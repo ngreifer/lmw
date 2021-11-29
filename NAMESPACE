@@ -1,1 +1,15 @@
-exportPattern("^[[:alpha:]]+")
+
+import("graphics")
+import("stats")
+
+importFrom("grDevices", "adjustcolor", "grey")
+
+
+export("lmw")
+
+S3method("summary", "lmw")
+S3method("print", "lmw")
+S3method("plot", "lmw")
+
+S3method("print", "summary.lmw")
+S3method("plot", "summary.lmw")

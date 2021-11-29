@@ -1,2 +1,15 @@
 ^.*\.Rproj$
+^README.md$
+^README.Rmd$
+^\.travis\.yml$
 ^\.Rproj\.user$
+^tests$
+^\_dev$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+^[.].*$
+^.*/[.].*$
+^.*\.o$
+^.*\.so$
