@@ -17,11 +17,17 @@ Description: Performs diagnostics for the implied weights of linear regression f
              the weights have a particular formulation and interesting properties that make them comparable to inverse probability weights 
              in form and function, but with greater potential for extrapolation in exchange for lower variance. 'lmw' provides tools
              to diagnose representativeness, balance, extrapolation, and influence for these models, clarifying the target population
-             of inference.
+             of inference. Tools are also available to simplify estimating treatment effects for specific target populations of interest.
 License: GPL (>= 2)
 Encoding: UTF-8
 URL: https://github.com/ngreifer/lmw
 BugReports: https://github.com/ngreifer/lmw/issues
-Depends: R (>= 4.0.0)
-Imports: sandwich
-Suggests: MatchIt (>= 4.3.2)
+Depends: 
+    R (>= 4.0.0)
+Imports:
+    sandwich (>= 3.0-1),
+    knitr,
+    rmarkdown
+Suggests: 
+    MatchIt (>= 4.3.2)
+VignetteBuilder: knitr

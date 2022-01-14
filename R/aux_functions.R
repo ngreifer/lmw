@@ -93,7 +93,8 @@ add_quotes <- function(x, quotes = 2L) {
 
 #Effective sample size (using |w|)
 ESS <- function(w) {
-  sum((w))^2/sum(w^2)
+  # sum(abs(w))^2/sum(w^2)
+  sum(w)^2/sum(w^2)
 }
 
 #Weighted colMeans
@@ -195,12 +196,24 @@ round_df_char <- function(df, digits, pad = "0", na_vals = "") {
   return(df)
 }
 
+#Transform number to subscript
+num2sub <- function(x) {
+  x <- as.character(x)
+
+  chartr("0123456789",
+         "\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089",
+         x)
+}
+
 #Get covariates (RHS) vars from formula
 covs_df_to_matrix <- function(covs) {
 
-    fnames <- colnames(covs)
-    fnames[!startsWith(fnames, "`")] <- paste0("`", fnames[!startsWith(fnames, "`")], "`")
-    formula <- reformulate(fnames)
+  if (NCOL(covs) == 0) {
+    return(as.matrix(covs))
+  }
+  fnames <- colnames(covs)
+  fnames[!startsWith(fnames, "`")] <- paste0("`", fnames[!startsWith(fnames, "`")], "`")
+  formula <- reformulate(fnames)
 
   mf <- model.frame(terms(formula, data = covs), covs,
                     na.action = na.pass)
@@ -255,15 +268,6 @@ binarize <- function(variable, zero = NULL, one = NULL) {
   }
 }
 
-process_mf <- function(mf) {
-  for (i in seq_len(ncol(mf))) {
-    if (anyNA(mf[[i]])) stop("Missing values are not allowed in the covariates.", call. = FALSE)
-    if (is.character(mf[[i]])) mf[[i]] <- factor(mf[[i]])
-    else if (any(!is.finite(mf[[i]]))) stop("Non-finite values are not allowed in the covariates.", call. = FALSE)
-  }
-  mf
-}
-
 hat_fast <- function(X, w = NULL) {
   if (is.null(w)) QR <- qr.default(X)
   else QR <- qr.default(sqrt(w) * X)
@@ -272,12 +276,22 @@ hat_fast <- function(X, w = NULL) {
   rowSums(Q * Q)
 }
 
-process_treat <- function(treat) {
-  if (anyNA(treat)) stop("Missing values are not allowed in the treatment.", call. = FALSE)
-  if (length(unique(treat)) != 2) stop("The treatment must be a binary variable.", call. = FALSE)
-  treat <- binarize(treat) #make 0/1
+treat_name_from_coefs <- function(coef_names, treat_levels) {
+  shortest_name <- coef_names[which.min(nchar(coef_names))]
+  for (i in 1:nchar(shortest_name)) {
+    treat <- substring(shortest_name, 1, i)
+    if (sum(paste0(treat, treat_levels) %in% coef_names) == length(coef_names)) {
+      return(treat)
+    }
+  }
+  return("")
 }
 
-check_target <- function(target, mf) {
+treat_levels_from_coefs <- function(coef_names, treat_levels, treat_name = NULL) {
+  if (is.null(treat_name)) {
+    treat_name <- treat_name_from_coefs(coef_names, treat_levels)
+  }
 
+  coef_levels <- sub(treat_name, "", coef_names, fixed = TRUE)
+  return(c(setdiff(treat_levels, coef_levels), coef_levels))
 }

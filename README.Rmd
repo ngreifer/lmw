@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 
 `lmw` provides diagnostic tools for the implied weights of linear regression for use in estimating treatment effects in observational studies under unconfoundedness. When a sufficient set of covariates have been measured to eliminate confounding, adjusting for them in a regression model for the outcome with the treatment and covariates as predictors can be an effective way to isolate the causal effect of the treatment. The treatment effect resulting from this model can be represented as a difference between the weighted outcome means in the treatment groups, similar to inverse probability weighting.
 
-The weights implied by the regression model have several interesting characteristics: they yield exact mean balance between the treatment groups for every covariate included in the model, they have minimum variance among all weights that do so, and they may be negative. Despite yielding exactly mean balance between treatment groups, they may not yield balance between the treatment groups and the target population corresponding to the desired estimand; in addition, the negative weights they produce indicate extrapolation beyond the original covariate space. `lmw` provides tools to compute the implied weights and perform diagnostics to assess balance, extrapolation, and influence.
+The weights implied by the regression model have several interesting characteristics: they yield exact mean balance between the treatment groups for every covariate included in the model, they have minimum variance among all weights that do so, and they may be negative. Despite yielding exact mean balance between treatment groups, they may not yield balance between the treatment groups and the target population corresponding to the desired estimand; in addition, the negative weights they produce indicate extrapolation beyond the original covariate space. `lmw` provides tools to compute the implied weights and perform diagnostics to assess balance, extrapolation, and influence.
 
 Below is an example of the use of `lmw` to diagnose regression weights for estimating the average treatment effect on the treated (ATT) of a job training program on earnings using the Lalonde dataset.
 
@@ -39,7 +39,7 @@ lmw.out <- lmw(~ treat + age + educ + race + married + nodegree + re74 + re75,
                data = lalonde, treat = "treat", estimand = "ATT", type = "URI")
 ```
 
-`lmw.out` contains the implied regression weights. We can see that the weighted outcome mean differnece between the treatment groups is equal to the coefficient on the treatment in the corresponding outcome regression model:
+`lmw.out` contains the implied regression weights. We can see that the weighted outcome mean difference between the treatment groups is equal to the coefficient on the treatment in the corresponding outcome regression model:
 
 ```{r}
 #The weighted difference in means
@@ -60,7 +60,7 @@ How well do the weights do at balancing the treatment groups to the target popul
 (s <- summary(lmw.out))
 ```
 
-The `SMD` columns contains the standardized mean differences for each covariate between the treatment groups; after weighting, the values are all equal to zero because of the properties of the implied regression weights. However, difference between the treatment groups and target sample remain, as displayed in the `TSMD Treated` and `TSMD Control` columns, which contain the standardized mean differences between each treatment group and the target sample.
+The `SMD` column contains the standardized mean differences for each covariate between the treatment groups; after weighting, the values are all equal to zero because of the properties of the implied regression weights. However, the difference between each treatment group and target sample remain, as displayed in the `TSMD Treated` and `TSMD Control` columns, which contain the standardized mean differences between each treatment group and the target sample.
 
 We can summarize this balance table in a plot:
 
@@ -77,20 +77,21 @@ plot(lmw.out, type = "weights")
 Negative weights are present in the control group. We can further examine extrapolation for specific covariates:
 
 ```{r}
-plot(lmw.out, type = "extrapolation", var = "married")
-
-plot(lmw.out, type = "extrapolation", var = "re75")
+plot(lmw.out, type = "extrapolation", var = ~married + re75)
 ```
 
-We can finally fit the outcome model and examine how influential individual points are using their sample influence curves, which are a function of their residuals, leverages, and implied weights:
+We can examine how influential individual points are using their sample influence curves, which are a function of their residuals, leverages, and implied weights:
 
 ```{r}
-#Not yet implemented
+plot(lmw.out, type = "influence", outcome = re78)
 ```
 
-Finally, we can extract estimates of the mean potential outcomes and their difference:
+Finally, we can fit the outcome model and extract estimates of the mean potential outcomes and their difference:
 
 ```{r}
-#Not yet implemented
+lmw.fit <- lmw_est(lmw.out, outcome = re78)
+
+summary(lmw.fit)
 ```
 
+`lmw` also interfaces with the `MatchIt` and `WeightIt` packages to implement these diagnostics for regression in a matched or weighted sample.

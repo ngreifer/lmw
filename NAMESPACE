@@ -1,15 +1,37 @@
-
 import("graphics")
 import("stats")
 
 importFrom("grDevices", "adjustcolor", "grey")
+importFrom("sandwich", "bread", "estfun")
+importFrom("utils", "hasName", "combn")
 
-
-export("lmw")
+export("lmw", "lmw_est", "lmw_iv")
 
 S3method("summary", "lmw")
+S3method("summary", "lmw.multi")
 S3method("print", "lmw")
 S3method("plot", "lmw")
+S3method("influence", "lmw")
+S3method("lmw_est", "lmw")
 
 S3method("print", "summary.lmw")
 S3method("plot", "summary.lmw")
+
+S3method("print", "lmw_est")
+S3method("summary", "lmw_est")
+S3method("influence", "lmw_est")
+
+S3method("bread", "lmw_est")
+S3method("vcov", "lmw_est")
+S3method("model.matrix", "lmw_est")
+S3method("hatvalues", "lmw_est")
+S3method("estfun", "lmw_est")
+
+S3method("print", "summary.lmw_est")
+
+S3method("print", "lmw_iv")
+S3method("lmw_est", "lmw_iv")
+
+S3method("bread", "lmw_est_iv")
+
+

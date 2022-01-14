@@ -1,63 +1,94 @@
-plot.summary.lmw <- function(x, abs = TRUE, var.order = "data", threshold = NULL, layout = "vertical", ...) {
+plot.summary.lmw <- function(x, stats, abs = TRUE, var.order = "data", threshold = NULL, layout = "vertical", ...) {
   .pardefault <- par(no.readonly = TRUE)
   on.exit(par(.pardefault))
 
-  weighted <- !is.null(x[["sum.weighted"]])
   un <- !is.null(x[["sum.un"]])
+  base.weighted <- !is.null(x[["sum.base.weighted"]])
+  weighted <- !is.null(x[["sum.weighted"]])
   standard.sum <- if (un) x[["sum.un"]] else x[["sum.weighted"]]
 
-  if (!all(c("TSMD Treated", "TSMD Control") %in% colnames(standard.sum))) {
+  if (!any(startsWith(colnames(standard.sum), "TSMD"))) {
     stop("Not appropriate for unstandardized summary. Run summary() with the standardize = TRUE option, and then plot.", call. = FALSE)
   }
 
+  if (missing(stats)) {
+    stats <- colnames(standard.sum)[startsWith(colnames(standard.sum), "TSMD")]
+  }
+  stats <- match_arg(stats, colnames(standard.sum), several.ok = TRUE)
+
   if (un) {
-    sd.all <- list(`1` = x[["sum.un"]][,"TSMD Treated"],
-                   `0` = x[["sum.un"]][,"TSMD Control"])
+    stats.un <- as.data.frame(x[["sum.un"]][,stats, drop = FALSE])
+  }
+  if (base.weighted) {
+    stats.base.weighted <- as.data.frame(x[["sum.base.weighted"]][,stats, drop = FALSE])
   }
   if (weighted) {
-    sd.weighted <- list(`1` = x[["sum.weighted"]][,"TSMD Treated"],
-                        `0` = x[["sum.weighted"]][,"TSMD Control"])
+    stats.weighted <- as.data.frame(x[["sum.weighted"]][,stats, drop = FALSE])
   }
 
   var.names <- rownames(standard.sum)
 
-  var.order <- match_arg(var.order, c("data", "alphabetical"))
+  var.order <- match_arg(var.order, c("data", "alphabetical", "unadjusted"[un]))
 
   layout <- match_arg(layout, c("vertical", "horizontal"))
 
   if (abs) {
     if (un) {
-      for (i in c("1", "0"))
-        sd.all[[i]] <- abs(sd.all[[i]])
+      for (i in seq_along(stats.un))
+        stats.un[[i]] <- abs(stats.un[[i]])
+    }
+    if (base.weighted) {
+      for (i in seq_along(stats.base.weighted))
+        stats.base.weighted[[i]] <- abs(stats.base.weighted[[i]])
     }
     if (weighted) {
-      for (i in c("1", "0"))
-        sd.weighted[[i]] <- abs(sd.weighted[[i]])
+      for (i in seq_along(stats.weighted))
+        stats.weighted[[i]] <- abs(stats.weighted[[i]])
     }
-    xlab <- list(`1` = "TASMD (treated group)",
-                 `0` = "TASMD (control group)")
   }
-  else {
-    xlab <- list(`1` = "TSMD (treated group)",
-                 `0` = "TSMD (control group)")
-  }
+
+  xlab <- vapply(stats, rename_summary_stat, character(1L), abs = abs)
 
   ord <- switch(var.order,
                 "data" = rev(seq_along(var.names)),
-                "alphabetical" = order(var.names, decreasing = TRUE))
+                "alphabetical" = order(var.names, decreasing = TRUE),
+                "unadjusted" = order(stats.un[[1]]))
 
-  minx <- min(if (un) c(sd.all[["1"]], sd.all[["0"]]), if (weighted) c(sd.weighted[["1"]], sd.weighted[["0"]]), if (abs) 0 else -.01)
-  maxx <- max(if (un) c(sd.all[["1"]], sd.all[["0"]]), if (weighted) c(sd.weighted[["1"]], sd.weighted[["0"]]), .01)
+  minx <- min(if (un) unlist(stats.un), if (base.weighted) unlist(stats.base.weighted), if (weighted) unlist(stats.weighted), if (abs) 0 else -.01)
+  maxx <- max(if (un) unlist(stats.un), if (base.weighted) unlist(stats.base.weighted), if (weighted) unlist(stats.weighted), .01)
 
   xlim <- c(minx, 1.75*maxx - minx)
 
-  if (layout == "vertical") layout(rbind(1,2))
-  else if (layout == "horizontal") layout(cbind(1,2))
+  if (layout == "vertical") layout(do.call("rbind", as.list(seq_along(stats))))
+  else if (layout == "horizontal") layout(do.call("cbind", as.list(seq_along(stats))))
   par(mar=c(3.75, 6.5, 1.25, 0.5),
       mgp=c(1.5, 0.5, 0))
 
-  for (i in c("1", "0")) {
-    dotchart(if (un) sd.all[[i]][ord] else sd.weighted[[i]][ord],
+  if (base.weighted) {
+    if (identical(x$base.weights.origin, "MatchIt")) {
+      legend.text <- sprintf(c("Before matching"[un],
+                               "After matching",
+                               "After matching + \n%s regression"[weighted]), x$type)
+    }
+    else if (identical(x$base.weights.origin, "WeightIt")) {
+      legend.text <- sprintf(c("Before weighting"[un],
+                               "After weighting",
+                               "After weighting + \n%s regression"[weighted]), x$type)
+    }
+    else {
+      legend.text <- sprintf(c("Before base weighting"[un],
+                               "After base weighting",
+                               "After base weighting + \n%s regression"[weighted]), x$type)
+    }
+  }
+  else {
+    legend.text <- sprintf(c("Before regression"[un],
+                             "After %s regression"[weighted]), x$type)
+  }
+
+
+  for (i in seq_along(stats)) {
+    dotchart(if (un) stats.un[[i]][ord] else stats.weighted[[i]][ord],
              labels = var.names[ord], xlab = xlab[[i]],
              xlim = xlim, lcolor = NA,
              cex=.8,
@@ -65,12 +96,16 @@ plot.summary.lmw <- function(x, abs = TRUE, var.order = "data", threshold = NULL
     abline(v = 0)
 
     if (un) {
-      points(x = sd.all[[i]][ord], y = seq_along(sd.all[[i]]),
+      points(x = stats.un[[i]][ord], y = seq_along(stats.un[[i]]),
              pch = 4, cex=1.5)
     }
+    if (base.weighted) {
+      points(x = stats.base.weighted[[i]][ord], y = seq_along(stats.base.weighted[[i]]),
+             pch = 1, cex=1.5)
+    }
     if (weighted) {
-      points(x = sd.weighted[[i]][ord], y = seq_along(sd.weighted[[i]]),
-             pch = 20, cex=1.5)
+      points(x = stats.weighted[[i]][ord], y = seq_along(stats.weighted[[i]]),
+             pch = 19, cex=1.5)
     }
 
     if (!is.null(threshold)) {
@@ -85,14 +120,29 @@ plot.summary.lmw <- function(x, abs = TRUE, var.order = "data", threshold = NULL
 
     title(ylab = "Covariate", mgp = c(5.25, 0.5, 0), cex = .8)
 
-      legend(x=maxx + .1*(maxx-minx),
-             y=length(var.names)+0.65,
-             legend=c("Before weighting",
-                      "After weighting")[c(un, weighted)],
-             pch=c(4, 20)[c(un, weighted)],
-             bty="n",
-             cex = .8)
+    legend(x=maxx + .1*(maxx-minx),
+           y=length(var.names)+0.65,
+           legend=legend.text,
+           pch=c(4, 1, 19)[c(un, base.weighted, weighted)],
+           bty="n",
+           cex = .8)
   }
 
   invisible(x)
+}
+
+rename_summary_stat <- function(x, abs = FALSE) {
+  splitted <- strsplit(x, " ", fixed = TRUE)[[1]]
+  stat <- splitted[1]
+  if (endsWith(stat, "KS")) stat <- paste(stat, "statistic")
+  else if (endsWith(stat, "SMD") && abs) stat <- sub("SMD", "ASMD", stat, fixed = TRUE)
+
+  if (length(splitted) > 1) {
+    group <- paste(splitted[-1], collapse = " ")
+    if (tolower(group) %in% c("treated", "control")) {
+      group <- paste(tolower(group), "group")
+    }
+    sprintf("%s (%s)", stat, group)
+  }
+  else stat
 }

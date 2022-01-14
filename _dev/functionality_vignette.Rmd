@@ -1,0 +1,432 @@
+---
+title: "`lmw` functionality"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document illustrates the functionality of the `lmw` package. It is not meant to be a vignette for users.
+
+We use the `lalonde` dataset from `MatchIt`, which must be installed (but doesn't have to be attached).
+
+```{r}
+library(lmw)
+data("lalonde", package = "MatchIt")
+```
+
+## A complete workflow for estimating the ATT
+
+We begin using URI weights. The estimand does not affect the calculation of the weights or treatment effect for URI weights when there are no treatment-by-covariate interactions in the model. Otherwise, covariates are centered in the target population implied by the estimand, which affects the assessment of balance and representativeness and the estimates of the counterfactual means. Therefore, `estimand` should always be specified.
+
+```{r}
+lmw.out1 <- lmw(~treat + age + educ + race + married + nodegree + re74 + re75,
+               data = lalonde, type = "URI", estimand = "ATT", treat = "treat")
+lmw.out1
+```
+
+We can assess balance using `summary()`. The output is very similar to `MatchIt`'s `summary.matchit()`. Here we save the output to a variable `s.out` which we will use for plotting subsequently. We add `age^2` as a covariate to illustrate balance for variables not included in the regression.
+
+```{r}
+(s.out1 <- summary(lmw.out1, addlvariables = ~I(age^2)))
+```
+
+The columns contain the SMD, the target SMDs for each treatment group, the KS statistics, and the target KS statistics for each group (i.e., the KS statistics between each group and the target group, which is determined by the estimand). It might be a good idea to produce the means, but I didn't want to overcrowd the output. We can possibly add the means as an additional option requested by the user or remove some of the currently displayed statistics.
+
+TSMD Treated and TKS treated will always be 0 before weighting when `estimand = "ATT"`. For variables included in the regression model, the SMD will always be 0 after weighting and the TSMD Treated will equal the negative of TSMD Control. This is not the case for the additional variables, though.
+
+We can plot the balance statistics using `plot()`.
+
+```{r, fig.width=9, fig.height=4}
+plot(s.out1, layout = "h")
+```
+
+There are several ways to customize this plot. Threshold lines can be added. The statistics to be displayed can be changed to any of the ones available in the `summary()` output, making it straightforward to request a plot of SMDs by using `plot(s.out, stat = "SMD")`. The plots can be arranged vertically or horizontally. The statistics can be displayed in absolute value or not. The variables can be ordered in different ways.
+
+We can examine the distribution of weights using `plot()` on the `lmw` object:
+
+```{r}
+plot(lmw.out1, type = "weights")
+```
+
+The red line is the mean of the weights and the small vertical black lines are a rug plot of the weights. These can be suppressed using the `mean` and `rug` arguments. We can see some small negative weights for the control units but all weights are positive for the treated units. The sample size and ESS are printed as well.
+
+We can examine represenativeness and extrapolation using `plot()`. We must specify one or more variables to assess using the `var` argument. It is possible to supply variables other than those used in computing the weights.
+
+```{r, fig.width=8, fig.height=2.5}
+plot(lmw.out1, type = "extrapolation", var = ~ age + race)
+```
+
+Factor variables have their levels automatically expanded. The line represents the weighted mean of the variable and the X represents the target mean. We can see that `age` is well represented, but `raceblack` is less so, consistent with the TSMD statistics above.
+
+Finally, when we have an outcome variable selected, we can look at the influence of the observations. This involves fitting the outcome regression model and computing the residuals, but we will not see the outcome model until later.
+
+```{r}
+plot(lmw.out1, type = "influence", outcome = re78)
+```
+
+The plot shows indices on the x-axis and scaled SIC on the y-axis. In this dataset, the first 185 units are treated and the remaining are control, and this can be seen in the differences in SIC in the plot.
+
+The `outcome` argument can be supplied as a string (e.g., `"re78"`) or as a variable itself that is present in the original dataset, as above. This make it easy to specify transformations of the outcome (e.g., `sqrt(re78)`) without requiring a new variable in the dataset. This is known as non-standard evaluation, and is the same method `lm()` uses when `weights` are supplied and `dplyr` and other `tidyverse` functions use. This makes it easier for users but it becomes slightly harder to do programming. This is more pronounced with `lmw_est()`, which uses the same syntax. An alternative is to include the outcome in the model formula supplied to `lmw()`, which will then be carried through to other functions that make use of it, even though `lmw()` itself does not.
+
+We can can extract the influence values now if we wanted to observe them more directly.
+
+```{r}
+infl <- influence(lmw.out1, outcome = re78)
+str(infl)
+summary(infl$sic)
+```
+
+We can now fit the outcome regression model to estimate the treatment effect using `lmw_est()`. This fits the regression model using the centered covariates and produces an object similar to the output of `lm.fit()`. The user should not interact with this object too much, but rather should use `summary()` to extract the treatment effects.
+
+```{r}
+lmw.fit1 <- lmw_est(lmw.out1, outcome = re78)
+
+lmw.fit1
+```
+
+Unlike `lm()` outputs, `lmw_est()` computes the coefficient covariance matrix. It uses HC3 robust standard errors by default, but the type of SEs are controlled by the `robust` argument, which takes inspiration from `jtools::summ()`. The outcome is specified using the non-standard evaluation input as done previously, but it is also possible instead to supply it as a string (e.g., `"re78"`); this is true for `plot()` and `influence()` as well.
+
+`summary()` should be used to compute the potential outcome means and treatment effect and their standard errors and confidence intervals.
+
+```{r}
+summary(lmw.fit1)
+```
+
+Note that estimates for the other coefficients are not included in the output because users should not report or interpret them, but they can be requested by setting `model = TRUE`, which produces the same output that `summary()` produces when used on an `lm` object. 
+
+Note that the label for the treatment effect estimate corresponds to the estimand. Subscripts for 0 and 1 make the labels easy to read.
+
+## Estimating the ATE using MRI
+
+Here we estimate the ATE using an MRI model.
+
+```{r}
+lmw.out2 <- lmw(~treat + age + educ + race + married + nodegree + re74 + re75,
+               data = lalonde, type = "MRI", estimand = "ATE", treat = "treat")
+lmw.out2
+```
+
+We can assess balance using `summary()`:
+
+```{r}
+summary(lmw.out2, addlvariables = ~I(age^2))
+```
+
+Unlike with the ATT, the TSMD before weighting for the neither group is zero because the target group is the full sample, not just the treated group. After weighting, SMDs and TSMDs are zero for the covariates included in computing the MRI weights.
+
+Finally, we can fit the outcome model and examine the treatment effect:
+
+```{r}
+lmw.fit2 <- lmw_est(lmw.out2, outcome = re78)
+lmw.fit2
+
+summary(lmw.fit2)
+```
+
+Unlike for URI regression, with MRI regression `summary()` produces the estimated potential outcome means in addition to the treatment effect. Note that the labels for the estimates correspond to the estimand.
+
+An alternative way to produce estimates without including the outcome in the call to `lmw_est()` is to include the outcome in the model formula supplied to `lwm()`, as previously mentioned:
+
+```{r}
+lmw.out2 <- lmw(re78 ~ treat + age + educ + race + married + nodegree + re74 + re75,
+               data = lalonde, type = "MRI", estimand = "ATE", treat = "treat")
+lmw.fit2 <- lmw_est(lmw.out2)
+summary(lmw.fit2)
+```
+
+This produces the same results but may be easier for users. It is not the recommended syntax, however, because it less clearly distinguishes between the design and analysis phases.
+
+## An example using regression after matching
+
+Here we use regression after matching to estimate the ATT. We use `MatchIt`, which has integration with `lmw`. Here we use nearest neighbor propensity score matching with an exact matching constraint on `married` and `nodegree`.
+
+```{r}
+m.out <- MatchIt::matchit(treat ~ age + educ + race + married + nodegree + re74 + re75,
+                          data = lalonde, method = "nearest", estimand = "ATT",
+                          exact = ~married + nodegree)
+
+m.out
+```
+
+We can supply the `matchit` object to the `obj` argument of `lmw()`. This will enable the use of some information from the original `matchit()` call, including the name of the treatment variable, the dataset, and the estimand, none of which need to be re-supplied to `lmw()` (although it is generally safer to do so). The `matchit` object also supplies the matching weights as base weights, which can also be supplied manually to the `base.weights` argument.
+
+```{r}
+lmw.out.m <- lmw(~treat + age + educ + race + married + nodegree + re74 + re75,
+                 obj = m.out, type = "URI")
+lmw.out.m
+```
+
+When we run `summary()` on the output, we get balance information not only for the unweighted and regression-weighted sample but also for the sample weighted by just the matching (i.e., base) weights.
+
+```{r}
+(s.m <- summary(lmw.out.m))
+```
+
+We can see that the URI regression has generally improved balance after matching but has made target balance slightly worse for some of the variables. Plotting the summary in a Love plot highlights the trade-offs:
+
+```{r, fig.width=9, fig.height=4}
+plot(s.m, layout = "h")
+```
+
+All the other plotting functions (i.e., using `plot.lmw()`) produce the output as when used without base weights; only statistics for the variables after regression weighting are displayed.
+
+Finally, we can estimate the treatment effect in the matched sample with URI regression using `lmw_est()`. Because we performed matching, it is best to use a cluster-robust standard error with `subclass` (which represents matched pair membership) included as the clustering variable.
+
+```{r}
+lmw.fit.m <- lmw_est(lmw.out.m, outcome = re78, cluster = ~subclass)
+
+lmw.fit.m
+
+summary(lmw.fit.m)
+```
+
+The outcome `re78` and pair membership variable `subclass` come from the output of `MatchItIt::match.data()`, which is called internally and produces a matched dataset from the `matchit` object.
+
+The same results as above could be generated by manually supplying variables to `lmw()`, as below:
+
+```{r}
+md.out <- MatchIt::match.data(m.out, drop.unmatched = FALSE)
+
+lmw.out.m2 <- lmw(~treat + age + educ + race + married + nodegree + re74 + re75,
+                  data = md.out, type = "URI", estimand = "ATT", treat = "treat",
+                  base.weights = md.out$weights)
+
+lmw.fit.m2 <- lmw_est(lmw.out.m2, outcome = re78, cluster = ~subclass)
+
+all.equal(coef(summary(lmw.fit.m)), 
+          coef(summary(lmw.fit.m2)))
+```
+
+## Estimating a CATE
+
+We can estimate a conditional ATE (CATE) by supplying a target unit. This works by centering the covariates at the target unit's covariate values. We will use MRI here since that makes more sense for computing the CATE.
+
+```{r}
+target <- list(age = 30, educ = 12, race = "hispan", married = 1, 
+               nodegree = 0, re74 = 8000, re75 = 8000)
+lmw.out.cate <- lmw(~treat + age + educ + race + married + nodegree + re74 + re75,
+                    data = lalonde, type = "MRI", estimand = "CATE", treat = "treat",
+                    target = target)
+lmw.out.cate
+```
+
+We can assess balance and view the ESS:
+
+```{r}
+summary(lmw.out.cate)
+```
+
+The effective sample size is low because this estimand requires some degree of extrapolation. We can see this by noting that many of the weights are negative:
+
+```{r, fig}
+plot(lmw.out.cate, type = "weights")
+```
+```{r, fig.width=8, fig.height=2.5}
+plot(lmw.out.cate, type = "extrapolation", var = ~age + race)
+```
+
+Finally, we can estimate the treatment effect:
+
+```{r}
+lmw.fit.cate <- lmw_est(lmw.out.cate, outcome = re78)
+
+summary(lmw.fit.cate)
+```
+
+The labels in the coefficient table make it clear the CATE is being estimated. Here the standard error is huge because of the degree of extrapolation required.
+
+## Using `s.weights` to change the estimand
+
+Now we'll demonstrate the use of `s.weights` to estimate an effect where the target population is determined by the weights. For this, we'll consider caliper matching using `MatchIt`. Unlike before, we cannot simply supply the `MatchIt` object because doing so will supply the matching weights as base weights to retain the requested estimand rather than letting the target population be determined by the matching weights.
+
+```{r}
+m.out2 <- MatchIt::matchit(treat ~ age + educ + race + married + nodegree + re74 + re75,
+                          data = lalonde, method = "nearest", estimand = "ATT",
+                          caliper = .01)
+
+m.out2
+```
+
+We supply the resulting weights to the `s.weights` argument of `lmw()`:
+
+```{r}
+md.out2 <- MatchIt::match.data(m.out2, drop.unmatched = FALSE)
+
+lmw.out.s <- lmw(~treat + age + educ + race + married + nodegree + re74 + re75,
+                 data = md.out2, type = "MRI", estimand = "ATE", treat = "treat",
+                 s.weights = md.out2$weights)
+
+lmw.out.s
+```
+
+When we assess balance, the sampling weights are incorporated into the "unadjusted" sample. Because we used caliper matching weights, balance will appear to be good in the unadjusted sample, again, because it is after caliper matching.
+
+```{r}
+summary(lmw.out.s)
+```
+
+Indeed, because balance after matching is so good, the regression weights do little to adjust the sample, so the effective sample size after regression is similar to that with just the matching weights applied. Examining the distribution of weights reveals a similar story:
+
+```{r}
+plot(lmw.out.s, type = "weights")
+```
+
+There is a peak at weights of 0 (indicating the units that were dropped by the matching), and little variability among the nonzero weights; none of the weights are negative.
+
+We can estimate the treatment effect in the matched data:
+
+```{r}
+lmw.est.s <- lmw_est(lmw.out.s, outcome = re78, cluster = m.out2$subclass)
+
+lmw.est.s
+
+summary(lmw.est.s)
+```
+
+We get a pretty similar result to had we just estimated the treatment effect without regression:
+
+```{r}
+md.out2_ <- MatchIt::match.data(m.out2)
+lm.est2 <- lm(re78 ~ treat, data = md.out2_, weights = weights)
+lmtest::coeftest(lm.est2, vcov = sandwich::vcovCL, cluster = ~subclass)
+```
+
+In fact, because the covariates were so well balanced, the regression actually increases the variance of the effect estimate.
+
+## Using propensity score regression
+
+Performing a regression with the propensity score as the sole covariate is one way to use propensity scores. We can assess balance on covariates after estimating the implied regression weights from the propensity score outcome model. We'll use the propensity score computed in `m.out`, which is stored as the `distance` component.
+
+```{r}
+lmw.out.ps <- lmw(~ treat + m.out$distance, data = lalonde, 
+                  type = "MRI", estimand = "ATT", treat = "treat")
+
+lmw.out.ps
+
+summary(lmw.out.ps, 
+        addlvariables = ~ age + educ + race + married + nodegree + re74 + re75)
+```
+
+Consistent with theory, conditioning on the propensity score improves balance on the covariates, though not as well as does conditioning on the covariates directly.
+
+Balance is even better if we use a polynomial model:
+
+```{r}
+lmw.out.ps <- lmw(~ treat + poly(m.out$distance, 2), data = lalonde, 
+                  type = "MRI", estimand = "ATT", treat = "treat")
+
+summary(lmw.out.ps, 
+        addlvariables = ~ age + educ + race + married + nodegree + re74 + re75)
+```
+
+Finally, we can estimate the effect:
+
+```{r}
+lmw.est.ps <- lmw_est(lmw.out.ps, outcome = re78)
+
+summary(lmw.est.ps)
+```
+
+## Estimating the effects of a multi-category treatment
+
+Here, we'll consider the covariate-adjusted effect of `race`, a 3-category variable (`"black"`, `"hispan"`, `"white"`), on `re78`. With multi-category treatments, some additional inputs may be required. Although both URI and MRI methods are available for multi-category treatments, MRI regression is much better and easier to use, so I'll demonstrate that now. [Note: I need help figuring out the URI weights.]
+
+If we want to estimate the ATT or ATC, we need to specify which group is the "focal" treated or control group, respectively; we can do this with the `focal` argument, which works the same way it does in `WeightIt`. Here we'll consider the ATT with respect to "white" as the treated group.
+
+```{r}
+lmw.out.multi <- lmw(~race + age + educ + married + re74, data = lalonde,
+                     treat = "race", type = "MRI", estimand = "ATT", 
+                     focal = "white")
+lmw.out.multi
+```
+
+We can assess balance using `summary()`:
+
+```{r}
+summary(lmw.out.multi)
+```
+
+Unlike with binary treatments, only target balance statistics are produced. Because we are using `"white"` as the focal group, all balance statistics are with respect to that group. To get balance statistics that compare pairs of treatment levels with each other, use the `contrast` argument to supply two treatment levels:
+
+```{r}
+summary(lmw.out.multi, contrast = c("black", "hispan"))
+```
+
+(In this case this is an odd choice, but when `estimand = "ATE"` it becomes more useful.)
+
+Plotting functions work the same:
+
+```{r}
+plot(lmw.out.multi, type = "weights")
+
+plot(lmw.out.multi, type = "extrapolation", var = ~ age + married)
+
+plot(lmw.out.multi, type = "influence", outcome = re78)
+```
+
+When we estimate treatment effects, all pairwise comparisons and each counterfactual mean is produced:
+
+```{r}
+lmw.fit.multi <- lmw_est(lmw.out.multi, outcome = re78)
+lmw.fit.multi
+
+summary(lmw.fit.multi)
+```
+
+A key is displayed at the bottom to identify the label for each treatment group.
+
+## Estimating a treatment effect using 2SLS
+
+Here we demonstrate computing weights corresponding to a 2SLS IV model. Only binary treatments with a single instrument are supported, and only URI regression is supported. We use the `c401k` dataset from the `LARF` package, which considers the effect of `p401k` on `nettfa` using `e401k` as an instrument.
+
+```{r}
+data("c401k", package = "LARF")
+```
+
+We use the `lmw_iv()` function, which is similar to `lmw()` except than additional argument, `iv`, must be supplied containing the name of the instrument, which should not otherwise appear in the model. The supplied formula should correspond to the second stage model. Although `estimand` can be supplied, it only affects the target population in balance assessment. We will include one covariate (`inc`) in the model; this covariate is included in the implied first and second stage models.
+
+```{r}
+lmw.out.iv <- lmw_iv(~p401k + inc, data = c401k, treat = "p401k", iv = "e401k")
+lmw.out.iv
+```
+
+We can assess balance on the other covariates using the `addlvariables` argument in `summary()`:
+
+```{r}
+summary(lmw.out.iv, addlvariables = ~male + marr + age)
+```
+
+Because `estimand` is set to `"ATE"` by default, target balance refers to how representative the weighted sample is of the full sample, which typically is not the estimand of 2SLS.
+
+If we plot the weights, we can see that the control group has many units with negative weights:
+
+```{r}
+plot(lmw.out.iv, type = "weights")
+```
+
+Because the primary component of the plots is the weights, all the plotting methods work for `lmw.iv` objects just as they do for `lmw` objects.
+
+We can estimate the treatment effect using `lmw_est()`, which has a separate method for `lmw.iv` objects. The arguments are the same as for `lmw` objects. Although the first and second stage models are fit, only the second stage model results are included in the output, which should typically not be examined anyway. Instead, we use `summary()` to examine the treatment effect estimate.
+
+```{r}
+lmw.fit.iv <- lmw_est(lmw.out.iv, outcome = nettfa)
+lmw.fit.iv
+
+summary(lmw.fit.iv)
+```
+
+The results agree with `ivreg::ivreg()` when the correct standard error is used. Sampling weights and base weights can be used with `lmw_iv()` just as they can be with `lmw()`.
+
+## To Do
+
+Things to improve or fix:
+
+* URI regression for multi-category treatments; it works, but there are some inconsistencies with the weights because of how strange they are mathematically
+* AIPW estimation; the weights can be produced, but it is not straightforward to estimate the standard errors of the treatment effects.
+* Testing and evaluation; making sure results agree with other functions like `lm()`, `margins()`, and `ivreg()`
+* Datasets and example; using a strong example dataset to allow a wide variety of examples, including for multi-category treatments and 2SLS
+* Vignettes; vignettes for users

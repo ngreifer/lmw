@@ -1,4 +1,8 @@
-lmw_est <- function(x, outcome, data = NULL) {
+lmw_est <- function(x, ...) {
+  UseMethod("lmw_est")
+}
+
+lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, ...) {
 
   call <- match.call()
 
@@ -6,184 +10,215 @@ lmw_est <- function(x, outcome, data = NULL) {
     stop("'x' must be an lmw object.", call. = FALSE)
   }
 
-  f_env <-environment(x$formula)
+  data <- get_data(data, x)
 
-  if (is.null(data)) {
-    data <- try(eval(x$call$data, envir = f_env), silent = TRUE)
-    if (length(data) == 0 || inherits(data, "try-error") || length(dim(data)) != 2 || nrow(data) != length(x[["treat"]])) {
-      data <- try(eval(x$call$data, envir = parent.frame()), silent = TRUE)
-      if (length(data) == 0 || inherits(data, "try-error") || length(dim(data)) != 2 || nrow(data) != length(x[["treat"]])) {
-        data <- x[["model"]][["data"]]
-        if (length(data) == 0 || nrow(data) != length(x[["treat"]])) {
-          stop("A valid dataset could not be found. Please supply an argument to 'data' containing the original dataset used to estimate the weights.", call. = FALSE)
-        }
-      }
-    }
-  }
+  outcome <- do.call("get_outcome", list(substitute(outcome), data, x$formula))
+  outcome_name <- attr(outcome, "outcome_name")
 
-  if (!is.data.frame(data)) {
-    if (is.matrix(data)) data <- as.data.frame.matrix(data)
-    else stop("'data' must be a data frame.", call. = FALSE)
-  }
-  if (nrow(data) != length(x$treat)) {
-    stop("'data' must have as many rows as there were units in the original call to lmw().", call. = FALSE)
-  }
+  attributes(outcome) <- NULL
 
-  tt <- terms(x$formula, data = data)
-
-  outcome_char <- deparse1(substitute(outcome))
-  if (is.null(outcome)) {
-    if (attr(tt, "response") == 0) {
-      stop("'outcome' must be supplied.", call. = FALSE)
-    }
-    mf <- model.frame(tt, data = data)
-    outcome <- model.response(mf)
-  }
-  else {
-    if ((is.numeric(outcome) || is.logical(outcome)) && length(outcome) == nrow(data)) {
-
-    }
-    else if (is.character(outcome) && length(outcome) == 1) {
-      outcome_char <- outcome
-      outcome <- try(eval(str2expression(outcome), data))
-      if (length(outcome) == 0 || inherits(outcome, "try-error")) {
-        stop("The outcome variable must be present in the dataset.", call. = FALSE)
-      }
-    }
-    else {
-      stop("'outcome' must be the name of the outcome variable or a vector containing the outcome values for all units.", call. = FALSE)
-    }
-  }
-
-  if (!is.numeric(outcome) && !is.logical(outcome)) {
-    stop("The outcome variable must be numeric.", call. = FALSE)
-  }
-
-  obj <- switch(x$type,
-                "URI" = get_X_from_formula_URI(x$formula, data = data, treat = attr(x$treat, "treat_name"),
-                                               estimand = x$estimand, target = x$target, s.weights = x$s.weights),
-                "MRI" = get_X_from_formula_MRI(x$formula, data = data, treat = attr(x$treat, "treat_name"),
-                                               estimand = x$estimand, target = x$target, s.weights = x$s.weights)
-  )
-
-  if (is.null(x$s.weights)) {
+  #Get model matrix
+  obj <- get_X_from_formula(x$formula, data = data, treat = x$treat,
+                            type = x$type, estimand = x$estimand, target = x$target,
+                            s.weights = x$s.weights, focal = x$focal)
+# browser()
+  #Fit regression model; note use lm.[w]fit() instead of lm() because
+  #we already have the model matrix (obj$X)
+  w <- NULL
+  rn <- rownames(obj$X)
+  if (is.null(x$s.weights) && is.null(x$base.weights)) {
     fit <- lm.fit(x = obj$X, y = outcome)
+    pos_w <- seq_along(outcome)
   }
   else {
-    fit <- lm.fit(x = obj$X, y = outcome, w = x$s.weights)
+    if (is.null(x$s.weights)) x$s.weights <- rep(1, length(outcome))
+    if (is.null(x$base.weights)) x$base.weights <- rep(1, length(outcome))
+    w <- x$s.weights * x$base.weights
+    pos_w <- which(w > 0)
+    obj$X <- obj$X[pos_w,, drop = FALSE]
+
+    fit <- lm.wfit(x = obj$X, y = outcome[pos_w], w = w[pos_w])
+
+    non_pos_w <- which(w <= 0)
+    fit$na.action <- setNames(non_pos_w, rn[non_pos_w])
+    class(fit$na.action) <- "omit"
   }
 
-  fit$call <- call
   class(fit) <- "lmw_est"
-  fit
-}
 
-summary.lmw_est <- function(object, robust = TRUE, cluster = NULL, ...) {
-  coefs <- object$coefficients
-
-  est <- coefs[2]
-  EY0 <- coefs[1]
-  EY1 <- EY0 + est
+  fit$model.matrix <- obj$X
 
   if (isTRUE(robust)) {
     if (is.null(cluster)) robust <- "HC3"
     else robust <- "HC1"
   }
   else if (isFALSE(robust)) {
-    cluster <- NULL
-    robust <- "const"
+    if (is.null(cluster)) robust <- "const"
+    else {
+      robust <- "HC1"
+      warning("Setting robust = \"HC1\" because 'cluster' is non-NULL.", call. = FALSE)
+    }
   }
   else if (!is.character(robust) || length(robust) != 1 ||
            !robust %in% eval(formals(sandwich::vcovHC.default)$type)) {
     stop("'robust' must be TRUE, FALSE, or one of the allowable inputs to the 'type' argument of sandwich::vcovHC().", call. = FALSE)
   }
-}
 
-#Extract bread from lm.fit() output
-bread.lm.fit <- function(x) {
-  p <- x$rank
-  p1 <- seq_len(p)
-  Qr <- x$qr
-  cov.unscaled <- chol2inv(Qr$qr[p1, p1, drop = FALSE])
-  df <- c(p, x$df.residual)
+  if (is.null(cluster)) {
+    fit$vcov <- sandwich::vcovHC(fit, type = robust, ...)
+  }
+  else {
+    if (inherits(cluster, "formula")) {
+      cluster <- model.frame(cluster,
+                             data = data[pos_w,, drop = FALSE],
+                             na.action = na.pass)
+    }
+    else {
+      cluster <- as.data.frame(cluster)
+    }
 
-  return(cov.unscaled * as.vector(sum(df)))
-}
-meat.lm.fit <- function(x, mm, type = "HC3") {
-  X <- mm
-  if (any(alias <- is.na(x$coefficients)))
-    X <- X[, !alias, drop = FALSE]
-  attr(X, "assign") <- NULL
-  n <- NROW(X)
-  diaghat <- hat_fast(X, x$weights)
-  df <- n - NCOL(X)
-  ef <- estfun(x)
-  res <- rowMeans(ef/X, na.rm = TRUE)
-  all0 <- apply(abs(ef) < .Machine$double.eps, 1L, all)
-  res[all0] <- 0
-  if (any(all0) && substr(type, 1L, 1L) == "c") {
-    if (inherits(x, "glm")) {
-      res <- as.vector(residuals(x, "working")) * weights(x,
-                                                          "working")
-      if (!(substr(x$family$family, 1L, 17L) %in% c("poisson",
-                                                    "binomial", "Negative Binomial"))) {
-        res <- res * sum(weights(x, "working"), na.rm = TRUE)/sum(res^2,
-                                                                  na.rm = TRUE)
-      }
+    if (nrow(cluster) == nrow(data)) cluster <- cluster[pos_w,, drop = FALSE]
+    else if (nrow(cluster) != length(pos_w)) {
+      stop("'cluster' must have the same number of rows as the original data set.", call. = FALSE)
     }
-    else if (inherits(x, "lm")) {
-      res <- as.vector(residuals(x))
-      if (!is.null(weights(x)))
-        res <- res * weights(x)
-    }
+    fit$vcov <- sandwich::vcovCL(fit, type = robust, cluster = cluster, ...)
   }
 
-  type <- match.arg(type)
-  if (type == "HC")
-    type <- "HC0"
-  switch(type, const = {
-    omega <- function(residuals, diaghat, df) rep(1,
-                                                  length(residuals)) * sum(residuals^2)/df
-  }, HC0 = {
-    omega <- function(residuals, diaghat, df) residuals^2
-  }, HC1 = {
-    omega <- function(residuals, diaghat, df) residuals^2 *
-      length(residuals)/df
-  }, HC2 = {
-    omega <- function(residuals, diaghat, df) residuals^2/(1 -
-                                                             diaghat)
-  }, HC3 = {
-    omega <- function(residuals, diaghat, df) residuals^2/(1 -
-                                                             diaghat)^2
-  }, HC4 = {
-    omega <- function(residuals, diaghat, df) {
-      n <- length(residuals)
-      p <- as.integer(round(sum(diaghat), digits = 0))
-      delta <- pmin(4, n * diaghat/p)
-      residuals^2/(1 - diaghat)^delta
-    }
-  }, HC4m = {
-    omega <- function(residuals, diaghat, df) {
-      gamma <- c(1, 1.5)
-      n <- length(residuals)
-      p <- as.integer(round(sum(diaghat), digits = 0))
-      delta <- pmin(gamma[1], n * diaghat/p) + pmin(gamma[2],
-                                                    n * diaghat/p)
-      residuals^2/(1 - diaghat)^delta
-    }
-  }, HC5 = {
-    omega <- function(residuals, diaghat, df) {
-      k <- 0.7
-      n <- length(residuals)
-      p <- as.integer(round(sum(diaghat), digits = 0))
-      delta <- pmin(n * diaghat/p, pmax(4, n * k *
-                                          max(diaghat)/p))
-      residuals^2/sqrt((1 - diaghat)^delta)
-    }
-  })
+  fit$call <- call
+  fit$estimand <- x$estimand
+  fit$focal <- x$focal
+  fit$type <- x$type
+  fit$robust <- robust
+  fit$outcome <- outcome_name
+  fit$treat_levels <- levels(x$treat)
 
-  omega <- omega(res, diaghat, df)
-  rval <- sqrt(omega) * X
-  rval <- crossprod(rval)/n
-  return(rval)
+  fit
+}
+
+print.lmw_est <- function(x, ...) {
+  cat(sprintf("An %s object\n", class(x)[1]))
+  cat(" - outcome:", x$outcome, "\n")
+  cat(" - standard errors:", if (hasName(x$call, "cluster") && !is.null(x$call[["cluster"]])) "cluster",
+      if (x$robust == "const") "usual" else sprintf("robust (%s)", x$robust), "\n")
+  if (!inherits(x, "lmw_est_iv")) cat(" - estimand:", x$estimand, "\n")
+  cat(" - type:", x$type, "\n")
+  cat("\n")
+  cat("Use summary() to examine estimates, standard errors, p-values, and confidence intervals.", "\n")
+  invisible(x)
+}
+
+lmw_est.formula <- function(x, data = NULL, type = "URI", estimand = "ATE", treat = NULL, target = NULL, base.weights = NULL,
+                            s.weights = NULL, dr.method = "WLS", obj = NULL, contrast = NULL, focal = NULL,
+                            outcome, robust = TRUE, cluster = NULL, ...) {
+  call <- match.call()
+
+  formula <- x
+
+  type <- match_arg(type, c("URI", "MRI"))
+
+  estimand <- process_estimand(estimand, target, obj)
+
+  data <- process_data(data, obj)
+
+  base.weights <- process_base.weights(base.weights, obj)
+
+  s.weights <- process_s.weights(s.weights, obj)
+
+  dr.method <- process_dr.method(dr.method, base.weights, type)
+
+  treat_name <- process_treat_name(treat, formula, type, obj)
+
+  #treat changes meaning from treatment name to treatment vector
+  treat <- process_treat(treat_name, data)
+
+  contrast <- process_contrast(contrast, treat, type)
+
+  #treat_contrast has levels re-ordered so contrast is first
+  treat_contrast <- apply_contrast_to_treat(treat, contrast)
+
+  focal <- process_focal(focal, treat_contrast, estimand)
+
+  # data <- get_data(data, x)
+
+  outcome <- do.call("get_outcome", list(substitute(outcome), data, formula))
+  outcome_name <- attr(outcome, "outcome_name")
+
+  attributes(outcome) <- NULL
+
+  #Get model matrix
+  obj <- get_X_from_formula(formula, data = data, treat = treat,
+                            type = type, estimand = estimand, target = target,
+                            s.weights = s.weights, focal = focal)
+
+  #Fit regression model; note use lm.[w]fit() instead of lm() because
+  #we already have the model matrix (obj$X)
+  w <- NULL
+  rn <- rownames(obj$X)
+  if (is.null(s.weights) && is.null(base.weights)) {
+    fit <- lm.fit(x = obj$X, y = outcome)
+    pos_w <- seq_along(outcome)
+  }
+  else {
+    if (is.null(s.weights)) s.weights <- rep(1, length(outcome))
+    if (is.null(base.weights)) base.weights <- rep(1, length(outcome))
+    w <- s.weights * base.weights
+    pos_w <- which(w > 0)
+    obj$X <- obj$X[pos_w,, drop = FALSE]
+
+    fit <- lm.wfit(x = obj$X, y = outcome[pos_w], w = w[pos_w])
+
+    non_pos_w <- which(w <= 0)
+    fit$na.action <- setNames(non_pos_w, rn[non_pos_w])
+    class(fit$na.action) <- "omit"
+  }
+
+  class(fit) <- "lmw_est"
+
+  fit$model.matrix <- obj$X
+
+  if (isTRUE(robust)) {
+    if (is.null(cluster)) robust <- "HC3"
+    else robust <- "HC1"
+  }
+  else if (isFALSE(robust)) {
+    if (is.null(cluster)) robust <- "const"
+    else {
+      robust <- "HC1"
+      warning("Setting robust = \"HC1\" because 'cluster' is non-NULL.", call. = FALSE)
+    }
+  }
+  else if (!is.character(robust) || length(robust) != 1 ||
+           !robust %in% eval(formals(sandwich::vcovHC.default)$type)) {
+    stop("'robust' must be TRUE, FALSE, or one of the allowable inputs to the 'type' argument of sandwich::vcovHC().", call. = FALSE)
+  }
+
+  if (is.null(cluster)) {
+    fit$vcov <- sandwich::vcovHC(fit, type = robust, ...)
+  }
+  else {
+    if (inherits(cluster, "formula")) {
+      cluster <- model.frame(cluster,
+                             data = data[pos_w,, drop = FALSE],
+                             na.action = na.pass)
+    }
+    else {
+      cluster <- as.data.frame(cluster)
+    }
+
+    if (nrow(cluster) == nrow(data)) cluster <- cluster[pos_w,, drop = FALSE]
+    else if (nrow(cluster) != length(pos_w)) {
+      stop("'cluster' must have the same number of rows as the original data set.", call. = FALSE)
+    }
+    fit$vcov <- sandwich::vcovCL(fit, type = robust, cluster = cluster, ...)
+  }
+
+  fit$call <- call
+  fit$estimand <- estimand
+  fit$focal <- focal
+  fit$type <- type
+  fit$robust <- robust
+  fit$outcome <- outcome_name
+  fit$treat_levels <- levels(treat)
+
+  fit
 }

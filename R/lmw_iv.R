@@ -1,9 +1,9 @@
 #Compute weights from formula
-lmw <- function(formula, data = NULL, type = "URI", estimand = "ATE", treat = NULL, target = NULL, base.weights = NULL,
-                s.weights = NULL, dr.method = "WLS", obj = NULL, contrast = NULL, focal = NULL) {
+lmw_iv <- function(formula, data = NULL, type = "URI", estimand = "ATE", treat = NULL, iv, target = NULL, base.weights = NULL,
+                s.weights = NULL, obj = NULL, contrast = NULL, focal = NULL) {
   call <- match.call()
 
-  type <- match_arg(type, c("URI", "MRI"))
+  type <- match_arg(type, c("URI"))
 
   estimand <- process_estimand(estimand, target, obj)
 
@@ -13,12 +13,10 @@ lmw <- function(formula, data = NULL, type = "URI", estimand = "ATE", treat = NU
 
   s.weights <- process_s.weights(s.weights, obj)
 
-  dr.method <- process_dr.method(dr.method, base.weights, type)
-
   treat_name <- process_treat_name(treat, formula, type, obj)
 
   #treat changes meaning from treatment name to treatment vector
-  treat <- process_treat(treat_name, data)
+  treat <- process_treat(treat_name, data, multi.ok = FALSE)
 
   contrast <- process_contrast(contrast, treat, type)
 
@@ -27,31 +25,37 @@ lmw <- function(formula, data = NULL, type = "URI", estimand = "ATE", treat = NU
 
   focal <- process_focal(focal, treat_contrast, estimand)
 
-  X_obj <- get_X_from_formula(formula, data, treat_contrast, type, estimand, target, s.weights, focal)
+  iv_name <- process_iv_name(iv, formula)
 
-  weights <- get_w_from_X(X_obj$X, treat_contrast, type, base.weights, s.weights, dr.method)
+  iv <- process_iv(iv_name, data)
+
+  X_obj <- get_1st_stage_X_from_formula_iv(formula, data, treat_contrast, iv,
+                                           type, estimand, target, s.weights, focal)
+
+  weights <- get_w_from_X_iv(X_obj$X, treat_contrast, type, base.weights, s.weights)
 
   out <- list(treat = treat,
+              iv = iv,
               weights = weights,
               covs = X_obj$mf,
               estimand = estimand,
               type = type,
               base.weights = base.weights,
               s.weights = s.weights,
-              dr.method = dr.method,
               call = call,
               formula = formula,
               target = attr(X_obj$target, "target_original"),
               contrast = contrast,
               focal = focal)
 
-  class(out) <- c("lmw.multi"[nlevels(treat) > 2], "lmw")
+  class(out) <- c("lmw_iv", "lmw")
   return(out)
 }
 
-print.lmw <- function(x, ...) {
-  cat("An lmw object\n")
+print.lmw_iv <- function(x, ...) {
+  cat("An lmw_iv object\n")
   cat(sprintf(" - treatment: %s (%s levels)\n", attr(x$treat, "treat_name"), nlevels(x$treat)))
+  cat(sprintf(" - instrument: %s\n", attr(x$iv, "iv_name")))
   cat(sprintf(" - type: %s\n", switch(x$type, "URI" = "URI (uni-regression imputation)", "MRI" = " MRI (multi-regression imputation)")))
   cat(sprintf(" - number of obs.: %s\n", length(x$treat)))
   cat(sprintf(" - sampling weights: %s\n", if (is.null(x$s.weights)) "none" else "present"))
@@ -65,7 +69,7 @@ print.lmw <- function(x, ...) {
   cat(sprintf(" - target estimand: %s\n", x$estimand))
   if (!is.null(x$covs)) {
     cat(sprintf(" - covariates: %s\n",
-        if (length(names(x$covs)) > 30) paste(c(names(x$covs)[1:30], sprintf("and %s more", ncol(x$covs) - 30)), collapse = ", ")
-        else paste(names(x$covs), collapse = ", ")))
+                if (length(names(x$covs)) > 30) paste(c(names(x$covs)[1:30], sprintf("and %s more", ncol(x$covs) - 30)), collapse = ", ")
+                else paste(names(x$covs), collapse = ", ")))
   }
 }
