@@ -26,13 +26,13 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
   means <- drop(a %*% coefs)[means_order]
   means_vcov <- (a %*% vcov %*% t(a))[means_order, means_order]
 
-  contrasts <- t(combn(object$treat_levels, 2))
+  contrasts <- combn(object$treat_levels, 2, simplify = FALSE)
 
   a0 <- setNames(rep(0, length(object$treat_levels)), object$treat_levels)
-  a <- do.call("rbind", apply(contrasts, 1, function(i) {
+  a <- do.call("rbind", lapply(contrasts, function(i) {
     a0[i] <- c(-1, 1)
     a0
-  }, simplify = FALSE))
+  }))
 
   effects <- drop(a %*% means)
   effects_vcov <- a %*% means_vcov %*% t(a)
@@ -52,10 +52,10 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
     effects_ci[,1] <- effects - effects_se*t.crit
     effects_ci[,2] <- effects + effects_se*t.crit
 
-    effects_mat <- cbind(effects_mat[,1:2,drop=FALSE], effects_ci, effects_mat[,3:4,drop=FALSE])
+    effects_mat <- cbind(effects_mat[,1:2,drop=FALSE], effects_ci, effects_mat[,-(1:2),drop=FALSE])
   }
 
-  rownames(effects_mat) <- apply(contrasts, 1, function(i) {
+  rownames(effects_mat) <- lapply(contrasts, function(i) {
     sprintf("E[Y%s-Y%s]", treat_level_inds[i[2]], treat_level_inds[i[1]])
   })
 
@@ -79,7 +79,7 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
       means_ci[,1] <- means - means_se*t.crit
       means_ci[,2] <- means + means_se*t.crit
 
-      means_mat <- cbind(means_mat[,1:2,drop=FALSE], means_ci, means_mat[,3:4,drop=FALSE])
+      means_mat <- cbind(means_mat[,1:2,drop=FALSE], means_ci, means_mat[,-(1:2),drop=FALSE])
     }
 
     rownames(means_mat) <- paste0("E[Y", treat_level_inds, "]")
@@ -122,7 +122,7 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
       conf[,1] <- model_coefs - model_se*t.crit
       conf[,2] <- model_coefs + model_se*t.crit
 
-      model_mat <- cbind(model_mat[,1:2,drop=FALSE], conf, model_mat[,3:4,drop=FALSE])
+      model_mat <- cbind(model_mat[,1:2,drop=FALSE], conf, model_mat[,-(1:2),drop=FALSE])
     }
   }
 
