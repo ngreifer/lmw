@@ -56,8 +56,8 @@ data("lalonde")
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                      nodegree + re74 + re75,
-                data = lalonde, method = "URI",
-                estimand = "ATT", treat = "treat")
+                data = lalonde, estimand = "ATT",
+                method = "URI", treat = "treat")
 
 #Influence for re78 outcome
 infl <- influence(lmw.out1, outcome = "re78")

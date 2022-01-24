@@ -60,7 +60,8 @@ data("lalonde")
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                    nodegree + re74 + re75, data = lalonde,
-                method = "URI", estimand = "ATT", treat = "treat")
+                estimand = "ATT", method = "URI",
+                treat = "treat")
 lmw.out1
 
 #Distribution of weights

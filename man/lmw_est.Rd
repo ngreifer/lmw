@@ -73,7 +73,7 @@ data("lalonde")
 # MRI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
-                  method = "MRI", estimand = "ATT",
+                  estimand = "ATT", method = "MRI",
                   treat = "treat")
 
 lmw.fit1 <- lmw_est(lmw.out1, outcome = "re78")
