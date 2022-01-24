@@ -58,7 +58,7 @@ A \code{summary.lmw} object, which contains the following components:
 \code{\link{lmw}} for computing the implied regression weights, \code{\link{plot.summary.lmw}} for plotting the balance statistics in a Love plot, \code{\link{plot.lmw}} for assessing the representativeness and extrapolation of the weights
 }
 \examples{
-data("lalonde", package = "MatchIt")
+data("lalonde")
 
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +

@@ -45,7 +45,7 @@ A plot is displayed, and \code{x} is invisibly returned.
 \code{\link{summary.lmw}}
 }
 \examples{
-data("lalonde", package = "MatchIt")
+data("lalonde")
 
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +

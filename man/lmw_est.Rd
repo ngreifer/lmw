@@ -68,7 +68,7 @@ When using \code{lmw_est()} inside \code{\link{lapply}} or \code{purrr::map} to 
 \code{\link{summary.lmw_est}} for viewing and extracting the treatment effect and potential outcome mean estimates, standard errors, and other model statistics; \code{\link{lmw}} or \code{\link{lmw_iv}} for estimating the weights that correspond to the model estimated by \code{lmw_est()}; \code{\link{lm}} and \code{\link{lm.fit}} for fitting the corresponding model; \code{ivreg()} in the \pkg{ivreg} package for fitting 2SLS models; \code{\link{influence.lmw_est}} for influence measures
 }
 \examples{
-data("lalonde", package = "MatchIt")
+data("lalonde")
 
 # MRI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +

@@ -51,7 +51,7 @@ When using \code{influence.lmw()} inside \code{\link{lapply}} or \code{purrr::ma
 \code{\link{plot.lmw}} for plotting the SIC values; \code{\link{lm.influence}} for influence measures for \code{lm} objects, which do not include SIC values; \code{\link{hatvalues}} for hat values for \code{lm} objects (note that \code{lmw_est} objects also have a \code{hatvalues()} method).
 }
 \examples{
-data("lalonde", package = "MatchIt")
+data("lalonde")
 
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +

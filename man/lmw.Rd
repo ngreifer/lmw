@@ -106,7 +106,7 @@ Chattopadhyay, A., & Zubizarreta, J. R. (2021). On the implied weights of linear
 \code{\link{summary.lmw}} for summarizing balance and representativeness; \code{\link{plot.lmw}} for plotting features of the weights; \code{\link{lmw_est}} for estimating treatment effects from \code{lmw} objects; \code{\link{influence.lmw}} for influence measures; \code{\link{lm}} for fitting standard regression models.
 }
 \examples{
-data("lalonde", package = "MatchIt")
+data("lalonde")
 
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +

@@ -37,7 +37,7 @@ job training program on earnings using the Lalonde dataset.
 ``` r
 #Load lmw and the data
 library("lmw")
-data("lalonde", package = "MatchIt")
+data("lalonde")
 
 #Estimate the weights
 lmw.out <- lmw(~ treat + age + educ + race + married + nodegree + re74 + re75,
