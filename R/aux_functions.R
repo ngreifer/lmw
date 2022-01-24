@@ -119,6 +119,28 @@ mean_w <- function(x, w = NULL, subset = NULL) {
   else return(sum(x * w)/sum(w))
 }
 
+#(Weighted) variance that uses special formula for binary variables
+wvar <- function(x, bin.var = NULL, w = NULL, subset = NULL) {
+  if (is.null(bin.var)) bin.var <- all(x == 0 | x == 1)
+  if (length(subset) != 0) {
+    x <- x[subset]
+    if (length(w) != 0) w <- w[subset]
+  }
+
+  if (is.null(w)) w <- rep(1, length(x))
+
+  w <- w / sum(w) #weights normalized to sum to 1
+  mx <- sum(w * x) #weighted mean
+
+  if (bin.var) {
+    mx*(1-mx)
+  }
+  else {
+    #Reliability weights variance; same as cov.wt()
+    sum(w * (x - mx)^2)/(1 - sum(w^2))
+  }
+}
+
 #Determine whether a character vector can be coerced to numeric
 can_str2num <- function(x) {
   nas <- is.na(x)
