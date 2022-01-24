@@ -1,18 +1,18 @@
 Package: lmw
 Type: Package
-Title: Diagnostics for the Implied Weights of Linear Regression for Causal Inference
-Version: 0.0.0.9000
+Title: Linear Model Weights
+Version: 0.0.0.9001
 Authors@R: c(
-  person("Jose", "Zubizarreta", email = "zubizarreta@hcp.med.harvard.edu", role = c("aut"),
-         comment = c(ORCID = "0000-0002-0322-147X")),
   person("Ambarish", "Chattopadhyay", email = "ambarish_chattopadhyay@g.harvard.edu", role = c("aut"),
          comment = c(ORCID = "0000-0002-1502-0974")),
+  person("Jose", "Zubizarreta", email = "zubizarreta@hcp.med.harvard.edu", role = c("aut"),
+         comment = c(ORCID = "0000-0002-0322-147X")),
   person("Noah", "Greifer", role = c("aut", "cre"), 
          email = "ngreifer@iq.harvard.edu",
 	       comment = c(ORCID="0000-0003-3067-7154"))
   )
-Description: Performs diagnostics for the implied weights of linear regression for estimating causal effects. 
-             These diagnostics rely on the finding presented in Chattopadhyay and Zubizarreta (2021) <http://arxiv.org/abs/2104.06581> that 
+Description: Computes the implied weights of linear regression models for estimating causal effects and provides diagnostics based
+             on these weights. These diagnostics rely on the finding presented in Chattopadhyay and Zubizarreta (2021) <http://arxiv.org/abs/2104.06581> that 
              using outcome regression to estimate causal effects is equivalent to computing a weighted difference in outcome means, where
              the weights have a particular formulation and interesting properties that make them comparable to inverse probability weights 
              in form and function, but with greater potential for extrapolation in exchange for lower variance. 'lmw' provides tools
