@@ -19,7 +19,7 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
 
   #Get model matrix
   obj <- get_X_from_formula(x$formula, data = data, treat = x$treat,
-                            type = x$type, estimand = x$estimand, target = x$target,
+                            method = x$method, estimand = x$estimand, target = x$target,
                             s.weights = x$s.weights, focal = x$focal)
 # browser()
   #Fit regression model; note use lm.[w]fit() instead of lm() because
@@ -87,7 +87,7 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
   fit$call <- call
   fit$estimand <- x$estimand
   fit$focal <- x$focal
-  fit$type <- x$type
+  fit$method <- x$method
   fit$robust <- robust
   fit$outcome <- outcome_name
   fit$treat_levels <- levels(x$treat)
@@ -101,20 +101,20 @@ print.lmw_est <- function(x, ...) {
   cat(" - standard errors:", if (hasName(x$call, "cluster") && !is.null(x$call[["cluster"]])) "cluster",
       if (x$robust == "const") "usual" else sprintf("robust (%s)", x$robust), "\n")
   if (!inherits(x, "lmw_est_iv")) cat(" - estimand:", x$estimand, "\n")
-  cat(" - type:", x$type, "\n")
+  cat(" - method:", x$method, "\n")
   cat("\n")
   cat("Use summary() to examine estimates, standard errors, p-values, and confidence intervals.", "\n")
   invisible(x)
 }
 
-lmw_est.formula <- function(x, data = NULL, type = "URI", estimand = "ATE", treat = NULL, target = NULL, base.weights = NULL,
+lmw_est.formula <- function(x, data = NULL, method = "URI", estimand = "ATE", treat = NULL, target = NULL, base.weights = NULL,
                             s.weights = NULL, dr.method = "WLS", obj = NULL, contrast = NULL, focal = NULL,
                             outcome, robust = TRUE, cluster = NULL, ...) {
   call <- match.call()
 
   formula <- x
 
-  type <- match_arg(type, c("URI", "MRI"))
+  method <- match_arg(method, c("URI", "MRI"))
 
   estimand <- process_estimand(estimand, target, obj)
 
@@ -124,14 +124,14 @@ lmw_est.formula <- function(x, data = NULL, type = "URI", estimand = "ATE", trea
 
   s.weights <- process_s.weights(s.weights, obj)
 
-  dr.method <- process_dr.method(dr.method, base.weights, type)
+  dr.method <- process_dr.method(dr.method, base.weights, method)
 
-  treat_name <- process_treat_name(treat, formula, type, obj)
+  treat_name <- process_treat_name(treat, formula, method, obj)
 
   #treat changes meaning from treatment name to treatment vector
   treat <- process_treat(treat_name, data)
 
-  contrast <- process_contrast(contrast, treat, type)
+  contrast <- process_contrast(contrast, treat, method)
 
   #treat_contrast has levels re-ordered so contrast is first
   treat_contrast <- apply_contrast_to_treat(treat, contrast)
@@ -147,7 +147,7 @@ lmw_est.formula <- function(x, data = NULL, type = "URI", estimand = "ATE", trea
 
   #Get model matrix
   obj <- get_X_from_formula(formula, data = data, treat = treat,
-                            type = type, estimand = estimand, target = target,
+                            method = method, estimand = estimand, target = target,
                             s.weights = s.weights, focal = focal)
 
   #Fit regression model; note use lm.[w]fit() instead of lm() because
@@ -215,7 +215,7 @@ lmw_est.formula <- function(x, data = NULL, type = "URI", estimand = "ATE", trea
   fit$call <- call
   fit$estimand <- estimand
   fit$focal <- focal
-  fit$type <- type
+  fit$method <- method
   fit$robust <- robust
   fit$outcome <- outcome_name
   fit$treat_levels <- levels(treat)

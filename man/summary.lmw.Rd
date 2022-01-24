@@ -35,7 +35,7 @@ ignored.
 \details{
 \code{summary.lmw()} produces covariate balance statistics and effective samples size before and after weighting. For each covariate, the following statistics are computed: the standardized mean difference between the treated and control groups (SMD), the standardized mean difference between the treated group and target sample (TSMD Treated), the standardized mean difference between between the control group and target sample (TSMD Control), the Kolmogorov-Smirnov (KS) statistic between the treated and control groups (KS), the the KS statistic between the treated group and target sample (TKS Treated), and the the KS statistic between the control group and target sample (TKS Control). For binary covariates, the Kolmogorov-Smirnov statistic is equal to the unstandardized difference in means and is computed as such.
 
-After weighting, the standardized mean difference between the treated and control groups of each covariate included in the original call to \code{lmw()} will be equal to zero. However, the difference between each treatment group and the target sample may not be equal to zero when \code{type = "URI"} in the call to \code{lmw()}, and covariates supplied to \code{addlvariables} not included in the call to \code{lmw()} may not be well balanced.
+After weighting, the standardized mean difference between the treated and control groups of each covariate included in the original call to \code{lmw()} will be equal to zero. However, the difference between each treatment group and the target sample may not be equal to zero when \code{method = "URI"} in the call to \code{lmw()}, and covariates supplied to \code{addlvariables} not included in the call to \code{lmw()} may not be well balanced.
 
 When \code{s.weights} are supplied to \code{lmw()}, the unadjusted balance statistics (if requested) will incorporate the sampling weights. When \code{base.weights} are supplied to \code{lmw()}, the unadjusted balance statistics will \emph{not} incorporate the base weights; rather, balance with base weights applied (if supplied) will be produced in a separate balance table (see Value below).
 
@@ -50,7 +50,7 @@ A \code{summary.lmw} object, which contains the following components:
 \item{sum.un}{If \code{un = TRUE}, the balance statistics prior to weighting.}
 \item{sum.base.weighted}{If \code{un = TRUE} and base weights were supplied to \code{lmw()}, the balance statistics with the base weights applied.}
 \item{sum.weighted}{The balance statistics with the implied regression weights applied.}
-\item{type}{The type of weights (i.e., URI or MRI)}
+\item{method}{The method used to estimate the weights (i.e., URI or MRI)}
 \item{base.weights.origin}{If base weights were supplied through the \code{obj} argument to \code{lmw()}, their origin (i.e, MatchIt or WeightIt)}
 }
 
@@ -63,7 +63,7 @@ data("lalonde", package = "MatchIt")
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
-                  type = "URI", estimand = "ATT", treat = "treat")
+                  method = "URI", estimand = "ATT", treat = "treat")
 lmw.out1
 summary(lmw.out1)
 
@@ -77,7 +77,7 @@ m.out <- MatchIt::matchit(treat ~ age + educ + race + married +
                           method = "nearest")
 lmw.out2 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
-                type = "MRI", estimand = "ATT", treat = "treat",
+                method = "MRI", estimand = "ATT", treat = "treat",
                 obj = m.out)
 lmw.out2
 summary(lmw.out2)

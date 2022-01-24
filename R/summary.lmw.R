@@ -109,7 +109,7 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
   res <- list(call = object$call, nn = nn_w, sum.un = sum.un,
               sum.base.weighted = sum.base.weighted,
               sum.weighted = sum.weighted,
-              type = object$type,
+              method = object$method,
               base.weights.origin = attr(object$base.weights, "origin"))
   class(res) <- "summary.lmw"
   return(res)
@@ -118,9 +118,9 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
 summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardize = TRUE, data = NULL, contrast = NULL, ...) {
   #Balance assessment, similar in structure to summary.matchit()
 
-  if (object$type == "URI") {
+  if (object$method == "URI") {
     if (hasName(match.call(), "contrast")) {
-      warning("The 'contrast' argument is ignored when type = \"URI\" in the original call to lmw().", call. = FALSE)
+      warning("The 'contrast' argument is ignored when method = \"URI\" in the original call to lmw().", call. = FALSE)
     }
     contrast <- object$contrast
   }
@@ -187,11 +187,11 @@ summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardi
     un_weights <- s.weights
   }
   else {
-    contrast <- process_contrast(contrast, treat, object$type)
+    contrast <- process_contrast(contrast, treat, object$method)
     balance_fun <- balance_one_var
     un_weights <- s.weights * (treat %in% contrast)
     treat <- apply_contrast_to_treat(treat, contrast)
-    if (object$type == "MRI") weights <- weights * (treat %in% contrast)
+    if (object$method == "MRI") weights <- weights * (treat %in% contrast)
   }
 
   kk <- ncol(X)
@@ -249,7 +249,7 @@ summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardi
   res <- list(call = object$call, nn = nn_w, sum.un = sum.un,
               sum.base.weighted = sum.base.weighted,
               sum.weighted = sum.weighted,
-              type = object$type,
+              method = object$method,
               base.weights.origin = attr(object$base.weights, "origin"))
   class(res) <- c("summary.lmw.multi"[is.null(contrast)], "summary.lmw")
   return(res)

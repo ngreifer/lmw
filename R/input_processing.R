@@ -32,14 +32,14 @@ process_s.weights <- function(s.weights, obj) {
   return(s.weights)
 }
 
-process_dr.method <- function(dr.method, base.weights, type) {
+process_dr.method <- function(dr.method, base.weights, method) {
   if (is.null(base.weights)) return(NULL)
   if (length(dr.method) != 1 || !is.character(dr.method)) {
     stop("'dr.method' must be a string.", call. = FALSE)
   }
   dr.method <- toupper(dr.method)
   dr.method <- match_arg(dr.method, c("WLS"))
-  # dr.method <- match_arg(dr.method, c("WLS", "AIPW"[type == "MRI"]))
+  # dr.method <- match_arg(dr.method, c("WLS", "AIPW"[method == "MRI"]))
 
   dr.method
 }
@@ -156,7 +156,7 @@ process_data <- function(data = NULL, obj = NULL) {
   return(data)
 }
 
-process_treat_name <- function(treat, formula, type, obj) {
+process_treat_name <- function(treat, formula, method, obj) {
   tt.factors <- attr(terms(formula), "factors")
 
   obj_treat <- NULL
@@ -175,7 +175,7 @@ process_treat_name <- function(treat, formula, type, obj) {
       message(paste0("Using \"", treat, "\" as the treatment variable. If this is incorrect or to suppress this message, please supply an argument to 'treat' to identify the treatment variable."))
     }
     else {
-      if (type == "URI" && !obj_treat %in% rownames(tt.factors)) {
+      if (method == "URI" && !obj_treat %in% rownames(tt.factors)) {
         stop(sprintf("The treatment variable in the supplied matchit object (%s) does not align with any variables in 'formula'.",
                      obj_treat), call. = FALSE)
       }
@@ -186,7 +186,7 @@ process_treat_name <- function(treat, formula, type, obj) {
     if (length(treat) != 1 || !is.character(treat)) {
       stop("'treat' must be a string naming the treatment variable.", call. = FALSE)
     }
-    if (type == "URI" && !treat %in% rownames(tt.factors)) {
+    if (method == "URI" && !treat %in% rownames(tt.factors)) {
       stop(sprintf("The supplied treatment variable (\"%s\") does not align with any variables in 'formula'.",
                    treat), call. = FALSE)
     }
@@ -194,14 +194,14 @@ process_treat_name <- function(treat, formula, type, obj) {
   return(treat)
 }
 
-process_contrast <- function(contrast = NULL, treat, type) {
+process_contrast <- function(contrast = NULL, treat, method) {
 
   treat_f <- if (is.factor(treat)) droplevels(treat) else as.factor(treat)
   t_levels <- levels(treat_f)
 
   if (is.null(contrast)) {
-    if (is.null(contrast) && length(t_levels) > 2 && type == "URI") {
-      stop("'contrast' must be specified when the treatment has more than two levels and type = \"URI\".", call. = FALSE)
+    if (is.null(contrast) && length(t_levels) > 2 && method == "URI") {
+      stop("'contrast' must be specified when the treatment has more than two levels and method = \"URI\".", call. = FALSE)
     }
     return(NULL)
   }

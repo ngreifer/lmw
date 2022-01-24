@@ -61,7 +61,7 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
 
   means_mat <- NULL
 
-  if (object$type == "MRI") {
+  if (object$method == "MRI") {
 
     means_se <- sqrt(diag(means_vcov))
     means_tval <- means/means_se

@@ -30,7 +30,7 @@ weights_plot <- function(x, rug = TRUE, mean = TRUE, ess = TRUE, ...) {
       mgp = c(1.5, 0.5, 0))
 
   for (i in tlevs) {
-    if (length(tlevs) == 2 && i != tlevs[1] && x$type == "URI") {
+    if (length(tlevs) == 2 && i != tlevs[1] && x$method == "URI") {
       in_i <- which(t != tlevs[1])
     }
     else {
@@ -162,7 +162,7 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
 
   cex <- numeric(length(w))
   for (i in tlevs) {
-    if (length(tlevs) == 2 && i != tlevs[1] && x$type == "URI") {
+    if (length(tlevs) == 2 && i != tlevs[1] && x$method == "URI") {
       in_i <- which(t != tlevs[1])
     }
     else {
@@ -199,7 +199,7 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
     abline(h = 2 * seq_along(tlevs)[-length(tlevs)])
 
     for (i in tlevs) {
-      if (length(tlevs) == 2 && i != tlevs[1] && x$type == "URI") {
+      if (length(tlevs) == 2 && i != tlevs[1] && x$method == "URI") {
         in_i <- which(t != tlevs[1])
       }
       else {

@@ -56,7 +56,7 @@ data("lalonde", package = "MatchIt")
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                      nodegree + re74 + re75,
-                data = lalonde, type = "URI",
+                data = lalonde, method = "URI",
                 estimand = "ATT", treat = "treat")
 
 #Influence for re78 outcome

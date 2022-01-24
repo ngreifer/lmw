@@ -1,4 +1,4 @@
-get_w_from_X <- function(X, treat, type, base.weights = NULL, s.weights = NULL, dr.method = "WLS") {
+get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL, dr.method = "WLS") {
 
   if (is.null(s.weights)) s.weights <- rep(1, nrow(X))
   if (is.null(base.weights) || dr.method == "AIPW") w <- s.weights
@@ -17,13 +17,13 @@ get_w_from_X <- function(X, treat, type, base.weights = NULL, s.weights = NULL, 
   if (is.null(s.weights)) s.weights <- rep(1, nrow(X))
 
   if (is.null(base.weights) || dr.method == "WLS") {
-    if (type == "URI") {
+    if (method == "URI") {
       #Treated group dummy always in second column
       weights <- XXtX1[,2]
       t <- X[,2]
       weights[t == 0] <- -weights[t == 0]
     }
-    else if (type == "MRI") {
+    else if (method == "MRI") {
       weights <- rep(0, length(treat))
       for (i in seq_len(nlevels(treat))) {
         weights[treat == levels(treat)[i]] <- XXtX1[treat == levels(treat)[i],i]
@@ -31,13 +31,13 @@ get_w_from_X <- function(X, treat, type, base.weights = NULL, s.weights = NULL, 
     }
   }
   else if (dr.method == "AIPW") {
-    if (type == "URI") {
+    if (method == "URI") {
       #Treated group dummy always in second column
       r.weights <- XXtX1[,2]
       t <- X[,2]
       r.weights[t == 0] <- -r.weights[t == 0]
     }
-    else if (type == "MRI") {
+    else if (method == "MRI") {
       r.weights <- rep(0, length(treat))
       for (i in seq_len(nlevels(treat))) {
         r.weights[treat == levels(treat)[i]] <- XXtX1[treat == levels(treat)[i],i]
@@ -60,7 +60,7 @@ get_w_from_X <- function(X, treat, type, base.weights = NULL, s.weights = NULL, 
   return(drop(weights))
 }
 
-get_w_from_X_iv <- function(X, treat, type, base.weights = NULL, s.weights = NULL) {
+get_w_from_X_iv <- function(X, treat, method, base.weights = NULL, s.weights = NULL) {
   #X should be from get_1st_stage_X_from_formula_iv()
   #iv i nsecond column
 

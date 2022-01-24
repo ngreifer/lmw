@@ -40,7 +40,7 @@ other arguments passed to \code{\link[sandwich]{vcovHC}} or \code{\link[sandwich
 \details{
 \code{lmw_est()} uses \code{\link{lm.fit}} or \code{\link{lm.wfit}} to fit the outcome regression model (and first stage model for \code{lmw_iv} objects) and returns the output of these functions augmented with other components related to the estimation of the weights. Unlike with \code{lm.[w]fit()}, the covariance matrix of the parameter estimates is also included in the output.
 
-For \code{lmw} objects, the model fit is that supplied to the \code{formula} input to \code{lmw()} except that it is fit in a dataset appropriately centered to ensure the estimand corresponds with the one requested. When \code{type = "MRI"} in the call to \code{lmw()}, the model is fit as an interaction between the treatment and all the (centered) terms in the model formula. The results will be similar to those from using \code{\link{lm}} on the model formula and supplied data except that the covariates are centered beforehand.
+For \code{lmw} objects, the model fit is that supplied to the \code{formula} input to \code{lmw()} except that it is fit in a dataset appropriately centered to ensure the estimand corresponds with the one requested. When \code{method = "MRI"} in the call to \code{lmw()}, the model is fit as an interaction between the treatment and all the (centered) terms in the model formula. The results will be similar to those from using \code{\link{lm}} on the model formula and supplied data except that the covariates are centered beforehand.
 
 For \code{lmw_iv} objects, the first stage model is constructed by removing the treatment from the supplied model formula, adding the instrumental variable as a main effect, and using the treatment variable as the outcome. For the second stage (reduced form) model, the fitted values of the treatment from the first stage model are used in place of the treatment in the outcome model. The results are similar to those from using \code{ivreg::ivreg()}, and the coefficients estimates will be the same except for the intercept due to the centering of covariates.
 
@@ -73,7 +73,7 @@ data("lalonde", package = "MatchIt")
 # MRI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
-                  type = "MRI", estimand = "ATT",
+                  method = "MRI", estimand = "ATT",
                   treat = "treat")
 
 lmw.fit1 <- lmw_est(lmw.out1, outcome = "re78")
@@ -88,7 +88,7 @@ m.out <- MatchIt::matchit(treat ~ age + educ + race +
                           estimand = "ATT")
 lmw.out2 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
-                type = "MRI", treat = "treat", obj = m.out)
+                method = "MRI", treat = "treat", obj = m.out)
 
 ## Using a cluster-robust SE with subclass (pair membership)
 ## as the cluster variable

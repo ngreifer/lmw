@@ -1,9 +1,9 @@
 #Compute weights from formula
-lmw <- function(formula, data = NULL, type = "URI", estimand = "ATE", treat = NULL, target = NULL, base.weights = NULL,
+lmw <- function(formula, data = NULL, method = "URI", estimand = "ATE", treat = NULL, target = NULL, base.weights = NULL,
                 s.weights = NULL, dr.method = "WLS", obj = NULL, contrast = NULL, focal = NULL) {
   call <- match.call()
 
-  type <- match_arg(type, c("URI", "MRI"))
+  method <- match_arg(method, c("URI", "MRI"))
 
   estimand <- process_estimand(estimand, target, obj)
 
@@ -13,29 +13,29 @@ lmw <- function(formula, data = NULL, type = "URI", estimand = "ATE", treat = NU
 
   s.weights <- process_s.weights(s.weights, obj)
 
-  dr.method <- process_dr.method(dr.method, base.weights, type)
+  dr.method <- process_dr.method(dr.method, base.weights, method)
 
-  treat_name <- process_treat_name(treat, formula, type, obj)
+  treat_name <- process_treat_name(treat, formula, method, obj)
 
   #treat changes meaning from treatment name to treatment vector
   treat <- process_treat(treat_name, data)
 
-  contrast <- process_contrast(contrast, treat, type)
+  contrast <- process_contrast(contrast, treat, method)
 
   #treat_contrast has levels re-ordered so contrast is first
   treat_contrast <- apply_contrast_to_treat(treat, contrast)
 
   focal <- process_focal(focal, treat_contrast, estimand)
 
-  X_obj <- get_X_from_formula(formula, data, treat_contrast, type, estimand, target, s.weights, focal)
+  X_obj <- get_X_from_formula(formula, data, treat_contrast, method, estimand, target, s.weights, focal)
 
-  weights <- get_w_from_X(X_obj$X, treat_contrast, type, base.weights, s.weights, dr.method)
+  weights <- get_w_from_X(X_obj$X, treat_contrast, method, base.weights, s.weights, dr.method)
 
   out <- list(treat = treat,
               weights = weights,
               covs = X_obj$mf,
               estimand = estimand,
-              type = type,
+              method = method,
               base.weights = base.weights,
               s.weights = s.weights,
               dr.method = dr.method,
@@ -52,7 +52,7 @@ lmw <- function(formula, data = NULL, type = "URI", estimand = "ATE", treat = NU
 print.lmw <- function(x, ...) {
   cat("An lmw object\n")
   cat(sprintf(" - treatment: %s (%s levels)\n", attr(x$treat, "treat_name"), nlevels(x$treat)))
-  cat(sprintf(" - type: %s\n", switch(x$type, "URI" = "URI (uni-regression imputation)", "MRI" = " MRI (multi-regression imputation)")))
+  cat(sprintf(" - method: %s\n", switch(x$method, "URI" = "URI (uni-regression imputation)", "MRI" = " MRI (multi-regression imputation)")))
   cat(sprintf(" - number of obs.: %s\n", length(x$treat)))
   cat(sprintf(" - sampling weights: %s\n", if (is.null(x$s.weights)) "none" else "present"))
   cat(sprintf(" - base weights: %s\n",

@@ -8,7 +8,7 @@ Compute instrumental variable regression-implied weights
 Computes the weights implied by an instrumental variable model that would estimate a weighted difference in outcome means equal to the treatment effect resulting from the supplied model fit with two-stage least squares.
 }
 \usage{
-lmw_iv(formula, data, type = "URI", estimand = "ATE",
+lmw_iv(formula, data, method = "URI", estimand = "ATE",
        treat = NULL, iv, target = NULL, base.weights = NULL,
        s.weights = NULL, obj = NULL, contrast = NULL,
        focal = NULL)
@@ -20,8 +20,8 @@ a one-sided formula with the treatment and covariates on the right-hand side cor
   \item{data}{
 a data frame containing the variables named in \code{formula}, \code{treat}, and \code{iv}.
 }
-  \item{type}{
-the type of weights estimated; currently, only \code{"URI"} for uni-regression imputation weights, where a single model is fit to the whole dataset, is allowed.
+  \item{method}{
+the method used to estimate the weights; currently, only \code{"URI"} for uni-regression imputation weights, where a single model is fit to the whole dataset, is allowed.
 }
   \item{estimand}{
 the estimand of interest, which determines how covariates are centered. Should be one of \code{"ATE"} for the average treatment effect, \code{"ATT"} for the average treatment effect in the treated, \code{"ATC"} for the average treatment effect in the control, or \code{"CATE"} for the conditional average treatment effect. When \code{estimand = "CATE"}, an argument to \code{target} must be supplied. This argument only affects what \code{\link{summary.lmw}} considers to be the target population. Default is \code{"ATE"} unless \code{obj} is specified, in which case it takes its value from the supplied object.
@@ -60,7 +60,7 @@ Centering covariates (i.e., by supplying arguments to \code{estimand}, \code{tar
 
 Base weights (\code{base.weights}) and sampling weights (\code{s.weights}) are similar in that they both involve combining weights with an outcome regression model. However, they differ in a few ways. Sampling weights are primarily used to adjust the target population; when the outcome model is fit, it is fit using weighted least squares, and when target balance is assessed, it is assessed using the sampling weighted population as the target population. Centering of covariates in the outcome model is done using the sampling weighted covariate means. Base weights are primarily used to offer a second level of balancing beyond the implied regression weights, i.e., to fit the 2SLS models in the base-weighted sample. Base weights do not change the target population, so when target balance is assessed, it is assessed using the unweighted population as the target population.
 
-Some forms of weights both change the target population and provide an extra layer of balancing, like propensity score weights that target estimands other than the ATT, ATC, or ATE (e.g., overlap weights), or matching weights where the target population is defined by the matching (e.g., matching with a caliper, cardinality matching, or coarsened exact matching). Because these weights change the target population, they should be supplied to \code{s.weights} to ensure covariates are appropriately centered. When there are no treatment-by-covariate interactions and \code{type = "URI"}, whether weights are supplied to \code{base.weights} or \code{s.weights} will not matter for the estimation of the weights but will affect the target population in \link[=summary.lmw]{balance assessment}.
+Some forms of weights both change the target population and provide an extra layer of balancing, like propensity score weights that target estimands other than the ATT, ATC, or ATE (e.g., overlap weights), or matching weights where the target population is defined by the matching (e.g., matching with a caliper, cardinality matching, or coarsened exact matching). Because these weights change the target population, they should be supplied to \code{s.weights} to ensure covariates are appropriately centered. When there are no treatment-by-covariate interactions and \code{method = "URI"}, whether weights are supplied to \code{base.weights} or \code{s.weights} will not matter for the estimation of the weights but will affect the target population in \link[=summary.lmw]{balance assessment}.
 
 When both \code{base.weights} and \code{s.weights} are supplied, e.g., when the base weights are the result of a propensity score model fit with sampling weights, it is assumed the base weights do not incorporate the sampling weights; that is, it is assumed that to estimate a treatment effect \emph{without} regression adjustment, the base weights and the sampling weights would have to be multiplied together. This is true, for example, for the weights in a \code{matchit} or \code{weightit} object (see below) but not for weights in the output of \code{MatchIt::match.data()} unless called with \code{include.s.weights = FALSE} or weights resulting from \code{CBPS::CBPS()}.
 }
@@ -83,7 +83,7 @@ An \code{lmw_iv} object, which inherits from \code{lmw} objects and contains the
 \item{weights}{the computed implied regression weights.}
 \item{covs}{a data frame containing the covariates included the model formula.}
 \item{estimand}{the requested estimand.}
-\item{type}{the type of weights (\code{"URI"} or \code{"MRI"}).}
+\item{method}{the method used to estimate the weights (\code{"URI"} or \code{"MRI"}).}
 \item{base.weights}{the weights supplied to \code{base.weights}.}
 \item{s.weights}{the weights supplied to \code{s.weights}.}
 \item{call}{the original call to \code{lmw_iv()}.}

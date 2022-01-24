@@ -68,22 +68,22 @@ plot.summary.lmw <- function(x, stats, abs = TRUE, var.order = "data", threshold
     if (identical(x$base.weights.origin, "MatchIt")) {
       legend.text <- sprintf(c("Before matching"[un],
                                "After matching",
-                               "After matching + \n%s regression"[weighted]), x$type)
+                               "After matching + \n%s regression"[weighted]), x$method)
     }
     else if (identical(x$base.weights.origin, "WeightIt")) {
       legend.text <- sprintf(c("Before weighting"[un],
                                "After weighting",
-                               "After weighting + \n%s regression"[weighted]), x$type)
+                               "After weighting + \n%s regression"[weighted]), x$method)
     }
     else {
       legend.text <- sprintf(c("Before base weighting"[un],
                                "After base weighting",
-                               "After base weighting + \n%s regression"[weighted]), x$type)
+                               "After base weighting + \n%s regression"[weighted]), x$method)
     }
   }
   else {
     legend.text <- sprintf(c("Before regression"[un],
-                             "After %s regression"[weighted]), x$type)
+                             "After %s regression"[weighted]), x$method)
   }
 
 

@@ -1,4 +1,4 @@
-get_X_from_formula <- function(formula, data, treat, type, estimand, target = NULL, s.weights = NULL, focal = NULL) {
+get_X_from_formula <- function(formula, data, treat, method, estimand, target = NULL, s.weights = NULL, focal = NULL) {
   formula <- delete.response(terms(formula, data = data))
 
   #Extract treatment variable
@@ -28,7 +28,7 @@ get_X_from_formula <- function(formula, data, treat, type, estimand, target = NU
   t_mat <- do.call("cbind", lapply(levels(treat)[-1], function(j) as.numeric(treat == j)))
   colnames(t_mat) <- paste0(treat_name, levels(treat)[-1])
 
-  if (type == "URI") {
+  if (method == "URI") {
     #Reconstruct X from centered covs by multiplying covs that interact with treat
     #by treat
     interacts_with_treat <- attr(formula_without_treat, "interacts_with_treat")
@@ -51,7 +51,7 @@ get_X_from_formula <- function(formula, data, treat, type, estimand, target = NU
     X <- cbind(1, t_mat, X)
     colnames(X)[1] <- "(Intercept)"
   }
-  else if (type == "MRI") {
+  else if (method == "MRI") {
     #Reconstruct X from centered covs by multiplying all covs by treat and adding
     #treat and intercept
     covs_int <- do.call("cbind", lapply(seq_len(ncol(covs)), function(i) {
@@ -112,7 +112,7 @@ remove_treat_from_formula <- function(formula, treat) {
   return(formula_without_treat)
 }
 
-get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, type, estimand, target = NULL, s.weights = NULL, focal = NULL) {
+get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, method, estimand, target = NULL, s.weights = NULL, focal = NULL) {
   formula <- delete.response(terms(formula, data = data))
 
   #Extract treatment variable
@@ -144,7 +144,7 @@ get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, type, esti
   #are interactions w/ treatment
   covs <- scale_covs(covs, treat, target, s.weights, focal)
 
-  if (type == "URI") {
+  if (method == "URI") {
     #Add intercept and IV to X
     X <- cbind(1, iv, covs)
     colnames(X)[1:2] <- c("(Intercept)", iv_name)
@@ -155,7 +155,7 @@ get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, type, esti
   return(list(X = X, mf = mf, target = target))
 }
 
-get_2nd_stage_X_from_formula_iv <- function(formula, data, treat, treat_fitted, type, estimand, target = NULL, s.weights = NULL, focal = NULL) {
+get_2nd_stage_X_from_formula_iv <- function(formula, data, treat, treat_fitted, method, estimand, target = NULL, s.weights = NULL, focal = NULL) {
   formula <- delete.response(terms(formula, data = data))
 
   #Extract treatment variable
@@ -182,7 +182,7 @@ get_2nd_stage_X_from_formula_iv <- function(formula, data, treat, treat_fitted, 
   #are interactions w/ treatment
   covs <- scale_covs(covs, treat, target, s.weights, focal)
 
-  if (type == "URI") {
+  if (method == "URI") {
     #Reconstruct X from centered covs by multiplying covs that interact with treat
     #by treat
     interacts_with_treat <- attr(formula_without_treat, "interacts_with_treat")
@@ -202,7 +202,7 @@ get_2nd_stage_X_from_formula_iv <- function(formula, data, treat, treat_fitted, 
     X <- cbind(1, treat_fitted, X)
     colnames(X)[1:2] <- c("(Intercept)", paste0(treat_name, levels(treat)[2]))
   }
-  else if (type == "MRI") {
+  else if (method == "MRI") {
     #Reconstruct X from centered covs by multiplying all covs by treat and adding
     #treat and intercept
     covs_int <- treat_fitted * covs

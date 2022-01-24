@@ -60,7 +60,7 @@ data("lalonde", package = "MatchIt")
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                    nodegree + re74 + re75, data = lalonde,
-                type = "URI", estimand = "ATT", treat = "treat")
+                method = "URI", estimand = "ATT", treat = "treat")
 lmw.out1
 
 #Distribution of weights
