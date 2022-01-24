@@ -8,7 +8,8 @@ influence.lmw <- function(model, outcome, data = NULL, ...) {
   #Get model matrix
   obj <- get_X_from_formula(model$formula, data = data, treat = model$treat,
                             method = model$method, estimand = model$estimand, target = model$target,
-                            s.weights = model$s.weights, focal = model$focal)
+                            s.weights = model$s.weights, target.weights = attr(model$target, "target.weights"),
+                            focal = model$focal)
 
   N <- length(model$weights)
 

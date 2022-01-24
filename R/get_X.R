@@ -1,4 +1,5 @@
-get_X_from_formula <- function(formula, data, treat, method, estimand, target = NULL, s.weights = NULL, focal = NULL) {
+get_X_from_formula <- function(formula, data, treat, method, estimand, target = NULL,
+                               s.weights = NULL, target.weights = NULL, focal = NULL) {
   formula <- delete.response(terms(formula, data = data))
 
   #Extract treatment variable
@@ -18,7 +19,7 @@ get_X_from_formula <- function(formula, data, treat, method, estimand, target = 
 
   #Process target when estimand = "CATE"
   if (estimand == "CATE") {
-    target <- process_target(target, formula_without_treat, mf)
+    target <- process_target(target, formula_without_treat, mf, target.weights)
   }
 
   #Center covariates at mean based on estimand; only affects weights if there
@@ -112,7 +113,8 @@ remove_treat_from_formula <- function(formula, treat) {
   return(formula_without_treat)
 }
 
-get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, method, estimand, target = NULL, s.weights = NULL, focal = NULL) {
+get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, method, estimand, target = NULL,
+                                            s.weights = NULL, target.weights = NULL, focal = NULL) {
   formula <- delete.response(terms(formula, data = data))
 
   #Extract treatment variable
@@ -137,7 +139,7 @@ get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, method, es
 
   #Process target when estimand = "CATE"
   if (estimand == "CATE") {
-    target <- process_target(target, formula_without_treat, mf)
+    target <- process_target(target, formula_without_treat, mf, target.weights)
   }
 
   #Center covariates at mean based on estimand; only affects weights if there
@@ -155,7 +157,8 @@ get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, method, es
   return(list(X = X, mf = mf, target = target))
 }
 
-get_2nd_stage_X_from_formula_iv <- function(formula, data, treat, treat_fitted, method, estimand, target = NULL, s.weights = NULL, focal = NULL) {
+get_2nd_stage_X_from_formula_iv <- function(formula, data, treat, treat_fitted, method, estimand, target = NULL,
+                                            s.weights = NULL, target.weights = NULL, focal = NULL) {
   formula <- delete.response(terms(formula, data = data))
 
   #Extract treatment variable
@@ -175,7 +178,7 @@ get_2nd_stage_X_from_formula_iv <- function(formula, data, treat, treat_fitted, 
 
   #Process target when estimand = "CATE"
   if (estimand == "CATE") {
-    target <- process_target(target, formula_without_treat, mf)
+    target <- process_target(target, formula_without_treat, mf, target.weights)
   }
 
   #Center covariates at mean based on estimand; only affects weights if there

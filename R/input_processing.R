@@ -323,7 +323,7 @@ get_data <- function(data, x) {
 # 'outcome' can be a string or the name of a variable in 'data' or the environment
 # containing the outcome
 # Uses NSE, so must be called with this idiom when used inside functions:
-#    do.call("get_outcome", list(substitute(outcome_arg), data_arg, formula_args))
+#    do.call("get_outcome", list(substitute(outcome_arg), data_arg, formula_arg))
 get_outcome <- function(outcome, data = NULL, formula) {
 
   tt <- terms(formula, data = data)
@@ -387,16 +387,26 @@ get_outcome <- function(outcome, data = NULL, formula) {
   outcome
 }
 
-process_target <- function(target, formula, mf) {
+process_target <- function(target, formula, mf, target.weights = NULL) {
   if (any(c("$", "[", "[[") %in% all.names(formula))) {
     stop("Subsetting operations ($, [.], [[.]]) are not allowed in the model formula when 'target' is specified.", call. = FALSE)
   }
-  if (!is.list(target) && !is.data.frame(target)) {
-    stop("'target' must be a list of covariate-value pairs.", call. = FALSE)
+  if (!is.list(target)) {
+    stop("'target' must be a list of covariate-value pairs or a data frame containing the target population.", call. = FALSE)
   }
-  if (!all(lengths(target) == 1L)) {
-    stop("All entries in 'target' must have lengths of 1.", call. = FALSE)
+  if (!is.data.frame(target) && !all(lengths(target) == 1L)) {
+    stop("All entries in 'target' must have lengths of 1 when supplied as a list.", call. = FALSE)
   }
+  if (!is.null(target.weights)) {
+    if (!is.data.frame(target) || nrow(target) == 1) {
+      warning("'target.weights' is ignored when 'target' is a target profile.", call. = FALSE)
+    }
+    if (!is.numeric(target.weights) || length(target.weights) != nrow(target)) {
+      stop("'target.weights' must be a numeric vector with length equal to the number of rows of the target dataset.", call. = FALSE)
+    }
+    target.weights <- as.numeric(target.weights)
+  }
+
   vars_in_formula <- all.vars(formula)
   vars_in_target <- names(target)
   vars_in_formula_not_in_target <- setdiff(vars_in_formula, vars_in_target)
@@ -404,10 +414,13 @@ process_target <- function(target, formula, mf) {
     stop(paste0("All covariates in the model formula must be present in 'target'; variable(s) not present:\n\t",
                 paste(vars_in_formula_not_in_target, collapse = ", ")), call. = FALSE)
   }
+
   vars_in_target_not_in_formula <- setdiff(vars_in_target, vars_in_formula)
   if (length(vars_in_target_not_in_formula) > 0) {
-    warning(paste0("The following value(s) in 'target' will be ignored:\n\t",
-                   paste(vars_in_target_not_in_formula, collapse = ", ")), call. = FALSE)
+    if (!is.data.frame(target)) {
+      warning(paste0("The following value(s) in 'target' will be ignored:\n\t",
+                     paste(vars_in_target_not_in_formula, collapse = ", ")), call. = FALSE)
+    }
     target <- target[vars_in_target %in% vars_in_formula]
   }
 
@@ -421,7 +434,14 @@ process_target <- function(target, formula, mf) {
   target_mf <- model.frame(formula, data = target)
   target_mm <- model.matrix(formula, data = target_mf)[,-1, drop = FALSE]
 
-  out <- setNames(drop(target_mm), colnames(target_mm))
+  if (nrow(target_mm) == 1) {
+    out <- setNames(drop(target_mm), colnames(target_mm))
+  }
+  else {
+    out <- setNames(colMeans_w(target_mm, target.weights), colnames(target_mm))
+  }
+
+  attr(target, "target.weights") <- target.weights
   attr(out, "target_original") <- target
 
   out

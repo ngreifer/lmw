@@ -44,11 +44,10 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
     X <- cbind(X, addlvariables[, setdiff(colnames(addlvariables), colnames(X)), drop = FALSE])
   }
 
-  X_target <- NULL
+  X_target <- target.weights <- NULL
   if (!is.null(object$target)) {
-    formula_without_treat <- remove_treat_from_formula(object$formula, attr(object$treat, "treat_name"))
-    target <- process_target(object$target, formula_without_treat, object$covs)
-    X_target <- covs_df_to_matrix(attr(target, "target_original"))
+    X_target <- covs_df_to_matrix(object$target)
+    target.weights <- attr(object$target, "target.weights")
   }
 
   treat <- apply_contrast_to_treat(object$treat, object$contrast)
@@ -71,9 +70,9 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
   if (kk > 0) {
     if (un) {
       aa.un <- lapply(colnames(X), function(i) {
-        balance_one_var(i, X, treat = treat, weights = s.weights, s.weights = s.weights,
+        balance_one_var(X[,i], treat = treat, weights = s.weights, s.weights = s.weights,
                     standardize = standardize, focal = focal,
-                    target = X_target)
+                    x_target = X_target[,i], target.weights = target.weights)
       })
 
       sum.un <- do.call("rbind", aa.un)
@@ -81,11 +80,11 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
 
       if (!is.null(object$base.weights)) {
         aa.base.weighted <- lapply(colnames(X), function(i) {
-          balance_one_var(i, X, treat = treat,
+          balance_one_var(X[,i], treat = treat,
                       weights = s.weights*object$base.weights,
                       s.weights = s.weights,
                       standardize = standardize, focal = focal,
-                      target = X_target)
+                      x_target = X_target[,i], target.weights = target.weights)
         })
 
         sum.base.weighted <- do.call("rbind", aa.base.weighted)
@@ -94,9 +93,9 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
     }
 
     aa.weighted <- lapply(colnames(X), function(i) {
-      balance_one_var(i, X, treat = treat, weights = weights, s.weights = s.weights,
+      balance_one_var(X[,i], treat = treat, weights = weights, s.weights = s.weights,
                   standardize = standardize, focal = focal,
-                  target = X_target)
+                  x_target = X_target[,i], target.weights = target.weights)
     })
     sum.weighted <- do.call("rbind", aa.weighted)
     rownames(sum.weighted) <- nam
@@ -171,11 +170,10 @@ summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardi
     X <- cbind(X, addlvariables[, setdiff(colnames(addlvariables), colnames(X)), drop = FALSE])
   }
 
-  X_target <- NULL
+  X_target <- target.weights <- NULL
   if (!is.null(object$target)) {
-    formula_without_treat <- remove_treat_from_formula(object$formula, attr(object$treat, "treat_name"))
-    target <- process_target(object$target, formula_without_treat, object$covs)
-    X_target <- covs_df_to_matrix(attr(target, "target_original"))
+    X_target <- covs_df_to_matrix(object$target)
+    target.weights <- attr(object$target, "target.weights")
   }
 
   treat <- object$treat
@@ -207,9 +205,9 @@ summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardi
   if (kk > 0) {
     if (un) {
       aa.un <- lapply(colnames(X), function(i) {
-        balance_fun(i, X, treat = treat, weights = un_weights, s.weights = s.weights,
+        balance_fun(X[,i], treat = treat, weights = un_weights, s.weights = s.weights,
                     standardize = standardize, focal = object$focal,
-                    target = X_target)
+                    x_target = X_target[,i], target.weights = target.weights)
       })
 
       sum.un <- do.call("rbind", aa.un)
@@ -218,11 +216,11 @@ summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardi
       if (!is.null(object$base.weights)) {
 
         aa.base.weighted <- lapply(colnames(X), function(i) {
-          balance_fun(i, X, treat = treat,
+          balance_fun(X[,i], treat = treat,
                       weights = un_weights*object$base.weights,
                       s.weights = s.weights,
                       standardize = standardize, focal = object$focal,
-                      target = X_target)
+                      x_target = X_target[,i], target.weights = target.weights)
         })
 
         sum.base.weighted <- do.call("rbind", aa.base.weighted)
@@ -231,9 +229,9 @@ summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardi
     }
 
     aa.weighted <- lapply(colnames(X), function(i) {
-      balance_fun(i, X, treat = treat, weights = weights, s.weights = s.weights,
+      balance_fun(X[,i], treat = treat, weights = weights, s.weights = s.weights,
                   standardize = standardize, focal = object$focal,
-                  target = X_target)
+                  x_target = X_target[,i], target.weights = target.weights)
     })
     sum.weighted <- do.call("rbind", aa.weighted)
     rownames(sum.weighted) <- nam
@@ -282,12 +280,12 @@ print.summary.lmw <- function(x, digits = max(3, getOption("digits") - 3), ...){
   invisible(x)
 }
 
-balance_one_var <- function(var, X, treat, weights, s.weights, standardize = TRUE, focal = NULL, target = NULL) {
+balance_one_var <- function(x, treat, weights, s.weights, standardize = TRUE,
+                            focal = NULL, x_target = NULL, target.weights = NULL) {
   #weights must already have s.weights applied, which is true of regression weights from
   #lmw() but but not base.weights, so make sure they are multiplied by s.weights in the
   #function call.
 
-  x <- X[,var]
   t1 <- levels(treat)[2] #treated level
 
   xsum <- rep(NA_real_, 6)
@@ -308,7 +306,7 @@ balance_one_var <- function(var, X, treat, weights, s.weights, standardize = TRU
 
   M <- {
     if (!is.null(focal)) mean_w(x, s.weights, treat==focal)
-    else if (!is.null(target)) target[,var]
+    else if (!is.null(x_target)) mean_w(x_target, target.weights)
     else mean_w(x, s.weights)
   }
 
@@ -325,8 +323,9 @@ balance_one_var <- function(var, X, treat, weights, s.weights, standardize = TRU
   else if (standardize) {
     if (!too.small) {
       std <- {
-        if (!is.null(focal)) sqrt(wvar(x[treat==focal], bin.var, s.weights[treat==focal]))
-        else sqrt(mean(vapply(levels(treat), function(t) wvar(x[treat==t], bin.var, s.weights[treat==t]), numeric(1L))))
+        if (!is.null(focal)) sqrt(wvar(x, bin.var, s.weights, treat==focal))
+        else if (!is.null(x_target) && length(x_target) > 1) sqrt(wvar(x_target, bin.var, target.weights))
+        else sqrt(mean(vapply(levels(treat), function(t) wvar(x, bin.var, s.weights, treat==t), numeric(1L))))
       }
 
       if (std < sqrt(.Machine$double.eps)) std <- sqrt(wvar(x, bin.var, s.weights)) #Avoid divide by zero
@@ -353,9 +352,10 @@ balance_one_var <- function(var, X, treat, weights, s.weights, standardize = TRU
       xsum[5] <- tks_w(x[treat != t1], x[treat == focal], weights[treat != t1], s.weights[treat == focal])
       xsum[6] <- tks_w(x[treat == t1], x[treat == focal], weights[treat == t1], s.weights[treat == focal])
     }
-    else if (!is.null(target)) {
-      xsum[5] <- tks_w(x[treat != t1], target[,var], weights[treat != t1], 1)
-      xsum[6] <- tks_w(x[treat == t1], target[,var], weights[treat == t1], 1)
+    else if (!is.null(x_target)) {
+      if (is.null(target.weights)) target.weights <- rep(1, length(x_target))
+      xsum[5] <- tks_w(x[treat != t1], x_target, weights[treat != t1], target.weights)
+      xsum[6] <- tks_w(x[treat == t1], x_target, weights[treat == t1], target.weights)
     }
     else {
       xsum[5] <- tks_w(x[treat != t1], x, weights[treat != t1], s.weights)
@@ -365,12 +365,11 @@ balance_one_var <- function(var, X, treat, weights, s.weights, standardize = TRU
 
   xsum
 }
-balance_one_var.multi <- function(var, X, treat, weights = NULL, s.weights, standardize = TRUE, focal = NULL, target = NULL) {
+balance_one_var.multi <- function(x, treat, weights = NULL, s.weights, standardize = TRUE,
+                                  focal = NULL, x_target = NULL, target.weights = NULL) {
   #weights must already have s.weights applied, which is true of regression weights from
   #lmw() but but not base.weights, so make sure they are multiplied by s.weights in the
   #function call.
-
-  x <- X[,var]
 
   xsum <- rep(NA_real_, 6)
   if (standardize)
@@ -390,7 +389,7 @@ balance_one_var.multi <- function(var, X, treat, weights = NULL, s.weights, stan
 
   M <- {
     if (!is.null(focal)) mean_w(x, s.weights, treat==focal)
-    else if (!is.null(target)) target[,var]
+    else if (!is.null(x_target)) mean_w(x_target, target.weights)
     else mean_w(x, s.weights)
   }
 
@@ -401,8 +400,9 @@ balance_one_var.multi <- function(var, X, treat, weights = NULL, s.weights, stan
   if (standardize) {
     if (!too.small) {
       std <- {
-        if (!is.null(focal)) sqrt(wvar(x[treat==focal], bin.var, s.weights[treat==focal]))
-        else sqrt(mean(vapply(levels(treat), function(t) wvar(x[treat==t], bin.var, s.weights[treat==t]), numeric(1L))))
+        if (!is.null(focal)) sqrt(wvar(x, bin.var, s.weights, treat==focal))
+        else if (!is.null(x_target) && length(x_target) > 1) sqrt(wvar(x_target, bin.var, target.weights))
+        else sqrt(mean(vapply(levels(treat), function(t) wvar(x, bin.var, s.weights, treat==t), numeric(1L))))
       }
 
       if (std < sqrt(.Machine$double.eps)) std <- sqrt(wvar(x, bin.var, s.weights)) #Avoid divide by zero
@@ -425,9 +425,10 @@ balance_one_var.multi <- function(var, X, treat, weights = NULL, s.weights, stan
           tks_w(x[treat == t], x[treat == focal], weights[treat == t], s.weights[treat == focal])
         }, numeric(1L))
       }
-      else if (!is.null(target)) {
+      else if (!is.null(x_target)) {
+        if (is.null(target.weights)) target.weights <- rep(1, length(x_target))
         vapply(levels(treat), function(t) {
-          tks_w(x[treat == t], target[,var], weights[treat == t], 1)
+          tks_w(x[treat == t], x_target, weights[treat == t], target.weights)
         }, numeric(1L))
       }
       else {
@@ -458,29 +459,12 @@ ks_w <- function(x, treat, weights) {
 
   max(ediff)
 }
-tks_w <- function(x, x.target, weights, weights.target) {
-  treat <- factor(c(rep(1, length(x)), rep(0, length(x.target))), levels = 0:1)
-  x <- c(x, x.target)
-  weights <- c(weights, weights.target)
+tks_w <- function(x, x_target, weights, target.weights) {
+  treat <- factor(c(rep(1, length(x)), rep(0, length(x_target))), levels = 0:1)
+  x <- c(x, x_target)
+  weights <- c(weights, target.weights)
 
   ks_w(x, treat, weights)
-}
-
-#(Weighted) variance that uses special formula for binary variables
-wvar <- function(x, bin.var = NULL, w = NULL) {
-  if (is.null(w)) w <- rep(1, length(x))
-  if (is.null(bin.var)) bin.var <- all(x == 0 | x == 1)
-
-  w <- w / sum(w) #weights normalized to sum to 1
-  mx <- sum(w * x) #weighted mean
-
-  if (bin.var) {
-    mx*(1-mx)
-  }
-  else {
-    #Reliability weights variance; same as cov.wt()
-    sum(w * (x - mx)^2)/(1 - sum(w^2))
-  }
 }
 
 #Compute sample sizes

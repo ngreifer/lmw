@@ -15,7 +15,8 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
 
   obj1 <- get_1st_stage_X_from_formula_iv(x$formula, data = data, treat = x$treat,
                                           iv = x$iv, method = x$method, estimand = x$estimand, target = x$target,
-                                          s.weights = x$s.weights, focal = x$focal)
+                                          s.weights = x$s.weights, target.weights = attr(x$target, "target.weights"),
+                                          focal = x$focal)
 
   X <- obj1$X
   t <- as.numeric(x$treat == levels(x$treat)[2])
@@ -50,7 +51,8 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
 
   obj2 <- get_2nd_stage_X_from_formula_iv(x$formula, data = data, treat = x$treat, treat_fitted = t_fitted,
                                           method = x$method, estimand = x$estimand, target = x$target,
-                                          s.weights = x$s.weights, focal = x$focal)
+                                          s.weights = x$s.weights, target.weights = attr(x$target, "target.weights"),
+                                          focal = x$focal)
 
   XZ <- obj2$X
 

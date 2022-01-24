@@ -8,10 +8,11 @@ Compute regression-implied weights
 Computes the weights implied by an outcome regression model that would estimate a weighted difference in outcome means equal to the covariate-adjusted treatment effect resulting from the supplied regression model.
 }
 \usage{
-lmw(formula, data, method = "URI", estimand = "ATE",
-    treat = NULL, target = NULL, base.weights = NULL,
-    s.weights = NULL, dr.method = "WLS",
-    obj = NULL, contrast = NULL, focal = NULL)
+lmw(formula, data, estimand = "ATE", method = "URI",
+    treat = NULL, base.weights = NULL,
+    s.weights = NULL, dr.method = "WLS", obj = NULL,
+    target = NULL, target.weights = NULL,
+    contrast = NULL, focal = NULL)
 }
 \arguments{
   \item{formula}{
@@ -20,17 +21,14 @@ a one-sided formula with the treatment and covariates on the right-hand side cor
   \item{data}{
 a data frame containing the variables named in \code{formula} and \code{treat}.
 }
-  \item{method}{
-the method used to estimate the weights; either \code{"URI"} (the default) for uni-regression imputation weights, where a single model is fit to the whole dataset, or \code{"MRI"} for multi-regression imputation, where the model is fit separately in the treatment groups. This affects the interpretation of \code{formula}. See Details.
-}
   \item{estimand}{
 the estimand of interest, which determines how covariates are centered. Should be one of \code{"ATE"} for the average treatment effect, \code{"ATT"} for the average treatment effect in the treated, \code{"ATC"} for the average treatment effect in the control, or \code{"CATE"} for the conditional average treatment effect. When \code{estimand = "CATE"}, an argument to \code{target} must be supplied. This argument also affects what \code{\link{summary.lmw}} considers to be the target population. Default is \code{"ATE"} unless \code{obj} is specified, in which case it takes its value from the supplied object.
 }
+  \item{method}{
+the method used to estimate the weights; either \code{"URI"} (the default) for uni-regression imputation weights, where a single model is fit to the whole dataset, or \code{"MRI"} for multi-regression imputation, where the model is fit separately in the treatment groups. This affects the interpretation of \code{formula}. See Details.
+}
   \item{treat}{
 the name of the treatment variable in \code{data}. If unspecified, the first variable present in \code{formula} will be taken as the treatment variable with a message. See Details.
-}
-  \item{target}{
-a list or data frame containing the target values for each covariate included in \code{formula}. Ignored with a warning when \code{estimand} is not \code{"CATE"}.
 }
   \item{base.weights}{
 a vector of base weights. See Details. If omitted and \code{obj} is specified, the weights from the supplied object will be used.
@@ -44,6 +42,12 @@ the method used to incorporate the \code{base.weights} into a doubly-robust esti
   \item{obj}{
 a \code{matchit} or \code{weightit} object corresponding to the matched or weighted sample in which the implied outcome regression would take place. See Details.
 }
+  \item{target}{
+a list or data frame containing the target values for each covariate included in \code{formula}. Ignored with a warning when \code{estimand} is not \code{"CATE"}.
+}
+  \item{target.weights}{
+a vector of sampling weights to be applied to \code{target} when supplied as a data frame. Ignored with a warning when \code{estimand} is not \code{"CATE"}.
+}
   \item{contrast}{
 for multi-category treatments with \code{method = "URI"}, a vector containing the names or indices of the two treatment levels to be contrasted (since in this case the weights depend on the specific contrast). See \code{Details}.
 }
@@ -54,9 +58,9 @@ the level of the treatment variable to be considered "focal" (i.e., the "treated
 \details{
 \code{formula} is interpreted differently depending on whether \code{method} is \code{"URI"} or \code{"MRI"}. When \code{method = "URI"}, the formula is taken literally as the right-hand side of the outcome model formula. The only difference is that the covariates will be centered based on the argument to \code{estimand} (see below). When \code{method = "MRI"}, all references to the treatment are removed (i.e., covariate interactions with treatment become covariate main effects if not already present), and the new formula is taken as the right-hand side of the model formula fit within each treatment group. This is equivalent to allowing all covariates to have both main effects and interactions with treatment after centering the covariates based on the argument to \code{estimand}. Allowing the treatment to interact with all covariates with \code{method = "URI"} is equivalent to specifying \code{method = "MRI"}, and, for binary treatments, the returned weights will be the same.
 
-When any treatment-by-covariate interactions are present in \code{formula} or when \code{method = "MRI"}, covariates are centered at specific values to ensure the resulting weights correspond to the desired estimand as supplied to the \code{estimand} argument. For the ATE, the covariates are centered at their means in the full sample. For the ATT and ATC, the covariates are centered at their means in the treatment or control group (i.e., the \code{focal} group), respectively. For the CATE, the covariates are centered at the values supplied to \code{target}.
+When any treatment-by-covariate interactions are present in \code{formula} or when \code{method = "MRI"}, covariates are centered at specific values to ensure the resulting weights correspond to the desired estimand as supplied to the \code{estimand} argument. For the ATE, the covariates are centered at their means in the full sample. For the ATT and ATC, the covariates are centered at their means in the treatment or control group (i.e., the \code{focal} group), respectively. For the CATE, the covariates are centered according to the argument supplied to \code{target} (see below).
 
-When \code{estimand = "CATE"} and \code{target} is specified, the named entries to \code{target} must correspond to all the named \emph{covariates} in \code{formula}; for example, if \code{formula = ~ X1 + log(X1) + X2 + X1:X2}, values in \code{target} must be given for \code{X1} and \code{X2}, but not \code{log(X1)} or \code{X1:X2}. For factor variables, the value in \code{target} must correspond to one of their levels. To choose a target value for a factor corresponding to a proportion (e.g., a target value of .5 for a variable like \code{sex} indicating a target population with a 50-50 sex split), the factor variable must be split into a numeric variable beforehand, e.g., using \code{\link{model.matrix}} or \code{cobalt::splitfactor()}. \code{target} values cannot be given to variables specified using \code{$}, \code{[[]]}, or \code{[]} (e.g., \code{data$X1}), so an error will be thrown if they are used in \code{formula}.
+When \code{estimand = "CATE"}, \code{target} can be supplied either as a single profile (i.e., a list of a data frame with one row) or as a target dataset, potentially with its own sampling weights, which are supplied to \code{target.weights}. The variables included in \code{target} must correspond to all the named \emph{covariates} in \code{formula}; for example, if \code{formula = ~ X1 + log(X1) + X2 + X1:X2}, values in \code{target} must be given for \code{X1} and \code{X2}, but not \code{log(X1)} or \code{X1:X2}. For factor variables, the value in \code{target} must correspond to one of their levels. To choose a target profile value for a factor corresponding to a proportion (e.g., a target value of .5 for a variable like \code{sex} indicating a target population with a 50-50 sex split), the factor variable must be split into a numeric variable beforehand, e.g., using \code{\link{model.matrix}} or \code{cobalt::splitfactor()}. \code{target} values cannot be given to variables specified using \code{$}, \code{[[]]}, or \code{[]} (e.g., \code{data$X1}), so an error will be thrown if they are used in \code{formula}. When a target dataset is supplied, covariates will be centered at their means in the (\code{target.weights}-weighted) target dataset.
 
 Note that when covariate-by-covariate interactions are present, they will be centered after computing the interaction rather than the interaction being computed on the centered covariates unless \code{estimand = "CATE"}, in which case the covariates will be centered at the values specified in \code{target} prior to involvement in interactions.
 
@@ -94,7 +98,7 @@ An \code{lmw} object, which contains the following components:
 \item{dr.method}{when \code{base.weights} are supplied, the method for computing the doubly-robust weights.}
 \item{call}{the original call to \code{lmw()}.}
 \item{formula}{the model formula.}
-\item{target}{the supplied covariate target values when \code{estimand = "CATE"}, after some initial processing.}
+\item{target}{the supplied target profile or dataset when \code{estimand = "CATE"}, after some initial processing. The \code{"target.weights"} attribute contains the \code{target.weights} if supplied.}
 \item{contrast}{the contrasted treatment groups.}
 \item{focal}{the focal treatment levels when \code{estimand} is \code{"ATT"} or \code{"ATC"}.}
 }
@@ -111,7 +115,7 @@ data("lalonde")
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
-                method = "URI", estimand = "ATT",
+                estimand = "ATT", method = "URI",
                 treat = "treat")
 lmw.out1
 summary(lmw.out1)
@@ -119,7 +123,7 @@ summary(lmw.out1)
 #MRI regression for ATT
 lmw.out2 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
-                method = "MRI", estimand = "ATT",
+                estimand = "ATT", method = "MRI",
                 treat = "treat")
 lmw.out2
 summary(lmw.out2)
@@ -135,15 +139,24 @@ lmw.out3 <- lmw(~ treat + age + educ + race + married +
 lmw.out3
 summary(lmw.out3)
 
-#MRI regression for CATE with given target
-target <- list(age = 25, educ = 11, race = "black",
-               married = 0, nodegree = 1, re74 = 0,
-               re75 = 0)
+#MRI regression for CATE with given target profile
+target.prof <- list(age = 25, educ = 11, race = "black",
+                    married = 0, nodegree = 1, re74 = 0,
+                    re75 = 0)
 lmw.out4 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
-                method = "MRI", estimand = "CATE",
-                treat = "treat",
-                target = target)
+                estimand = "CATE", method = "MRI",
+                treat = "treat", target = target.prof)
+lmw.out4
+summary(lmw.out4)
+
+#MRI regression for CATE with given target dataset (in
+#this case, will give the same as with estimand = "ATT")
+target.data <- subset(lalonde, treat == 1)
+lmw.out4 <- lmw(~ treat + age + educ + race + married +
+                  nodegree + re74 + re75, data = lalonde,
+                estimand = "CATE", method = "MRI",
+                treat = "treat", target = target.data)
 lmw.out4
 summary(lmw.out4)
 }

@@ -20,8 +20,9 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
   #Get model matrix
   obj <- get_X_from_formula(x$formula, data = data, treat = x$treat,
                             method = x$method, estimand = x$estimand, target = x$target,
-                            s.weights = x$s.weights, focal = x$focal)
-# browser()
+                            s.weights = x$s.weights, target.weights = attr(x$target, "target.weights"),
+                            focal = x$focal)
+
   #Fit regression model; note use lm.[w]fit() instead of lm() because
   #we already have the model matrix (obj$X)
   w <- NULL
@@ -107,8 +108,9 @@ print.lmw_est <- function(x, ...) {
   invisible(x)
 }
 
-lmw_est.formula <- function(x, data = NULL, method = "URI", estimand = "ATE", treat = NULL, target = NULL, base.weights = NULL,
-                            s.weights = NULL, dr.method = "WLS", obj = NULL, contrast = NULL, focal = NULL,
+lmw_est.formula <- function(x, data = NULL, estimand = "ATE", method = "URI", treat = NULL, base.weights = NULL,
+                            s.weights = NULL, dr.method = "WLS", obj = NULL, target = NULL, target.weights = NULL,
+                            contrast = NULL, focal = NULL,
                             outcome, robust = TRUE, cluster = NULL, ...) {
   call <- match.call()
 
@@ -145,10 +147,9 @@ lmw_est.formula <- function(x, data = NULL, method = "URI", estimand = "ATE", tr
 
   attributes(outcome) <- NULL
 
-  #Get model matrix
-  obj <- get_X_from_formula(formula, data = data, treat = treat,
-                            method = method, estimand = estimand, target = target,
-                            s.weights = s.weights, focal = focal)
+  #Get model matrix; note: use original treat, unlike
+  obj <- get_X_from_formula(formula, data, treat, method, estimand,
+                            target, s.weights, target.weights, focal)
 
   #Fit regression model; note use lm.[w]fit() instead of lm() because
   #we already have the model matrix (obj$X)

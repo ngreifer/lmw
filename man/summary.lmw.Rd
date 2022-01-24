@@ -39,7 +39,7 @@ After weighting, the standardized mean difference between the treated and contro
 
 When \code{s.weights} are supplied to \code{lmw()}, the unadjusted balance statistics (if requested) will incorporate the sampling weights. When \code{base.weights} are supplied to \code{lmw()}, the unadjusted balance statistics will \emph{not} incorporate the base weights; rather, balance with base weights applied (if supplied) will be produced in a separate balance table (see Value below).
 
-Standardized mean differences are computed as the difference between the (weighted) means divided by a standardization factor, which is the standard deviation of the covariate in the target sample. When \code{estimand = "ATT"} in the call to \code{lmw()}, the standardization factor is the standard deviation in the treated group; when \code{estimand = "ATC"}, the standardization factor is the standard deviation in the control group; when \code{estimand = "ATE"} or \code{"CATE"}, the standardization factor is the square root of the average of the variances of both treatment groups. When \code{s.weights} is supplied, the standardization factor is computed including the sampling weights; otherwise it is computed in the unweighted sample.
+Standardized mean differences are computed as the difference between the (weighted) means divided by a standardization factor, which is the standard deviation of the covariate in the target sample. When \code{estimand = "ATT"} in the call to \code{lmw()}, the standardization factor is the standard deviation in the treated group; when \code{estimand = "ATC"}, the standardization factor is the standard deviation in the control group; when \code{estimand = "ATE"} or when \code{estimand = "CATE"} and a target profile is supplied, the standardization factor is the square root of the average of the variances of both treatment groups; when \code{estimand = "CATE"} and a target dataset is supplied, the standardization factor is the standard deviation in the target dataset. When \code{s.weights} is supplied, the standardization factor is computed including the sampling weights; otherwise it is computed in the unweighted sample.
 
 The effective sample size (ESS) is computed as \eqn{(\sum w)^2/\sum w^2}. With uniform weights, this is equal to the sample size.
 }
@@ -63,7 +63,8 @@ data("lalonde")
 #URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
-                  method = "URI", estimand = "ATT", treat = "treat")
+                  estimand = "ATT", method = "URI",
+                  treat = "treat")
 lmw.out1
 summary(lmw.out1)
 
@@ -73,12 +74,12 @@ summary(lmw.out1, un = FALSE,
 
 #MRI regression for ATT after PS matching
 m.out <- MatchIt::matchit(treat ~ age + educ + race + married +
-                            nodegree + re74 + re75, data = lalonde,
-                          method = "nearest")
+                            nodegree + re74 + re75,
+                          data = lalonde, method = "nearest",
+                          estimand = "ATT")
 lmw.out2 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
-                method = "MRI", estimand = "ATT", treat = "treat",
-                obj = m.out)
+                method = "MRI", treat = "treat", obj = m.out)
 lmw.out2
 summary(lmw.out2)
 

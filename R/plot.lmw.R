@@ -153,9 +153,7 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
   v <- as.data.frame(covs)
 
   if (!is.null(x$target)) {
-    formula_without_treat <- remove_treat_from_formula(x$formula, attr(x$treat, "treat_name"))
-    target <- process_target(x$target, formula_without_treat, x$covs)
-    v_target <- covs_df_to_matrix(attr(target, "target_original"))
+    v_target <- colMeans_w(covs_df_to_matrix(x$target), attr(x$target, "target.weights"))
   }
 
   par(mfrow = c(1, ncol(v)))

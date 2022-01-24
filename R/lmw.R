@@ -1,6 +1,7 @@
 #Compute weights from formula
-lmw <- function(formula, data = NULL, method = "URI", estimand = "ATE", treat = NULL, target = NULL, base.weights = NULL,
-                s.weights = NULL, dr.method = "WLS", obj = NULL, contrast = NULL, focal = NULL) {
+lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = NULL, base.weights = NULL,
+                s.weights = NULL, dr.method = "WLS", obj = NULL, target = NULL, target.weights = NULL,
+                contrast = NULL, focal = NULL) {
   call <- match.call()
 
   method <- match_arg(method, c("URI", "MRI"))
@@ -27,7 +28,8 @@ lmw <- function(formula, data = NULL, method = "URI", estimand = "ATE", treat = 
 
   focal <- process_focal(focal, treat_contrast, estimand)
 
-  X_obj <- get_X_from_formula(formula, data, treat_contrast, method, estimand, target, s.weights, focal)
+  X_obj <- get_X_from_formula(formula, data, treat_contrast, method, estimand,
+                              target, s.weights, target.weights, focal)
 
   weights <- get_w_from_X(X_obj$X, treat_contrast, method, base.weights, s.weights, dr.method)
 

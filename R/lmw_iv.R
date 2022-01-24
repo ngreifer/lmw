@@ -1,6 +1,6 @@
 #Compute weights from formula
-lmw_iv <- function(formula, data = NULL, method = "URI", estimand = "ATE", treat = NULL, iv, target = NULL, base.weights = NULL,
-                s.weights = NULL, obj = NULL, contrast = NULL, focal = NULL) {
+lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = NULL, iv, base.weights = NULL,
+                s.weights = NULL, obj = NULL, target = NULL, target.weights = NULL, contrast = NULL, focal = NULL) {
   call <- match.call()
 
   method <- match_arg(method, c("URI"))
@@ -30,7 +30,8 @@ lmw_iv <- function(formula, data = NULL, method = "URI", estimand = "ATE", treat
   iv <- process_iv(iv_name, data)
 
   X_obj <- get_1st_stage_X_from_formula_iv(formula, data, treat_contrast, iv,
-                                           method, estimand, target, s.weights, focal)
+                                           method, estimand, target, s.weights,
+                                           target.weights, focal)
 
   weights <- get_w_from_X_iv(X_obj$X, treat_contrast, method, base.weights, s.weights)
 
