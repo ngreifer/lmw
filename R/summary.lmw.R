@@ -436,12 +436,12 @@ balance_one_var <- function(x, treat, weights, s.weights, standardize = TRUE,
   else if (standardize) {
     if (!too.small) {
       std <- {
-        if (!is.null(focal)) sqrt(wvar(x, bin.var, s.weights, treat==focal))
-        else if (!is.null(x_target) && length(x_target) > 1) sqrt(wvar(x_target, bin.var, target.weights))
-        else sqrt(mean(vapply(levels(treat), function(t) wvar(x, bin.var, s.weights, treat==t), numeric(1L))))
+        if (!is.null(focal)) sqrt(var_w(x, bin.var, s.weights, treat==focal))
+        else if (!is.null(x_target) && length(x_target) > 1) sqrt(var_w(x_target, bin.var, target.weights))
+        else sqrt(mean(vapply(levels(treat), function(t) var_w(x, bin.var, s.weights, treat==t), numeric(1L))))
       }
 
-      if (std < sqrt(.Machine$double.eps)) std <- sqrt(wvar(x, bin.var, s.weights)) #Avoid divide by zero
+      if (std < sqrt(.Machine$double.eps)) std <- sqrt(var_w(x, bin.var, s.weights)) #Avoid divide by zero
 
       xsum[1] <- mdiff/std
       xsum[2] <- mdiff0/std
@@ -513,12 +513,12 @@ balance_one_var.multi <- function(x, treat, weights = NULL, s.weights, standardi
   if (standardize) {
     if (!too.small) {
       std <- {
-        if (!is.null(focal)) sqrt(wvar(x, bin.var, s.weights, treat==focal))
-        else if (!is.null(x_target) && length(x_target) > 1) sqrt(wvar(x_target, bin.var, target.weights))
-        else sqrt(mean(vapply(levels(treat), function(t) wvar(x, bin.var, s.weights, treat==t), numeric(1L))))
+        if (!is.null(focal)) sqrt(var_w(x, bin.var, s.weights, treat==focal))
+        else if (!is.null(x_target) && length(x_target) > 1) sqrt(var_w(x_target, bin.var, target.weights))
+        else sqrt(mean(vapply(levels(treat), function(t) var_w(x, bin.var, s.weights, treat==t), numeric(1L))))
       }
 
-      if (std < sqrt(.Machine$double.eps)) std <- sqrt(wvar(x, bin.var, s.weights)) #Avoid divide by zero
+      if (std < sqrt(.Machine$double.eps)) std <- sqrt(var_w(x, bin.var, s.weights)) #Avoid divide by zero
 
       xsum[seq_len(nlevels(treat))] <- mdifft/std
     }
@@ -574,16 +574,16 @@ distribution_one_var <- function(x, treat, weights, s.weights, focal = NULL,
       else mean_w(x, s.weights)
     },
     "SD Target" = {
-      if (!is.null(focal)) sqrt(wvar(x, bin.var, s.weights, treat==focal))
+      if (!is.null(focal)) sqrt(var_w(x, bin.var, s.weights, treat==focal))
       else if (!is.null(x_target)) {
-        if (length(x_target) > 1) sqrt(wvar(x_target, bin.var, target.weights))
+        if (length(x_target) > 1) sqrt(var_w(x_target, bin.var, target.weights))
         else NA_real_
       }
-      else sqrt(wvar(x, bin.var, s.weights))
+      else sqrt(var_w(x, bin.var, s.weights))
     },
     unlist(lapply(tlevs, function(t) {
       setNames(c(mean_w(x, weights, treat==t),
-                 sqrt(wvar(x, bin.var, weights, treat==t))),
+                 sqrt(var_w(x, bin.var, weights, treat==t))),
                paste(c("Mean", "SD"), t))
     }))
   )
