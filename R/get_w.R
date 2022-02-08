@@ -18,7 +18,7 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
   rw <- sqrt(w)
   qr_X <- qr(rw*X)
   p <- qr_X$rank
-  # browser()
+
   XtX1 <- chol2inv(qr_X$qr[1:p, 1:p, drop = FALSE])
 
   #Remove linearly dependent columns
@@ -63,13 +63,15 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
 }
 
 get_w_from_X_iv <- function(X, treat, method, base.weights = NULL, s.weights = NULL) {
-  #X should be from get_1st_stage_X_from_formula_iv()
+  #X should be from get_1st_stage_X_from_formula_iv()$X
+
+  iv_names <- attr(X, "iv_names")
 
   #Remove linearly dependent columns
   qr_X <- qr(X)
   X <- X[, qr_X$pivot[seq_len(qr_X$rank)], drop = FALSE]
 
-  iv_ind <- which(colnames(X) %in% attr(X, "iv_names"))
+  iv_ind <- which(colnames(X) %in% iv_names)
 
   if (is.null(s.weights)) s.weights <- rep(1, nrow(X))
   if (is.null(base.weights)) base.weights <- rep(1, nrow(X))
