@@ -1,5 +1,7 @@
-summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = TRUE, data = NULL, ...) {
+summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = TRUE, data = NULL, stat = "balance", ...) {
   #Balance assessment, similar in structure to summary.matchit()
+
+  stat <- match_arg(stat, c("balance", "distribution"))
 
   if (is.null(object$covs)) {
     X <- matrix(nrow = length(object$treat), ncol = 0)
@@ -46,8 +48,15 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
 
   X_target <- target.weights <- NULL
   if (!is.null(object$target)) {
-    X_target <- covs_df_to_matrix(object$target)
+    X_target <- covs_df_to_matrix(model.frame(remove_treat_from_formula(delete.response(terms(object$formula)), attr(object$treat, "treat_name")),
+                                              data = object$target))
     target.weights <- attr(object$target, "target.weights")
+
+    if (length(addl_diff <- setdiff(colnames(X), colnames(X_target))) > 0) {
+      addl_target <- matrix(NA_real_, nrow = nrow(X_target), ncol = length(addl_diff),
+                            dimnames = list(rownames(X_target), addl_diff))
+      X_target <- cbind(X_target, addl_target)
+    }
   }
 
   treat <- apply_contrast_to_treat(object$treat, object$contrast)
@@ -59,63 +68,106 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
 
   kk <- ncol(X)
 
+  bal.un <- bal.base.weighted <- bal.weighted <- NULL
+  dist.un <- dist.base.weighted <- dist.weighted <- NULL
+
   if (kk > 0) {
+    #Remove tics (``) from outside of variables names
     nam <- colnames(X)
-    nam[startsWith(nam, "`") & endsWith(nam, "`")] <- substr(nam[startsWith(nam, "`") & endsWith(nam, "`")],
-                                                             2, nchar(nam[startsWith(nam, "`") & endsWith(nam, "`")]) - 1)
-  }
+    has_tics <- startsWith(nam, "`") & endsWith(nam, "`")
+    nam[has_tics] <- substr(nam[has_tics], 2, nchar(nam[has_tics]) - 1)
 
-  sum.un <- sum.base.weighted <- sum.weighted <- NULL
-  ## Summary Stats
-  if (kk > 0) {
-    if (un) {
-      aa.un <- lapply(colnames(X), function(i) {
-        balance_one_var(X[,i], treat = treat, weights = s.weights, s.weights = s.weights,
-                    standardize = standardize, focal = focal,
-                    x_target = X_target[,i], target.weights = target.weights)
-      })
-
-      sum.un <- do.call("rbind", aa.un)
-      rownames(sum.un) <- nam
-
-      if (!is.null(object$base.weights)) {
-        aa.base.weighted <- lapply(colnames(X), function(i) {
-          balance_one_var(X[,i], treat = treat,
-                      weights = s.weights*object$base.weights,
-                      s.weights = s.weights,
-                      standardize = standardize, focal = focal,
-                      x_target = X_target[,i], target.weights = target.weights)
+    if (stat == "balance") {
+      #Compute balance statistics - SMD, KS
+      if (un) {
+        aa.un <- lapply(colnames(X), function(i) {
+          balance_one_var(X[,i], treat = treat, weights = s.weights, s.weights = s.weights,
+                          standardize = standardize, focal = focal,
+                          x_target = X_target[,i], target.weights = target.weights)
         })
 
-        sum.base.weighted <- do.call("rbind", aa.base.weighted)
-        rownames(sum.base.weighted) <- nam
-      }
-    }
+        bal.un <- do.call("rbind", aa.un)
+        rownames(bal.un) <- nam
 
-    aa.weighted <- lapply(colnames(X), function(i) {
-      balance_one_var(X[,i], treat = treat, weights = weights, s.weights = s.weights,
-                  standardize = standardize, focal = focal,
-                  x_target = X_target[,i], target.weights = target.weights)
-    })
-    sum.weighted <- do.call("rbind", aa.weighted)
-    rownames(sum.weighted) <- nam
+        if (!is.null(object$base.weights)) {
+          aa.base.weighted <- lapply(colnames(X), function(i) {
+            balance_one_var(X[,i], treat = treat,
+                            weights = s.weights*object$base.weights,
+                            s.weights = s.weights,
+                            standardize = standardize, focal = focal,
+                            x_target = X_target[,i], target.weights = target.weights)
+          })
+
+          bal.base.weighted <- do.call("rbind", aa.base.weighted)
+          rownames(bal.base.weighted) <- nam
+        }
+      }
+
+      aa.weighted <- lapply(colnames(X), function(i) {
+        balance_one_var(X[,i], treat = treat, weights = weights, s.weights = s.weights,
+                        standardize = standardize, focal = focal,
+                        x_target = X_target[,i], target.weights = target.weights)
+      })
+      bal.weighted <- do.call("rbind", aa.weighted)
+      rownames(bal.weighted) <- nam
+    }
+    else if (stat == "distribution") {
+      #Compute distribution statistics - mean, SD
+      if (un) {
+        aa.un <- lapply(colnames(X), function(i) {
+          distribution_one_var(X[,i], treat = treat, weights = s.weights, s.weights = s.weights)
+        })
+
+        dist.un <- do.call("rbind", aa.un)
+        colnames(dist.un)[1:2] <- c("Mean Overall", "SD Overall")
+        rownames(dist.un) <- nam
+
+        if (!is.null(object$base.weights)) {
+          aa.base.weighted <- lapply(colnames(X), function(i) {
+            distribution_one_var(X[,i], treat = treat,
+                                 weights = s.weights*object$base.weights,
+                                 s.weights = s.weights, focal = focal,
+                                 x_target = X_target[,i], target.weights = target.weights)
+          })
+
+          dist.base.weighted <- do.call("rbind", aa.base.weighted)
+          rownames(dist.base.weighted) <- nam
+        }
+      }
+
+      aa.weighted <- lapply(colnames(X), function(i) {
+        distribution_one_var(X[,i], treat = treat, weights = weights, s.weights = s.weights,
+                             focal = focal, x_target = X_target[,i],
+                             target.weights = target.weights)
+      })
+      dist.weighted <- do.call("rbind", aa.weighted)
+      rownames(dist.weighted) <- nam
+    }
   }
 
   ## Sample sizes
   nn_w <- nn(treat, weights, object$base.weights, s.weights)
 
   ## output
-  res <- list(call = object$call, nn = nn_w, sum.un = sum.un,
-              sum.base.weighted = sum.base.weighted,
-              sum.weighted = sum.weighted,
+  res <- list(call = object$call,
+              nn = nn_w,
+              bal.un = bal.un,
+              bal.base.weighted = bal.base.weighted,
+              bal.weighted = bal.weighted,
+              dist.un = dist.un,
+              dist.base.weighted = dist.base.weighted,
+              dist.weighted = dist.weighted,
               method = object$method,
               base.weights.origin = attr(object$base.weights, "origin"))
   class(res) <- "summary.lmw"
   return(res)
 }
 
-summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardize = TRUE, data = NULL, contrast = NULL, ...) {
+summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardize = TRUE, data = NULL,
+                              contrast = NULL, stat = "balance", ...) {
   #Balance assessment, similar in structure to summary.matchit()
+
+  stat <- match_arg(stat, c("balance", "distribution"))
 
   if (object$method == "URI") {
     if (hasName(match.call(), "contrast")) {
@@ -181,60 +233,102 @@ summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardi
   s.weights <- if (is.null(object$s.weights)) rep(1, length(weights)) else object$s.weights
 
   if (is.null(contrast)) {
-    balance_fun <- balance_one_var.multi
     un_weights <- s.weights
+    if (stat == "balance") {
+      balance_fun <- balance_one_var.multi
+    }
   }
   else {
     contrast <- process_contrast(contrast, treat, object$method)
-    balance_fun <- balance_one_var
     un_weights <- s.weights * (treat %in% contrast)
     treat <- apply_contrast_to_treat(treat, contrast)
     if (object$method == "MRI") weights <- weights * (treat %in% contrast)
+    if (stat == "balance") {
+      balance_fun <- balance_one_var
+    }
   }
 
   kk <- ncol(X)
 
+  bal.un <- bal.base.weighted <- bal.weighted <- NULL
+  dist.un <- dist.base.weighted <- dist.weighted <- NULL
+
+  ## Summary Stats
   if (kk > 0) {
+    #Remove tics (``) from outside of variables names
     nam <- colnames(X)
     has_tics <- startsWith(nam, "`") & endsWith(nam, "`")
     nam[has_tics] <- substr(nam[has_tics], 2, nchar(nam[has_tics]) - 1)
-  }
 
-  sum.un <- sum.base.weighted <- sum.weighted <- NULL
-  ## Summary Stats
-  if (kk > 0) {
-    if (un) {
-      aa.un <- lapply(colnames(X), function(i) {
-        balance_fun(X[,i], treat = treat, weights = un_weights, s.weights = s.weights,
-                    standardize = standardize, focal = object$focal,
-                    x_target = X_target[,i], target.weights = target.weights)
-      })
-
-      sum.un <- do.call("rbind", aa.un)
-      rownames(sum.un) <- nam
-
-      if (!is.null(object$base.weights)) {
-
-        aa.base.weighted <- lapply(colnames(X), function(i) {
-          balance_fun(X[,i], treat = treat,
-                      weights = un_weights*object$base.weights,
-                      s.weights = s.weights,
+    if (stat == "balance") {
+      if (un) {
+        aa.un <- lapply(colnames(X), function(i) {
+          balance_fun(X[,i], treat = treat, weights = un_weights, s.weights = s.weights,
                       standardize = standardize, focal = object$focal,
                       x_target = X_target[,i], target.weights = target.weights)
         })
 
-        sum.base.weighted <- do.call("rbind", aa.base.weighted)
-        rownames(sum.base.weighted) <- nam
-      }
-    }
+        bal.un <- do.call("rbind", aa.un)
+        rownames(bal.un) <- nam
 
-    aa.weighted <- lapply(colnames(X), function(i) {
-      balance_fun(X[,i], treat = treat, weights = weights, s.weights = s.weights,
-                  standardize = standardize, focal = object$focal,
-                  x_target = X_target[,i], target.weights = target.weights)
-    })
-    sum.weighted <- do.call("rbind", aa.weighted)
-    rownames(sum.weighted) <- nam
+        if (!is.null(object$base.weights)) {
+
+          aa.base.weighted <- lapply(colnames(X), function(i) {
+            balance_fun(X[,i], treat = treat,
+                        weights = un_weights*object$base.weights,
+                        s.weights = s.weights,
+                        standardize = standardize, focal = object$focal,
+                        x_target = X_target[,i], target.weights = target.weights)
+          })
+
+          bal.base.weighted <- do.call("rbind", aa.base.weighted)
+          rownames(bal.base.weighted) <- nam
+        }
+      }
+
+      aa.weighted <- lapply(colnames(X), function(i) {
+        balance_fun(X[,i], treat = treat, weights = weights, s.weights = s.weights,
+                    standardize = standardize, focal = object$focal,
+                    x_target = X_target[,i], target.weights = target.weights)
+      })
+      bal.weighted <- do.call("rbind", aa.weighted)
+      rownames(bal.weighted) <- nam
+    }
+    else if (stat == "distribution") {
+      #Compute distribution statistics - mean, SD
+      if (un) {
+        aa.un <- lapply(colnames(X), function(i) {
+          distribution_one_var(X[,i], treat = treat, weights = s.weights, s.weights = s.weights,
+                               contrast = contrast)
+        })
+
+        dist.un <- do.call("rbind", aa.un)
+        colnames(dist.un)[1:2] <- c("Mean Overall", "SD Overall")
+        rownames(dist.un) <- nam
+
+        if (!is.null(object$base.weights)) {
+          aa.base.weighted <- lapply(colnames(X), function(i) {
+            distribution_one_var(X[,i], treat = treat,
+                                 weights = s.weights*object$base.weights,
+                                 s.weights = s.weights, focal = object$focal,
+                                 x_target = X_target[,i], target.weights = target.weights,
+                                 contrast = contrast)
+          })
+
+          dist.base.weighted <- do.call("rbind", aa.base.weighted)
+          rownames(dist.base.weighted) <- nam
+        }
+      }
+
+      aa.weighted <- lapply(colnames(X), function(i) {
+        distribution_one_var(X[,i], treat = treat, weights = weights, s.weights = s.weights,
+                             focal = object$focal, x_target = X_target[,i],
+                             target.weights = target.weights,
+                             contrast = contrast)
+      })
+      dist.weighted <- do.call("rbind", aa.weighted)
+      rownames(dist.weighted) <- nam
+    }
   }
 
   ## Sample sizes
@@ -244,37 +338,56 @@ summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardi
   }
 
   ## output
-  res <- list(call = object$call, nn = nn_w, sum.un = sum.un,
-              sum.base.weighted = sum.base.weighted,
-              sum.weighted = sum.weighted,
+  res <- list(call = object$call, nn = nn_w,
+              bal.un = bal.un,
+              bal.base.weighted = bal.base.weighted,
+              bal.weighted = bal.weighted,
+              dist.un = dist.un,
+              dist.base.weighted = dist.base.weighted,
+              dist.weighted = dist.weighted,
               method = object$method,
               base.weights.origin = attr(object$base.weights, "origin"))
   class(res) <- c("summary.lmw.multi"[is.null(contrast)], "summary.lmw")
   return(res)
 }
 
-print.summary.lmw <- function(x, digits = max(3, getOption("digits") - 3), ...){
+print.summary.lmw <- function(x, digits = max(3, getOption("digits") - 4), ...){
 
   if (!is.null(x$call)) cat("\nCall:", deparse(x$call), sep = "\n")
 
-  if (!is.null(x$sum.un)) {
+  if (!is.null(x$bal.un)) {
     cat("\nSummary of Balance for Unweighted Data:\n")
-    print.data.frame(round_df_char(x$sum.un[,-7, drop = FALSE], digits, pad = "0", na_vals = "."))
+    print.data.frame(round_df_char(x$bal.un, digits))
   }
 
-  if (!is.null(x$sum.base.weighted)) {
+  if (!is.null(x$bal.base.weighted)) {
     cat("\nSummary of Balance for Base Weighted Data:\n")
-    print.data.frame(round_df_char(x$sum.base.weighted, digits, pad = "0", na_vals = "."))
+    print.data.frame(round_df_char(x$bal.base.weighted, digits))
   }
 
-  if (!is.null(x$sum.weighted)) {
+  if (!is.null(x$bal.weighted)) {
     cat("\nSummary of Balance for Weighted Data:\n")
-    print.data.frame(round_df_char(x$sum.weighted, digits, pad = "0", na_vals = "."))
+    print.data.frame(round_df_char(x$bal.weighted, digits))
+  }
+
+  if (!is.null(x$dist.un)) {
+    cat("\nDistribution Summary for Unweighted Data:\n")
+    print.data.frame(add_peren_to_sd(round_df_char(x$dist.un, digits)))
+  }
+
+  if (!is.null(x$dist.base.weighted)) {
+    cat("\nDistribution Summary for Base Weighted Data:\n")
+    print.data.frame(add_peren_to_sd(round_df_char(x$dist.base.weighted, digits)))
+  }
+
+  if (!is.null(x$dist.weighted)) {
+    cat("\nDistribution Summary for Weighted Data:\n")
+    print.data.frame(add_peren_to_sd(round_df_char(x$dist.weighted, digits)))
   }
 
   if (!is.null(x$nn)) {
     cat("\nEffective Sample Sizes:\n")
-    print.data.frame(round_df_char(x$nn, 2, pad = " ", na_vals = "."))
+    print.data.frame(round_df_char(x$nn, 2, pad = " "))
   }
   cat("\n")
   invisible(x)
@@ -438,6 +551,42 @@ balance_one_var.multi <- function(x, treat, weights = NULL, s.weights, standardi
       }
     }
   }
+
+  xsum
+}
+
+distribution_one_var <- function(x, treat, weights, s.weights, focal = NULL,
+                                 x_target = NULL, target.weights = NULL, contrast = NULL) {
+  #weights must already have s.weights applied, which is true of regression weights from
+  #lmw() but but not base.weights, so make sure they are multiplied by s.weights in the
+  #function call.
+  bin.var <- all(x == 0 | x == 1)
+
+  tlevs <- levels(treat)
+  if (!is.null(contrast)) {
+    tlevs <- intersect(tlevs, contrast)
+  }
+
+  xsum <- c(
+    "Mean Target" = {
+      if (!is.null(focal)) mean_w(x, s.weights, treat==focal)
+      else if (!is.null(x_target)) mean_w(x_target, target.weights)
+      else mean_w(x, s.weights)
+    },
+    "SD Target" = {
+      if (!is.null(focal)) sqrt(wvar(x, bin.var, s.weights, treat==focal))
+      else if (!is.null(x_target)) {
+        if (length(x_target) > 1) sqrt(wvar(x_target, bin.var, target.weights))
+        else NA_real_
+      }
+      else sqrt(wvar(x, bin.var, s.weights))
+    },
+    unlist(lapply(tlevs, function(t) {
+      setNames(c(mean_w(x, weights, treat==t),
+                 sqrt(wvar(x, bin.var, weights, treat==t))),
+               paste(c("Mean", "SD"), t))
+    }))
+  )
 
   xsum
 }

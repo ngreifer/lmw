@@ -153,7 +153,13 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
   v <- as.data.frame(covs)
 
   if (!is.null(x$target)) {
-    v_target <- colMeans_w(covs_df_to_matrix(x$target), attr(x$target, "target.weights"))
+    X_target <- covs_df_to_matrix(model.frame(remove_treat_from_formula(delete.response(terms(x$formula)), attr(x$treat, "treat_name")),
+                                              data = x$target))
+    target_means <- colMeans_w(X_target, attr(x$target, "target.weights"))
+
+    if (length(addl_diff <- setdiff(colnames(covs), colnames(X_target))) > 0) {
+      target_means <- c(target_means, setNames(rep(NA_real_, length(addl_diff)), addl_diff))
+    }
   }
 
   par(mfrow = c(1, ncol(v)))
@@ -207,7 +213,7 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
     }
 
     points(x = rep(if (!is.null(x$focal)) mean_w(vj, x$s.weights, t==x$focal)
-                   else if (!is.null(x$target)) v_target[,j]
+                   else if (!is.null(x$target)) target_means[j]
                    else mean_w(vj, x$s.weights), length(tlevs)),
            y = -1 + 2*seq_along(tlevs), pch = 4, cex = 4, lwd = 0.5)
     axis(2, at = -1 + 2*seq_along(tlevs),
