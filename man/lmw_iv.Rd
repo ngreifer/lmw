@@ -8,9 +8,10 @@ Compute instrumental variable regression-implied weights
 Computes the weights implied by an instrumental variable model that would estimate a weighted difference in outcome means equal to the treatment effect resulting from the supplied model fit with two-stage least squares.
 }
 \usage{
-lmw_iv(formula, data, method = "URI", estimand = "ATE",
-       treat = NULL, iv, target = NULL, base.weights = NULL,
-       s.weights = NULL, obj = NULL, contrast = NULL,
+lmw_iv(formula, data, estimand = "ATE", method = "URI",
+       treat = NULL, iv, base.weights = NULL,
+       s.weights = NULL, obj = NULL, target = NULL,
+       target.weights = NULL, contrast = NULL,
        focal = NULL)
 }
 \arguments{
@@ -20,20 +21,17 @@ a one-sided formula with the treatment and covariates on the right-hand side cor
   \item{data}{
 a data frame containing the variables named in \code{formula}, \code{treat}, and \code{iv}.
 }
-  \item{method}{
-the method used to estimate the weights; currently, only \code{"URI"} for uni-regression imputation weights, where a single model is fit to the whole dataset, is allowed.
-}
   \item{estimand}{
 the estimand of interest, which determines how covariates are centered. Should be one of \code{"ATE"} for the average treatment effect, \code{"ATT"} for the average treatment effect in the treated, \code{"ATC"} for the average treatment effect in the control, or \code{"CATE"} for the conditional average treatment effect. When \code{estimand = "CATE"}, an argument to \code{target} must be supplied. This argument only affects what \code{\link{summary.lmw}} considers to be the target population. Default is \code{"ATE"} unless \code{obj} is specified, in which case it takes its value from the supplied object.
+}
+  \item{method}{
+the method used to estimate the weights; currently, only \code{"URI"} for uni-regression imputation weights, where a single model is fit to the whole dataset, is allowed.
 }
   \item{treat}{
 the name of the treatment variable in \code{data}. If unspecified, the first variable present in \code{formula} will be taken as the treatment variable with a message. Currently, only binary treatments are supported. See Details.
 }
   \item{iv}{
-the name of the instrumental variable in \code{data}. Currently, only a single (binary or numeric) instrumental treatment is supported. This variable should not appear in \code{formula}. See Details.
-}
-  \item{target}{
-a list or data frame containing the target values for each covariate included in \code{formula}. Ignored with a warning when \code{estimand} is not \code{"CATE"}.
+a character vector or one-sided formula containing the names of the instrumental variables in \code{data}. These variables should not appear in \code{formula}. See Details.
 }
   \item{base.weights}{
 a vector of base weights. See Details. If omitted and \code{obj} is specified, the weights from the supplied object will be used.
@@ -44,6 +42,12 @@ a vector of sampling weights. See Details. If omitted and \code{obj} is specifie
   \item{obj}{
 a \code{matchit} or \code{weightit} object corresponding to the matched or weighted sample in which the implied outcome regression would take place. See Details.
 }
+  \item{target}{
+a list or data frame containing the target values for each covariate included in \code{formula}. Ignored with a warning when \code{estimand} is not \code{"CATE"}.
+}
+  \item{target.weights}{
+a vector of sampling weights to be applied to \code{target} when supplied as a data frame. Ignored with a warning when \code{estimand} is not \code{"CATE"}.
+}
   \item{contrast}{
 ignored.
 }
@@ -52,7 +56,7 @@ the level of the treatment variable to be considered "focal" (i.e., the "treated
 }
 }
 \details{
-\code{lmw_iv()} computes weights that, when used in the weighted difference in outcome means between the treatment groups, corresponds to the two-stage least squares (2SLS) estimate of the treatment effect. \code{formula} corresponds to the second-stage (reduced form) model, with the treatment replaced by its fitted values resulting from the first stage model. The first stage is fit by removing the treatment from the supplied \code{formula}, adding the instrumental variable named in \code{iv} as a main effect, and using the treatment as the outcome. The treatment is assumed to be endogenous and the supplied instrumental variable assumed to be an instrument conditional on the other covariates, which are assumed to to be exogenous.
+\code{lmw_iv()} computes weights that, when used in the weighted difference in outcome means between the treatment groups, corresponds to the two-stage least squares (2SLS) estimate of the treatment effect. \code{formula} corresponds to the second-stage (reduced form) model, with the treatment replaced by its fitted values resulting from the first stage model. The first stage is fit by removing the treatment from the supplied \code{formula}, adding the instrumental variables named in \code{iv} as main effects, and using the treatment as the outcome. The treatment is assumed to be endogenous and the supplied instrumental variables assumed to be instruments conditional on the other covariates, which are assumed to to be exogenous.
 
 Centering covariates (i.e., by supplying arguments to \code{estimand}, \code{target}, or \code{focal}) has no effect on the resulting weights or the treatment effect estimated. It will affect the intercept of the outcome model and the target population to which the weighted distribution of covariates is compared using \code{\link{summary.lmw}} and \code{\link{plot.lmw}}. See \code{\link{lmw}} for more information on covariate centering.
 
@@ -71,7 +75,7 @@ Instrumental variable regression weights can be computed in a matched or weighte
 
 \subsection{Multi-category treatments and instruments}{
 
-Multi-category treatment are not currently supported for \code{lmw_iv()}. Instruments can be binary or numeric, but not multi-category. Only one instrument and one treatment can be supplied (i.e., in contrast to \code{ivreg::ivreg()}, which supports multiple endogenous variables and instruments).
+Multi-category treatments are not currently supported for \code{lmw_iv()}.
 }
 
 }
@@ -79,7 +83,6 @@ Multi-category treatment are not currently supported for \code{lmw_iv()}. Instru
 \value{
 An \code{lmw_iv} object, which inherits from \code{lmw} objects and contains the following components:
 \item{treat}{the treatment variable, given as a factor.}
-\item{iv}{the instrumental variable, given as a factor.}
 \item{weights}{the computed implied regression weights.}
 \item{covs}{a data frame containing the covariates included the model formula.}
 \item{estimand}{the requested estimand.}
@@ -88,6 +91,7 @@ An \code{lmw_iv} object, which inherits from \code{lmw} objects and contains the
 \item{s.weights}{the weights supplied to \code{s.weights}.}
 \item{call}{the original call to \code{lmw_iv()}.}
 \item{formula}{the model formula.}
+\item{iv}{the instrumental variables, given as a one-sided formula.}
 \item{target}{the supplied covariate target values when \code{estimand = "CATE"}, after some initial processing.}
 \item{contrast}{the contrasted treatment groups.}
 \item{focal}{the focal treatment levels when \code{estimand} is \code{"ATT"} or \code{"ATC"}.}

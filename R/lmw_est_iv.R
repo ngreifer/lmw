@@ -2,10 +2,6 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
 
   call <- match.call()
 
-  if (!inherits(x, "lmw_iv")) {
-    stop("'x' must be an lmw_iv object.", call. = FALSE)
-  }
-
   data <- get_data(data, x)
 
   outcome <- do.call("get_outcome", list(substitute(outcome), data, x$formula))

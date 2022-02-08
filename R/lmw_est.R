@@ -28,6 +28,12 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
   w <- NULL
   rn <- rownames(obj$X)
   if (is.null(x$s.weights) && is.null(x$base.weights)) {
+    if (!is.null(x$fixef)) {
+      for (i in seq_len(ncol(obj$X))[-1]) {
+        obj$X[,i] <- demean(obj$X[,i], x$fixef)
+      }
+      outcome <- demean(outcome, x$fixef)
+    }
     fit <- lm.fit(x = obj$X, y = outcome)
     pos_w <- seq_along(outcome)
   }
@@ -37,17 +43,32 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
     w <- x$s.weights * x$base.weights
     pos_w <- which(w > 0)
     obj$X <- obj$X[pos_w,, drop = FALSE]
+    outcome <- outcome[pos_w]
 
-    fit <- lm.wfit(x = obj$X, y = outcome[pos_w], w = w[pos_w])
+    if (!is.null(x$fixef)) {
+      for (i in seq_len(ncol(obj$X))[-1]) {
+        obj$X[,i] <- demean(obj$X[,i], x$fixef[pos_w], w[pos_w])
+      }
+      outcome <- demean(outcome, x$fixef[pos_w], w[pos_w])
+    }
+
+    fit <- lm.wfit(x = obj$X, y = outcome, w = w[pos_w])
 
     non_pos_w <- which(w <= 0)
     fit$na.action <- setNames(non_pos_w, rn[non_pos_w])
     class(fit$na.action) <- "omit"
   }
 
-  class(fit) <- "lmw_est"
+  class(fit) <- c("lmw_est")
 
   fit$model.matrix <- obj$X
+
+  n <- length(residuals(fit))
+
+  if (!is.null(x$fixef)) {
+    fit$df.residual <- fit$df.residual - nlevels(x$fixef) + 1
+    fit$fixef <- x$fixef
+  }
 
   if (isTRUE(robust)) {
     if (is.null(cluster)) robust <- "HC3"
@@ -65,7 +86,13 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
     stop("'robust' must be TRUE, FALSE, or one of the allowable inputs to the 'type' argument of sandwich::vcovHC().", call. = FALSE)
   }
 
-  if (is.null(cluster)) {
+  if (robust == "const") { #Regular OLS vcov; faster than sandwich
+    fit$vcov <- {
+      if (is.null(w)) bread(fit)/length(residuals(fit)) * sum(residuals(fit)^2)/fit$df.residual
+      else bread(fit)/length(residuals(fit)) * sum(w[pos_w] * residuals(fit)^2)/fit$df.residual
+    }
+  }
+  else if (is.null(cluster)) {
     fit$vcov <- sandwich::vcovHC(fit, type = robust, ...)
   }
   else {
@@ -85,6 +112,11 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
     fit$vcov <- sandwich::vcovCL(fit, type = robust, cluster = cluster, ...)
   }
 
+  #Need to correct df for HC1 when fixed effects are present
+  if (!is.null(x$fixef) && robust %in% c("const", "HC1")) {
+    fit$vcov <- fit$vcov * (n - ncol(fit$model.matrix))/fit$df.residual
+  }
+
   fit$call <- call
   fit$estimand <- x$estimand
   fit$focal <- x$focal
@@ -92,6 +124,7 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
   fit$robust <- robust
   fit$outcome <- outcome_name
   fit$treat_levels <- levels(x$treat)
+
 
   fit
 }
@@ -103,6 +136,7 @@ print.lmw_est <- function(x, ...) {
       if (x$robust == "const") "usual" else sprintf("robust (%s)", x$robust), "\n")
   if (!inherits(x, "lmw_est_iv")) cat(" - estimand:", x$estimand, "\n")
   cat(" - method:", x$method, "\n")
+  if (!is.null(x$fixef)) cat(" - fixed effects:", attr(x$fixef, "fixef_name"), "\n")
   cat("\n")
   cat("Use summary() to examine estimates, standard errors, p-values, and confidence intervals.", "\n")
   invisible(x)

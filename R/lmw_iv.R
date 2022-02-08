@@ -25,9 +25,7 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
 
   focal <- process_focal(focal, treat_contrast, estimand)
 
-  iv_name <- process_iv_name(iv, formula)
-
-  iv <- process_iv(iv_name, data)
+  iv <- process_iv(iv, formula, data)
 
   X_obj <- get_1st_stage_X_from_formula_iv(formula, data, treat_contrast, iv,
                                            method, estimand, target, s.weights,
@@ -36,7 +34,6 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
   weights <- get_w_from_X_iv(X_obj$X, treat_contrast, method, base.weights, s.weights)
 
   out <- list(treat = treat,
-              iv = iv,
               weights = weights,
               covs = X_obj$mf,
               estimand = estimand,
@@ -45,6 +42,7 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
               s.weights = s.weights,
               call = call,
               formula = formula,
+              iv = iv,
               target = attr(X_obj$target, "target_original"),
               contrast = contrast,
               focal = focal)

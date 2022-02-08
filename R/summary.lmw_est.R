@@ -61,7 +61,7 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
 
   means_mat <- NULL
 
-  if (object$method == "MRI") {
+  if (object$method == "MRI" && is.null(object$fixef)) {
 
     means_se <- sqrt(diag(means_vcov))
     means_tval <- means/means_se
@@ -89,15 +89,10 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
   r <- object$residuals
   w <- object$weights
   n <- length(r)
-  if (is.null(w)) {
-    mss <- sum((f - mean(f))^2)
-    rss <- sum(r^2)
-  }
-  else {
-    m <- sum(w * f/sum(w))
-    mss <- sum(w * (f - m)^2)
-    rss <- sum(w * r^2)
-  }
+  m <- mean_w(f, w)
+  if (is.null(w)) w <- 1
+  mss <- sum(w * (f - m)^2)
+  rss <- sum(w * r^2)
 
   r.squared <- mss/(mss + rss)
   adj.r.squared <- 1 - (1 - r.squared) * ((n - 1)/rdf)
@@ -137,7 +132,8 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
               adj.r.squared = adj.r.squared,
               estimand = object$estimand,
               focal = object$focal,
-              treat_levels = object$treat_levels)
+              treat_levels = object$treat_levels,
+              fixef_name = attr(object$fixef, "fixef_name"))
 
   class(ans) <- "summary.lmw_est"
   return(ans)
@@ -170,6 +166,9 @@ print.summary.lmw_est <- function(x, digits = max(3, getOption("digits") - 3),
     do.call("printCoefmat", c(list(coefs), printCoefmat.args))
 
     cat("\nResidual standard error:", format(signif(x$sigma, digits)), "on", rdf, "degrees of freedom")
+    if (!is.null(x$fixef_name)) {
+      cat("\nEstimated with fixed effects for", x$fixef_name)
+    }
     cat("\n")
   }
 
@@ -222,7 +221,7 @@ model.matrix.lmw_est <- function(object, ...) {
   object$model.matrix
 }
 hatvalues.lmw_est <- function(model, ...) {
-  hat_fast(model$model.matrix, model$weights)
+  hat_fast(model$model.matrix, model$weights, model$fixef)
 }
 estfun.lmw_est <- function (x, ...) {
   xmat <- model.matrix(x)
@@ -259,13 +258,17 @@ vcov.lmw_est <- function(object, complete = TRUE, ...) {
   #               complete)
 }
 bread.lmw_est <- function(x) {
+
   p <- x$rank
   p1 <- seq_len(p)
   Qr <- x$qr
   cov.unscaled <- chol2inv(Qr$qr[p1, p1, drop = FALSE])
-  df <- c(p, x$df.residual)
 
-  b <- cov.unscaled * as.vector(sum(df))
+  #Note: in presence of fixed effects, n is incorrect
+  # df <- c(p, x$df.residual)
+  # b <- cov.unscaled * as.vector(sum(df))
+
+  b <- cov.unscaled * length(residuals(x))
   dimnames(b) <- list(names(x$coefficients[p1]), names(x$coefficients[p1]))
   return(b)
 }

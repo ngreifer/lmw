@@ -1,6 +1,6 @@
 #Compute weights from formula
 lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = NULL, base.weights = NULL,
-                s.weights = NULL, dr.method = "WLS", obj = NULL, target = NULL, target.weights = NULL,
+                s.weights = NULL, dr.method = "WLS", obj = NULL, fixef = NULL, target = NULL, target.weights = NULL,
                 contrast = NULL, focal = NULL) {
   call <- match.call()
 
@@ -16,10 +16,14 @@ lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = 
 
   dr.method <- process_dr.method(dr.method, base.weights, method)
 
+  fixef <- do.call("process_fixef", list(substitute(fixef), data))
+
   treat_name <- process_treat_name(treat, formula, method, obj)
 
   #treat changes meaning from treatment name to treatment vector
   treat <- process_treat(treat_name, data)
+
+  check_lengths(treat, data, s.weights, base.weights, fixef)
 
   contrast <- process_contrast(contrast, treat, method)
 
@@ -31,7 +35,7 @@ lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = 
   X_obj <- get_X_from_formula(formula, data, treat_contrast, method, estimand,
                               target, s.weights, target.weights, focal)
 
-  weights <- get_w_from_X(X_obj$X, treat_contrast, method, base.weights, s.weights, dr.method)
+  weights <- get_w_from_X(X_obj$X, treat_contrast, method, base.weights, s.weights, dr.method, fixef)
 
   out <- list(treat = treat,
               weights = weights,
@@ -42,6 +46,7 @@ lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = 
               s.weights = s.weights,
               dr.method = dr.method,
               call = call,
+              fixef = fixef,
               formula = formula,
               target = attr(X_obj$target, "target_original"),
               contrast = contrast,
@@ -69,5 +74,9 @@ print.lmw <- function(x, ...) {
     cat(sprintf(" - covariates: %s\n",
         if (length(names(x$covs)) > 30) paste(c(names(x$covs)[1:30], sprintf("and %s more", ncol(x$covs) - 30)), collapse = ", ")
         else paste(names(x$covs), collapse = ", ")))
+  }
+  if (!is.null(x$fixef)) {
+    cat(sprintf(" - fixed effect: %s\n",
+                attr(x$fixef, "fixef_name")))
   }
 }

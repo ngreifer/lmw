@@ -11,12 +11,12 @@ Computes the weights implied by an outcome regression model that would estimate 
 lmw(formula, data, estimand = "ATE", method = "URI",
     treat = NULL, base.weights = NULL,
     s.weights = NULL, dr.method = "WLS", obj = NULL,
-    target = NULL, target.weights = NULL,
+    fixef = NULL, target = NULL, target.weights = NULL,
     contrast = NULL, focal = NULL)
 }
 \arguments{
   \item{formula}{
-a one-sided formula with the treatment and covariates on the right-hand side corresponding to the outcome regression model to be fit. If an outcome variable is supplied on the left-hand side, it will be ignored. See Details for how this formula is interpreted in light of other options.
+a one-sided formula with the treatment and covariates on the right-hand side corresponding to the outcome regression model to be fit. The outcome variable is not involved in computing the weights and does not need to be specified. See Details for how this formula is interpreted in light of other options.
 }
   \item{data}{
 a data frame containing the variables named in \code{formula} and \code{treat}.
@@ -42,31 +42,35 @@ the method used to incorporate the \code{base.weights} into a doubly-robust esti
   \item{obj}{
 a \code{matchit} or \code{weightit} object corresponding to the matched or weighted sample in which the implied outcome regression would take place. See Details.
 }
+  \item{fixef}{
+optional; a factor variable containing the fixed effects. Can be supplied either as a string or unquoted name of the variable in \code{data} or as the fixed effects variable itself. See Details.
+}
   \item{target}{
-a list or data frame containing the target values for each covariate included in \code{formula}. Ignored with a warning when \code{estimand} is not \code{"CATE"}.
+a list or data frame containing the target values for each covariate included in \code{formula}. Ignored with a warning when \code{estimand} is not \code{"CATE"}. See Details.
 }
   \item{target.weights}{
-a vector of sampling weights to be applied to \code{target} when supplied as a data frame. Ignored with a warning when \code{estimand} is not \code{"CATE"}.
+a vector of sampling weights to be applied to \code{target} when supplied as a data frame. Ignored with a warning when \code{estimand} is not \code{"CATE"}. See Details.
 }
   \item{contrast}{
-for multi-category treatments with \code{method = "URI"}, a vector containing the names or indices of the two treatment levels to be contrasted (since in this case the weights depend on the specific contrast). See \code{Details}.
+for multi-category treatments with \code{method = "URI"}, a vector containing the names or indices of the two treatment levels to be contrasted (since in this case the weights depend on the specific contrast). See Details.
 }
   \item{focal}{
-the level of the treatment variable to be considered "focal" (i.e., the "treated" level when \code{estimand = "ATT"} or the control level when \code{estimand = "ATC"}). Ignored when \code{estimand} is \code{"ATE"} or \code{"CATE"}. Otherwise, if unspecified, the second value of \code{contrast} will be considered focal when \code{estimand = "ATT"} and the first value of \code{contrast} will be considered focal when \code{estimand = "ATC"}. For binary treatments, this generally does not need to be supplied. See \code{Details}.
+the level of the treatment variable to be considered "focal" (i.e., the "treated" level when \code{estimand = "ATT"} or the control level when \code{estimand = "ATC"}). Ignored when \code{estimand} is \code{"ATE"} or \code{"CATE"}. Otherwise, if unspecified, the second value of \code{contrast} will be considered focal when \code{estimand = "ATT"} and the first value of \code{contrast} will be considered focal when \code{estimand = "ATC"}. For binary treatments, this generally does not need to be supplied. See Details.
 }
 }
 \details{
 \code{formula} is interpreted differently depending on whether \code{method} is \code{"URI"} or \code{"MRI"}. When \code{method = "URI"}, the formula is taken literally as the right-hand side of the outcome model formula. The only difference is that the covariates will be centered based on the argument to \code{estimand} (see below). When \code{method = "MRI"}, all references to the treatment are removed (i.e., covariate interactions with treatment become covariate main effects if not already present), and the new formula is taken as the right-hand side of the model formula fit within each treatment group. This is equivalent to allowing all covariates to have both main effects and interactions with treatment after centering the covariates based on the argument to \code{estimand}. Allowing the treatment to interact with all covariates with \code{method = "URI"} is equivalent to specifying \code{method = "MRI"}, and, for binary treatments, the returned weights will be the same.
 
-When any treatment-by-covariate interactions are present in \code{formula} or when \code{method = "MRI"}, covariates are centered at specific values to ensure the resulting weights correspond to the desired estimand as supplied to the \code{estimand} argument. For the ATE, the covariates are centered at their means in the full sample. For the ATT and ATC, the covariates are centered at their means in the treatment or control group (i.e., the \code{focal} group), respectively. For the CATE, the covariates are centered according to the argument supplied to \code{target} (see below).
+When any treatment-by-covariate interactions are present in \code{formula} or when \code{method = "MRI"}, covariates are centered at specific values to ensure the resulting weights correspond to the desired estimand as supplied to the \code{estimand} argument. For the ATE, the covariates are centered at their means in the full sample. For the ATT and ATC, the covariates are centered at their means in the treatment or control group (i.e., the \code{focal} group), respectively. For the CATE, the covariates are centered according to the argument supplied to \code{target} (see below). Note that when covariate-by-covariate interactions are present, they will be centered after computing the interaction rather than the interaction being computed on the centered covariates unless \code{estimand = "CATE"}, in which case the covariates will be centered at the values specified in \code{target} prior to involvement in interactions.
 
-When \code{estimand = "CATE"}, \code{target} can be supplied either as a single profile (i.e., a list of a data frame with one row) or as a target dataset, potentially with its own sampling weights, which are supplied to \code{target.weights}. The variables included in \code{target} must correspond to all the named \emph{covariates} in \code{formula}; for example, if \code{formula = ~ X1 + log(X1) + X2 + X1:X2}, values in \code{target} must be given for \code{X1} and \code{X2}, but not \code{log(X1)} or \code{X1:X2}. For factor variables, the value in \code{target} must correspond to one of their levels. To choose a target profile value for a factor corresponding to a proportion (e.g., a target value of .5 for a variable like \code{sex} indicating a target population with a 50-50 sex split), the factor variable must be split into a numeric variable beforehand, e.g., using \code{\link{model.matrix}} or \code{cobalt::splitfactor()}. \code{target} values cannot be given to variables specified using \code{$}, \code{[[]]}, or \code{[]} (e.g., \code{data$X1}), so an error will be thrown if they are used in \code{formula}. When a target dataset is supplied, covariates will be centered at their means in the (\code{target.weights}-weighted) target dataset.
+\subsection{Estimating the CATE}{
 
-Note that when covariate-by-covariate interactions are present, they will be centered after computing the interaction rather than the interaction being computed on the centered covariates unless \code{estimand = "CATE"}, in which case the covariates will be centered at the values specified in \code{target} prior to involvement in interactions.
+When \code{estimand = "CATE"}, \code{target} can be supplied either as a single target profile (i.e., a list or a data frame with one row) or as a target dataset, potentially with its own sampling weights, which are supplied to \code{target.weights}. The variables included in \code{target} must correspond to all the named \emph{covariates} in \code{formula}; for example, if \code{formula = ~ X1 + log(X1) + X2 + X1:X2}, values in \code{target} must be given for \code{X1} and \code{X2}, but not \code{log(X1)} or \code{X1:X2}. To choose a target profile value for a factor corresponding to a proportion (e.g., a target value of .5 for a variable like \code{sex} indicating a target population with a 50-50 sex split), the factor variable must be split into a numeric variable beforehand, e.g., using \code{\link{model.matrix}} or \code{cobalt::splitfactor()}. \code{target} values cannot be given to variables specified using \code{$}, \code{[[]]}, or \code{[]} (e.g., \code{data$X1}), so an error will be thrown if they are used in \code{formula}. When a target dataset is supplied, covariates will be centered at their means in the (\code{target.weights}-weighted) target dataset.
+}
 
 \subsection{Base weights and sampling weights}{
 
-Base weights (\code{base.weights}) and sampling weights (\code{s.weights}) are similar in that they both involve combining weights with an outcome regression model. However, they differ in a few ways. Sampling weights are primarily used to adjust the target population; when the outcome model is fit, it is fit using weighted least squares, and when target balance is assessed, it is assessed using the sampling weighted population as the target population. Centering of covariates in the outcome model is done using the sampling weighted covariate means. Base weights are primarily used to offer a second level of balancing beyond the implied regression weights; they can be incorporated into the effect estimator either using weighted least squares or using the augmented inverse probability weighting estimator. Base weights do not change the target population, so when target balance is assessed, it is assessed using the unweighted population as the target population.
+Base weights (\code{base.weights}) and sampling weights (\code{s.weights}) are similar in that they both involve combining weights with an outcome regression model. However, they differ in a few ways. Sampling weights are primarily used to adjust the target population; when the outcome model is fit, it is fit using weighted least squares, and when target balance is assessed, it is assessed using the sampling weighted population as the target population. Centering of covariates in the outcome model is done using the sampling weighted covariate means. Base weights are primarily used to offer a second level of balancing beyond the implied regression weights; they can be incorporated into the effect estimate either using weighted least squares or using the augmented inverse probability weighting (AIPW) estimator. Base weights do not change the target population, so when target balance is assessed, it is assessed using the unweighted population as the target population.
 
 Some forms of weights both change the target population and provide an extra layer of balancing, like propensity score weights that target estimands other than the ATT, ATC, or ATE (e.g., overlap weights), or matching weights where the target population is defined by the matching (e.g., matching with a caliper, cardinality matching, or coarsened exact matching). Because these weights change the target population, they should be supplied to \code{s.weights} to ensure covariates are appropriately centered. When there are no treatment-by-covariate interactions and \code{method = "URI"}, whether weights are supplied to \code{base.weights} or \code{s.weights} will not matter for the estimation of the weights but will affect the target population in \link[=summary.lmw]{balance assessment}.
 
@@ -85,6 +89,10 @@ The key difference, though, is when \code{method = "URI"}, because in this case 
 The implication of this is that contrast statistics computed in the weighted sample involve all units, even those not in the contrasted groups, whereas statistics computed in the unweighted sample only involve units in the contrasted groups. See \code{\link{summary.lmw}} for more information on assessing balance using the regression weights for multi-category treatments. Given these complications, it is generally best to use \code{method = "MRI"} with multi-category treatments.
 }
 
+\subsection{Fixed effects}{
+A fixed effects variable can be supplied to the \code{fixef} argument. This is equivalent to adding the fixed effects variable as a predictor that does not interact with the treatment or any other covariate. The difference is that computation is much faster when the fixed effect has many levels because demeaning is used rather than including the fixed effect variable as a collection of dummy variables. When using URI, the weights will be the same regardless of whether the fixed effect variable is included as a covariate or supplied to \code{fixef}; when using MRI, results will differ because the fixed effect variable does not interact with treatment. The fixed effects variable will not appear in the \code{\link{summary.lmw}} output (but can be added using `addlvariables` argument) or in the model output of \code{\link{lmw_est}} or \code{\link{summary.lmw_est}}. Because it does not interact with the treatment, the distribution of the fixed effect variable may not correspond to the target population, so caution should be used if it is expected the treatment effect varies across levels of this variable (in which case it should be included as a predictor). Currently only one fixed effect variable is allowed.
+}
+
 }
 \value{
 An \code{lmw} object, which contains the following components:
@@ -97,6 +105,7 @@ An \code{lmw} object, which contains the following components:
 \item{s.weights}{the weights supplied to \code{s.weights}.}
 \item{dr.method}{when \code{base.weights} are supplied, the method for computing the doubly-robust weights.}
 \item{call}{the original call to \code{lmw()}.}
+\item{fixef}{the fixed effects variable if supplied to \code{fixef}.}
 \item{formula}{the model formula.}
 \item{target}{the supplied target profile or dataset when \code{estimand = "CATE"}, after some initial processing. The \code{"target.weights"} attribute contains the \code{target.weights} if supplied.}
 \item{contrast}{the contrasted treatment groups.}
@@ -159,4 +168,13 @@ lmw.out4 <- lmw(~ treat + age + educ + race + married +
                 treat = "treat", target = target.data)
 lmw.out4
 summary(lmw.out4)
+
+#URI regression with fixed effects for 'race'
+lmw.out5 <- lmw(~ treat + age + educ + married +
+                  nodegree + re74 + re75, data = lalonde,
+                method = "URI", fixef = race)
+lmw.out5
+
+#Produces the same weights as when included as a covariate
+all.equal(lmw.out1$weights, lmw.out5$weights)
 }

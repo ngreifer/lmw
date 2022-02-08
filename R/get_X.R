@@ -10,6 +10,8 @@ get_X_from_formula <- function(formula, data, treat, method, estimand, target = 
 
   mf <- model.frame(formula_without_treat, data = data, na.action = "na.pass")
 
+  if (anyNA(mf)) stop("Missing values are not allowed in the covariates.", call. = FALSE)
+
   mf <- process_mf(mf)
 
   covs <- model.matrix(formula_without_treat, data = mf)
@@ -120,22 +122,24 @@ get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, method, es
   #Extract treatment variable
   treat_name <- attr(treat, "treat_name")
 
-  #Extract treatment variable
-  iv_name <- attr(iv, "iv_name")
-
   #Process formula, removing treatment variable
   formula_without_treat <- remove_treat_from_formula(formula, treat_name)
 
-  # formula_without_treat_with_iv <- update(formula_without_treat, str2lang(sprintf("~ %s + .", iv_name)))
-
   mf <- model.frame(formula_without_treat, data = data, na.action = "na.pass")
+
+  if (anyNA(mf)) stop("Missing values are not allowed in the covariates.", call. = FALSE)
 
   mf <- process_mf(mf)
 
-  covs <- model.matrix(formula_without_treat, data = mf)
+  covs <- model.matrix(formula_without_treat, data = mf)[,-1, drop = FALSE]
 
-  assign <- attr(formula_without_treat, "term.labels")[attr(covs, "assign")[-1]]
-  covs <- covs[,-1, drop = FALSE]
+  iv_mf <- model.frame(iv, data = data, na.action = "na.pass")
+
+  if (anyNA(iv_mf)) stop("Missing values are not allowed in the instrumental variable(s).", call. = FALSE)
+
+  iv_mf <- process_mf(iv_mf)
+
+  iv_mm <- model.matrix(iv, data = iv_mf)[,-1, drop = FALSE]
 
   #Process target when estimand = "CATE"
   if (estimand == "CATE") {
@@ -146,11 +150,10 @@ get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, method, es
   #are interactions w/ treatment
   covs <- scale_covs(covs, treat, target, s.weights, focal)
 
-  if (method == "URI") {
-    #Add intercept and IV to X
-    X <- cbind(1, iv, covs)
-    colnames(X)[1:2] <- c("(Intercept)", iv_name)
-  }
+  #Add intercept and IV to X
+  X <- cbind(1, covs, iv_mm)
+  colnames(X) <- c("(Intercept)", colnames(covs), colnames(iv_mm))
+  attr(X, "iv_names") <- colnames(iv_mm)
 
   attr(mf, "terms") <- NULL
 
@@ -168,6 +171,8 @@ get_2nd_stage_X_from_formula_iv <- function(formula, data, treat, treat_fitted, 
   formula_without_treat <- remove_treat_from_formula(formula, treat_name)
 
   mf <- model.frame(formula_without_treat, data = data, na.action = "na.pass")
+
+  if (anyNA(mf)) stop("Missing values are not allowed in the covariates.", call. = FALSE)
 
   mf <- process_mf(mf)
 
