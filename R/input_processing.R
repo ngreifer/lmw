@@ -467,12 +467,11 @@ process_iv <- function(iv, formula, data = NULL) {
     stop("'iv' must be a one-sided formula or character vectorof instrumental variables.", call. = FALSE)
   }
 
-  iv.factors <- attr(terms(formula), "factors")
+  iv.factors <- attr(terms(iv_f), "factors")
 
-  if (any(iv.factors %in% rownames(tt.factors))) {
+  if (any(rownames(iv.factors) %in% rownames(tt.factors))) {
     stop("The instrumental variable(s) should not be present in the model formula.", call. = FALSE)
   }
-
 
   return(iv_f)
 }
@@ -538,5 +537,3 @@ check_lengths <- function(treat, ...) {
     stop(msg, call. = FALSE)
   }
 }
-
-# stop("If implementing fixef, process it and figure out how to include it in outcome")

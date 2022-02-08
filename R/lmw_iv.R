@@ -54,7 +54,7 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
 print.lmw_iv <- function(x, ...) {
   cat("An lmw_iv object\n")
   cat(sprintf(" - treatment: %s (%s levels)\n", attr(x$treat, "treat_name"), nlevels(x$treat)))
-  cat(sprintf(" - instrument: %s\n", attr(x$iv, "iv_name")))
+  cat(sprintf(" - instrument: %s\n", attr(terms(x$iv), "term.labels")))
   cat(sprintf(" - method: %s\n", switch(x$method, "URI" = "URI (uni-regression imputation)", "MRI" = " MRI (multi-regression imputation)")))
   cat(sprintf(" - number of obs.: %s\n", length(x$treat)))
   cat(sprintf(" - sampling weights: %s\n", if (is.null(x$s.weights)) "none" else "present"))
