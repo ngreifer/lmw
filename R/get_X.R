@@ -125,6 +125,10 @@ get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, method, es
   #Process formula, removing treatment variable
   formula_without_treat <- remove_treat_from_formula(formula, treat_name)
 
+  if (any(attr(formula_without_treat, "interacts_with_treat"))) {
+    stop("Treatment-covariate interactions are not permitted in lmw_iv().", call. = FALSE)
+  }
+
   mf <- model.frame(formula_without_treat, data = data, na.action = "na.pass")
 
   if (anyNA(mf)) stop("Missing values are not allowed in the covariates.", call. = FALSE)
