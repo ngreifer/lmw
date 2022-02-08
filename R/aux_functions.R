@@ -1,10 +1,10 @@
-#More informative and cleaner version of base::match.arg. From WeightIt.
+#More informative and cleaner version of base::match.arg. From WeightIt with edits.
 match_arg <- function(arg, choices, several.ok = FALSE) {
   #Replaces match.arg() but gives cleaner error message and processing
   #of arg.
   if (missing(arg))
     stop("No argument was supplied to match_arg.", call. = FALSE)
-  arg.name <- paste(deparse(substitute(arg), width.cutoff = 500L), collapse = " ")
+  arg.name <- deparse1(substitute(arg))
 
   if (missing(choices)) {
     formal.args <- formals(sys.function(sysP <- sys.parent()))
@@ -12,27 +12,30 @@ match_arg <- function(arg, choices, several.ok = FALSE) {
                     envir = sys.frame(sysP))
   }
 
-  if (is.null(arg))
-    return(choices[1L])
+  if (is.null(arg)) return(choices[1L])
   else if (!is.character(arg))
     stop(paste0("The argument to '", arg.name, "' must be NULL or a character vector"), call. = FALSE)
+
   if (!several.ok) {
-    if (identical(arg, choices))
-      return(arg[1L])
-    if (length(arg) > 1L)
+    if (identical(arg, choices)) return(arg[1L])
+    if (length(arg) > 1L) {
       stop(paste0("The argument to '", arg.name, "' must be of length 1"), call. = FALSE)
+    }
   }
-  else if (length(arg) == 0)
+  else if (length(arg) == 0) {
     stop(paste0("The argument to '", arg.name, "' must be of length >= 1"), call. = FALSE)
+  }
 
   i <- pmatch(arg, choices, nomatch = 0L, duplicates.ok = TRUE)
   if (all(i == 0L))
-    stop(paste0("The argument to '", arg.name, "' should be ", if (length(choices) > 1) {if (several.ok) "at least one of " else "one of "} else "",
-                word_list(choices, and.or = "or", quotes = 2), "."),
+    stop(sprintf("The argument to '%s' should be %s%s.",
+                 arg.name,
+                 ngettext(length(choices), "", if (several.ok) "at least one of " else "one of "),
+                 word_list(choices, and.or = "or", quotes = 2)),
          call. = FALSE)
+
   i <- i[i > 0L]
-  if (!several.ok && length(i) > 1)
-    stop("There is more than one match in 'match_arg'")
+
   choices[i]
 }
 
@@ -91,7 +94,7 @@ add_quotes <- function(x, quotes = 2L) {
   x
 }
 
-#Effective sample size (using |w|)
+#Effective sample size
 ESS <- function(w) {
   # sum(abs(w))^2/sum(w^2)
   sum(w)^2/sum(w^2)
@@ -108,7 +111,7 @@ colMeans_w <- function(mat, w = NULL, subset = NULL) {
   else return(colSums(mat * w)/sum(w))
 }
 
-#Weighted mean
+#Weighted mean (faster than weighted.mean())
 mean_w <- function(x, w = NULL, subset = NULL) {
   if (length(subset) != 0) {
     x <- x[subset]
@@ -120,7 +123,7 @@ mean_w <- function(x, w = NULL, subset = NULL) {
 }
 
 #(Weighted) variance that uses special formula for binary variables
-wvar <- function(x, bin.var = NULL, w = NULL, subset = NULL) {
+var_w <- function(x, bin.var = NULL, w = NULL, subset = NULL) {
   if (is.null(bin.var)) bin.var <- all(x == 0 | x == 1)
   if (length(subset) != 0) {
     x <- x[subset]
@@ -133,12 +136,13 @@ wvar <- function(x, bin.var = NULL, w = NULL, subset = NULL) {
   mx <- sum(w * x) #weighted mean
 
   if (bin.var) {
-    mx*(1-mx)
+    v <- mx*(1-mx)
   }
   else {
     #Reliability weights variance; same as cov.wt()
-    sum(w * (x - mx)^2)/(1 - sum(w^2))
+    v <- sum(w * (x - mx)^2)/(1 - sum(w^2))
   }
+  abs(v)
 }
 
 #Determine whether a character vector can be coerced to numeric
@@ -156,14 +160,8 @@ str2num <- function(x) {
   return(x_num)
 }
 
-#Capitalize first letter
-firstup <- function(x) {
-  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
-  x
-}
-
 #Clean printing of data frames with numeric and NA elements.
-round_df_char <- function(df, digits, pad = "0", na_vals = "") {
+round_df_char <- function(df, digits, pad = "0", na_vals = ".") {
   #Digits is passed to round(). pad is used to replace trailing zeros so decimal
   #lines up. Should be "0" or " "; "" (the empty string) un-aligns decimals.
   #na_vals is what NA should print as.
@@ -173,7 +171,9 @@ round_df_char <- function(df, digits, pad = "0", na_vals = "") {
   rn <- rownames(df)
   cn <- colnames(df)
 
-  infs <- o.negs <- array(FALSE, dim = dim(df))
+  infs <- array(FALSE, dim = dim(df))
+  # o.negs <- array(FALSE, dim = dim(df))
+
   nas <- is.na(df)
   nums <- vapply(df, is.numeric, logical(1))
   infs[,nums] <- vapply(which(nums), function(i) !nas[,i] & !is.finite(df[[i]]), logical(NROW(df)))
@@ -185,7 +185,7 @@ round_df_char <- function(df, digits, pad = "0", na_vals = "") {
     }
   }
 
-  o.negs[,nums] <- !nas[,nums] & df[nums] < 0 & round(df[nums], digits) == 0
+  # o.negs[,nums] <- !nas[,nums] & df[nums] < 0 & round(df[nums], digits) == 0
   df[nums] <- round(df[nums], digits = digits)
 
   for (i in which(nums)) {
@@ -206,7 +206,7 @@ round_df_char <- function(df, digits, pad = "0", na_vals = "") {
     }
   }
 
-  df[o.negs] <- paste0("-", df[o.negs])
+  # df[o.negs] <- paste0("-", df[o.negs]) #Requested to remove to prevent -0
 
   # Insert NA placeholders
   df[nas] <- na_vals
@@ -215,7 +215,18 @@ round_df_char <- function(df, digits, pad = "0", na_vals = "") {
   if (length(rn) > 0) rownames(df) <- rn
   if (length(cn) > 0) names(df) <- cn
 
+  attr(df, "na_vals") <- na_vals
   return(df)
+}
+
+#Adds perentheses around a number in SD columns; e.g., 5.46 -> (5.46)
+add_peren_to_sd <- function(df) {
+  for (i in names(df)) {
+    if (startsWith(i, "SD") && !all(df[[i]] == attr(df, "na_vals"))) {
+      df[[i]][df[[i]] != attr(df, "na_vals")] <- sprintf("(%s)",  df[[i]][df[[i]] != attr(df, "na_vals")])
+    }
+  }
+  df
 }
 
 #Transform number to subscript
@@ -227,7 +238,7 @@ num2sub <- function(x) {
          x)
 }
 
-#Get covariates (RHS) vars from formula
+#Get covariates from data frame; for use in summary()
 covs_df_to_matrix <- function(covs) {
 
   if (NCOL(covs) == 0) {
@@ -253,49 +264,34 @@ covs_df_to_matrix <- function(covs) {
   return(X)
 }
 
-#Turn a vector into a 0/1 vector. 'zero' and 'one' can be supplied to make it clear which is
-#which; otherwise, a guess is used. From WeightIt.
-binarize <- function(variable, zero = NULL, one = NULL) {
-  if (length(unique(variable)) > 2) stop(paste0("Cannot binarize ", deparse1(substitute(variable)), ": more than two levels."))
-  if (is.character(variable) || is.factor(variable)) {
-    variable <- factor(variable, nmax = 2)
-    unique.vals <- levels(variable)
+#Quickly compute diagnoal of hat matrix without having to compute
+#full project matrix. Usues a specifal formula with a fixed effects (f)
+#is present to simplify calculation. Assumes X first column is an
+#intercept..
+hat_fast <- function(X, w = NULL, f = NULL) {
+  if (is.null(f)) {
+    if (is.null(w)) QR <- qr.default(X)
+    else QR <- qr.default(sqrt(w) * X)
+
+    Q <- qr.qy(QR, diag(1, nrow = nrow(QR$qr), ncol = QR$rank))
+    return(rowSums(Q * Q))
+  }
+
+  #Fixed effects block version
+  fmm <- do.call("cbind", lapply(levels(f), function(i) as.numeric(f == i)))
+
+  if (!is.null(w)) {
+    rw <- sqrt(w)
+    diag_h_f <- hat_fast(fmm, w)
   }
   else {
-    unique.vals <- unique(variable, nmax = 2)
+    rw <- 1
+    diag_h_f <- 1/tabulate(f)[as.integer(f)]
   }
 
-  if (is.null(zero)) {
-    if (is.null(one)) {
-      if (can_str2num(unique.vals)) {
-        variable.numeric <- str2num(variable)
-      }
-      else {
-        variable.numeric <- as.numeric(variable)
-      }
+  diag_h_X <- hat_fast(.lm.fit(rw*fmm, rw*X[,-1, drop = FALSE])$residuals/rw, w)
 
-      if (0 %in% variable.numeric) zero <- 0
-      else zero <- min(variable.numeric, na.rm = TRUE)
-
-      return(setNames(as.integer(variable.numeric != zero), names(variable)))
-    }
-    else {
-      if (one %in% unique.vals) return(setNames(as.integer(variable == one), names(variable)))
-      else stop("The argument to 'one' is not the name of a level of variable.", call. = FALSE)
-    }
-  }
-  else {
-    if (zero %in% unique.vals) return(setNames(as.integer(variable != zero), names(variable)))
-    else stop("The argument to 'zero' is not the name of a level of variable.", call. = FALSE)
-  }
-}
-
-hat_fast <- function(X, w = NULL) {
-  if (is.null(w)) QR <- qr.default(X)
-  else QR <- qr.default(sqrt(w) * X)
-
-  Q <- qr.qy(QR, diag(1, nrow = nrow(QR$qr), ncol = QR$rank))
-  rowSums(Q * Q)
+  return(diag_h_f + diag_h_X)
 }
 
 treat_name_from_coefs <- function(coef_names, treat_levels) {
@@ -316,4 +312,16 @@ treat_levels_from_coefs <- function(coef_names, treat_levels, treat_name = NULL)
 
   coef_levels <- sub(treat_name, "", coef_names, fixed = TRUE)
   return(c(setdiff(treat_levels, coef_levels), coef_levels))
+}
+
+#Group mean centers a variable x for a factor f. For
+#use with fixed effects.
+demean <- function(x, f, w = NULL) {
+  for (i in levels(f)) {
+    x[f == i] <- {
+      if (is.null(w)) x[f == i] - mean(x[f == i])
+      else  x[f == i] - mean_w(x[f == i], w[f == i])
+    }
+  }
+  x
 }
