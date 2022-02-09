@@ -3,7 +3,11 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
                 s.weights = NULL, obj = NULL, target = NULL, target.weights = NULL, contrast = NULL, focal = NULL) {
   call <- match.call()
 
-  method <- match_arg(method, c("URI"))
+  if (missing(iv)) {
+    stop("An argument to 'iv' specifying the instrumental variable(s) is required.", call. = FALSE)
+  }
+
+  method <- match_arg(method, c("URI", "MRI"))
 
   estimand <- process_estimand(estimand, target, obj)
 
@@ -13,7 +17,7 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
 
   s.weights <- process_s.weights(s.weights, obj)
 
-  treat_name <- process_treat_name(treat, formula, method, obj)
+  treat_name <- process_treat_name(treat, formula, data, method, obj)
 
   #treat changes meaning from treatment name to treatment vector
   treat <- process_treat(treat_name, data, multi.ok = FALSE)
@@ -31,7 +35,7 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
                                            method, estimand, target, s.weights,
                                            target.weights, focal)
 
-  weights <- get_w_from_X_iv(X_obj$X, treat_contrast, method, base.weights, s.weights)
+  weights <- get_w_from_X_iv(X_obj$X, X_obj$A, treat_contrast, method, base.weights, s.weights)
 
   out <- list(treat = treat,
               weights = weights,
@@ -54,7 +58,8 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
 print.lmw_iv <- function(x, ...) {
   cat("An lmw_iv object\n")
   cat(sprintf(" - treatment: %s (%s levels)\n", attr(x$treat, "treat_name"), nlevels(x$treat)))
-  cat(sprintf(" - instrument: %s\n", attr(terms(x$iv), "term.labels")))
+  cat(sprintf(" - instrument%s: %s\n", if (length(attr(terms(x$iv), "term.labels")) > 1) "s" else "",
+              paste(attr(terms(x$iv), "term.labels"), collapse = ", ")))
   cat(sprintf(" - method: %s\n", switch(x$method, "URI" = "URI (uni-regression imputation)", "MRI" = " MRI (multi-regression imputation)")))
   cat(sprintf(" - number of obs.: %s\n", length(x$treat)))
   cat(sprintf(" - sampling weights: %s\n", if (is.null(x$s.weights)) "none" else "present"))

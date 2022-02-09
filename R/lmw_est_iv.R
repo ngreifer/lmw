@@ -37,20 +37,22 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
   offset <- rep(0, n)
 
   if (is.null(w)) {
-    auxreg <- lm.fit(X, t)
+    auxreg <- lm.fit(X, obj1$A)
   }
   else {
-    auxreg <- lm.wfit(X[pos_w,, drop = FALSE], t[pos_w], w[pos_w])
+    auxreg <- lm.wfit(X[pos_w,, drop = FALSE],
+                      obj1$A[pos_w,, drop=FALSE],
+                      w[pos_w])
   }
 
   t_fitted <- auxreg$fitted.values
 
-  obj2 <- get_2nd_stage_X_from_formula_iv(x$formula, data = data, treat = x$treat, treat_fitted = t_fitted,
-                                          method = x$method, estimand = x$estimand, target = x$target,
-                                          s.weights = x$s.weights, target.weights = attr(x$target, "target.weights"),
-                                          focal = x$focal)
-
+  obj2 <- get_X_from_formula(x$formula, data = data, treat = x$treat,
+                             method = x$method, estimand = x$estimand, target = x$target,
+                             s.weights = x$s.weights, target.weights = attr(x$target, "target.weights"),
+                             focal = x$focal)
   XZ <- obj2$X
+  XZ[,colnames(t_fitted)] <- t_fitted
 
   ## main regression
   if (is.null(w)) {
@@ -71,9 +73,10 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
   ok <- which(!is.na(fit$coefficients))
   res <- numeric(n)
 
-  #Replace t_fitted with t to compute residuals
-  XZ[,2] <- t
-  res[pos_w] <- outcome[pos_w] - drop(XZ[, ok, drop = FALSE] %*% fit$coefficients[ok])
+  #Replace t_fitted with A to compute residuals
+  XZ[,colnames(obj1$A)] <- obj1$A
+  fit$fitted.values <- drop(XZ[, ok, drop = FALSE] %*% fit$coefficients[ok])
+  res[pos_w] <- outcome[pos_w] - fit$fitted.values[pos_w]
   fit$residuals <- res
 
   rss <- if (is.null(w)) sum(res^2) else sum(w * res^2)

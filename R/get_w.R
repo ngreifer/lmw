@@ -62,8 +62,9 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
   return(drop(weights))
 }
 
-get_w_from_X_iv <- function(X, treat, method, base.weights = NULL, s.weights = NULL) {
+get_w_from_X_iv <- function(X, A, treat, method, base.weights = NULL, s.weights = NULL) {
   #X should be from get_1st_stage_X_from_formula_iv()$X
+  #A should be from get_1st_stage_X_from_formula_iv()$A
 
   iv_names <- attr(X, "iv_names")
 
@@ -76,14 +77,21 @@ get_w_from_X_iv <- function(X, treat, method, base.weights = NULL, s.weights = N
   if (is.null(s.weights)) s.weights <- rep(1, nrow(X))
   if (is.null(base.weights)) base.weights <- rep(1, nrow(X))
 
-  t <- as.numeric(treat == levels(treat)[1])
-
   rw <- sqrt(base.weights*s.weights)
-  weights <- .lm.fit(rw*X[,-iv_ind, drop = FALSE], rw*t)$residuals -
-    .lm.fit(rw*X, rw*t)$residuals
+  weights_ <- .lm.fit(rw*X[,-iv_ind, drop = FALSE], rw*A)$residuals -
+    .lm.fit(rw*X, rw*A)$residuals
 
-  for (i in levels(treat)) {
-    weights[treat == i] <- weights[treat == i] / sum(weights[treat == i])
+  weights <- rep(0, length(treat))
+  if (ncol(A) == 1) {
+    #Scaling factor is a scalar, so normalizing weights does it
+    for (i in levels(treat)) {
+      weights[treat == i] <- weights_[treat == i] / sum(weights_[treat == i])
+    }
+  }
+  else {
+    #Scaling factor is a column vector (solve(t(A) %*% weights_)[,1])
+    weights <- weights_ %*% solve(crossprod(A, weights_), c(1, rep(0, ncol(A) - 1)))
+    weights[treat == levels(treat)[1]] <- -weights[treat == levels(treat)[1]]
   }
 
   return(weights)

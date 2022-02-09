@@ -5,7 +5,7 @@
 Compute instrumental variable regression-implied weights
 }
 \description{
-Computes the weights implied by an instrumental variable model that would estimate a weighted difference in outcome means equal to the treatment effect resulting from the supplied model fit with two-stage least squares.
+Computes the weights implied by an instrumental variable (IV) model that would estimate a weighted difference in outcome means equal to the treatment effect resulting from the supplied model fit with two-stage least squares.
 }
 \usage{
 lmw_iv(formula, data, estimand = "ATE", method = "URI",
@@ -16,22 +16,22 @@ lmw_iv(formula, data, estimand = "ATE", method = "URI",
 }
 \arguments{
   \item{formula}{
-a one-sided formula with the treatment and covariates on the right-hand side corresponding to the second-stage (reduced form) outcome regression model to be fit. If an outcome variable is supplied on the left-hand side, it will be ignored. This model should not include an instrumental variable. See Details for how this formula is interpreted in light of other options.
+a one-sided formula with the treatment and covariates on the right-hand side corresponding to the second-stage (reduced form) outcome regression model to be fit. If an outcome variable is supplied on the left-hand side, it will be ignored. This model should not include an IV. See Details for how this formula is interpreted in light of other options.
 }
   \item{data}{
 a data frame containing the variables named in \code{formula}, \code{treat}, and \code{iv}.
 }
   \item{estimand}{
-the estimand of interest, which determines how covariates are centered. Should be one of \code{"ATE"} for the average treatment effect, \code{"ATT"} for the average treatment effect in the treated, \code{"ATC"} for the average treatment effect in the control, or \code{"CATE"} for the conditional average treatment effect. When \code{estimand = "CATE"}, an argument to \code{target} must be supplied. This argument only affects what \code{\link{summary.lmw}} considers to be the target population. Default is \code{"ATE"} unless \code{obj} is specified, in which case it takes its value from the supplied object.
+the estimand of interest, which determines how covariates are centered. Should be one of \code{"ATE"} for the average treatment effect, \code{"ATT"} for the average treatment effect in the treated, \code{"ATC"} for the average treatment effect in the control, or \code{"CATE"} for the conditional average treatment effect. When \code{estimand = "CATE"}, an argument to \code{target} must be supplied. This argument also affects what \code{\link{summary.lmw}} considers to be the target population. Default is \code{"ATE"} unless \code{obj} is specified, in which case it takes its value from the supplied object.
 }
   \item{method}{
-the method used to estimate the weights; currently, only \code{"URI"} for uni-regression imputation weights, where a single model is fit to the whole dataset, is allowed.
+the method used to estimate the weights; either \code{"URI"} (the default) for uni-regression imputation weights, where a single model is fit to the whole dataset, or \code{"MRI"} for multi-regression imputation, where the covariates fully interact with the treatment. This affects the interpretation of \code{formula}. See Details.
 }
   \item{treat}{
 the name of the treatment variable in \code{data}. If unspecified, the first variable present in \code{formula} will be taken as the treatment variable with a message. Currently, only binary treatments are supported. See Details.
 }
   \item{iv}{
-a character vector or one-sided formula containing the names of the instrumental variables in \code{data}. These variables should not appear in \code{formula}. See Details.
+a character vector or one-sided formula containing the names of the IVs in \code{data}. These variables should not appear in \code{formula}. Multiple IVs are allowed. See Details. This argument is required.
 }
   \item{base.weights}{
 a vector of base weights. See Details. If omitted and \code{obj} is specified, the weights from the supplied object will be used.
@@ -40,7 +40,7 @@ a vector of base weights. See Details. If omitted and \code{obj} is specified, t
 a vector of sampling weights. See Details. If omitted and \code{obj} is specified, the sampling weights from the supplied object will be used.
 }
   \item{obj}{
-a \code{matchit} or \code{weightit} object corresponding to the matched or weighted sample in which the implied outcome regression would take place. See Details.
+a \code{matchit} or \code{weightit} object corresponding to the matched or weighted sample in which the implied IV regression would take place. See Details.
 }
   \item{target}{
 a list or data frame containing the target values for each covariate included in \code{formula}. Ignored with a warning when \code{estimand} is not \code{"CATE"}.
@@ -52,19 +52,21 @@ a vector of sampling weights to be applied to \code{target} when supplied as a d
 ignored.
 }
   \item{focal}{
-the level of the treatment variable to be considered "focal" (i.e., the "treated" level when \code{estimand = "ATT"} or the control level when \code{estimand = "ATC"}). Ignored when \code{estimand} is \code{"ATE"} or \code{"CATE"}.
+the level of the treatment variable to be considered "focal" (i.e., the "treated" level when \code{estimand = "ATT"} or the control level when \code{estimand = "ATC"}). Ignored when \code{estimand} is \code{"ATE"} or \code{"CATE"}. For binary treatments, this generally does not need to be supplied.
 }
 }
 \details{
-\code{lmw_iv()} computes weights that, when used in the weighted difference in outcome means between the treatment groups, corresponds to the two-stage least squares (2SLS) estimate of the treatment effect. \code{formula} corresponds to the second-stage (reduced form) model, with the treatment replaced by its fitted values resulting from the first stage model. The first stage is fit by removing the treatment from the supplied \code{formula}, adding the instrumental variables named in \code{iv} as main effects, and using the treatment as the outcome. The treatment is assumed to be endogenous and the supplied instrumental variables assumed to be instruments conditional on the other covariates, which are assumed to to be exogenous.
+\code{lmw_iv()} computes weights that make the weighted difference in outcome means between the treatment groups equal to the two-stage least squares (2SLS) estimate of the treatment effect. \code{formula} corresponds to the second-stage (reduced form) model, with the treatment replaced by its fitted values resulting from the first stage model. The first stage is fit by replacing the treatment in the supplied \code{formula} with the IVs named in \code{iv} and using the treatment as the outcome. The treatment is assumed to be endogenous and the supplied instrumental variables assumed to be instruments conditional on the other covariates, which are assumed to to be exogenous.
 
-Centering covariates (i.e., by supplying arguments to \code{estimand}, \code{target}, or \code{focal}) has no effect on the resulting weights or the treatment effect estimated. It will affect the intercept of the outcome model and the target population to which the weighted distribution of covariates is compared using \code{\link{summary.lmw}} and \code{\link{plot.lmw}}. See \code{\link{lmw}} for more information on covariate centering.
+When any treatment-by-covariate interactions are present in \code{formula} or when \code{method = "MRI"}, covariates are centered at specific values to ensure the resulting weights correspond to the desired estimand as supplied to the \code{estimand} argument. For the ATE, the covariates are centered at their means in the full sample. For the ATT and ATC, the covariates are centered at their means in the treatment or control group (i.e., the \code{focal} group), respectively. For the CATE, the covariates are centered according to the argument supplied to \code{target} (see below). Note that when covariate-by-covariate interactions are present, they will be centered after computing the interaction rather than the interaction being computed on the centered covariates unless \code{estimand = "CATE"}, in which case the covariates will be centered at the values specified in \code{target} prior to involvement in interactions. Note that resulting effect estimate does not actually correspond to the estimand supplied unless all effect heterogenity is due to the included covariates.
+
+When treatment-by-covariate interactions are included in \code{formula}, additional instruments will be formed as the product of the supplied IVs and the interacting covariates. When \code{method = "MRI"}, instruments will be formed as the product of the supplied IVs and each of the covariates. All treatment-by-covariate interactions are considered endogenous.
 
 \subsection{Base weights and sampling weights}{
 
 Base weights (\code{base.weights}) and sampling weights (\code{s.weights}) are similar in that they both involve combining weights with an outcome regression model. However, they differ in a few ways. Sampling weights are primarily used to adjust the target population; when the outcome model is fit, it is fit using weighted least squares, and when target balance is assessed, it is assessed using the sampling weighted population as the target population. Centering of covariates in the outcome model is done using the sampling weighted covariate means. Base weights are primarily used to offer a second level of balancing beyond the implied regression weights, i.e., to fit the 2SLS models in the base-weighted sample. Base weights do not change the target population, so when target balance is assessed, it is assessed using the unweighted population as the target population.
 
-Some forms of weights both change the target population and provide an extra layer of balancing, like propensity score weights that target estimands other than the ATT, ATC, or ATE (e.g., overlap weights), or matching weights where the target population is defined by the matching (e.g., matching with a caliper, cardinality matching, or coarsened exact matching). Because these weights change the target population, they should be supplied to \code{s.weights} to ensure covariates are appropriately centered. When there are no treatment-by-covariate interactions and \code{method = "URI"}, whether weights are supplied to \code{base.weights} or \code{s.weights} will not matter for the estimation of the weights but will affect the target population in \link[=summary.lmw]{balance assessment}.
+Some forms of weights both change the target population and provide an extra layer of balancing, like propensity score weights that target estimands other than the ATT, ATC, or ATE (e.g., overlap weights), or matching weights where the target population is defined by the matching (e.g., matching with a caliper, cardinality matching, or coarsened exact matching). Because these weights change the target population, they should be supplied to \code{s.weights} to ensure covariates are appropriately centered. In \code{lmw_iv()}, whether weights are supplied to \code{base.weights} or \code{s.weights} will not matter for the estimation of the weights but will affect the target population in \link[=summary.lmw]{balance assessment}.
 
 When both \code{base.weights} and \code{s.weights} are supplied, e.g., when the base weights are the result of a propensity score model fit with sampling weights, it is assumed the base weights do not incorporate the sampling weights; that is, it is assumed that to estimate a treatment effect \emph{without} regression adjustment, the base weights and the sampling weights would have to be multiplied together. This is true, for example, for the weights in a \code{matchit} or \code{weightit} object (see below) but not for weights in the output of \code{MatchIt::match.data()} unless called with \code{include.s.weights = FALSE} or weights resulting from \code{CBPS::CBPS()}.
 }
@@ -73,8 +75,7 @@ When both \code{base.weights} and \code{s.weights} are supplied, e.g., when the 
 Instrumental variable regression weights can be computed in a matched or weighted sample by supplying a \code{matchit} or \code{weightit} object (from \pkg{MatchIt} or \pkg{WeightIt}, respectively) to the \code{obj} argument of \code{lmw()}. The estimand, base weights, and sampling weights (if any) will be taken from the supplied object and used in the calculation of the implied regression weights, unless these have been supplied separately to \code{lmw_iv()}. The \code{weights} component of the supplied object containing the matching or balancing weights will be passed to \code{base.weights} and the \code{s.weights} component will be passed to \code{s.weights}. Arguments supplied to \code{lmw_iv()} will take precedence over the corresponding components in the \code{obj} object.
 }
 
-\subsection{Multi-category treatments and instruments}{
-
+\subsection{Multi-category treatments}{
 Multi-category treatments are not currently supported for \code{lmw_iv()}.
 }
 
@@ -96,7 +97,7 @@ An \code{lmw_iv} object, which inherits from \code{lmw} objects and contains the
 \item{contrast}{the contrasted treatment groups.}
 \item{focal}{the focal treatment levels when \code{estimand} is \code{"ATT"} or \code{"ATC"}.}
 
-All functions that lack a specific \code{lmw_iv} method work with \code{lmw_iv} objects as they do for \code{lmw} objects, link \code{\link{summary.lmw}}, \code{\link{plot.lmw}}, etc.
+All functions that lack a specific \code{lmw_iv} method work with \code{lmw_iv} objects as they do for \code{lmw} objects, such as \code{\link{summary.lmw}}, \code{\link{plot.lmw}}, etc.
 }
 \references{
 Chattopadhyay, A., & Zubizarreta, J. R. (2021). On the implied weights of linear regression for causal inference. ArXiv:2104.06581 [Stat]. \url{https://arxiv.org/abs/2104.06581}
