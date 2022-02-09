@@ -2,10 +2,15 @@ plot.summary.lmw <- function(x, stats, abs = TRUE, var.order = "data", threshold
   .pardefault <- par(no.readonly = TRUE)
   on.exit(par(.pardefault))
 
-  un <- !is.null(x[["sum.un"]])
-  base.weighted <- !is.null(x[["sum.base.weighted"]])
-  weighted <- !is.null(x[["sum.weighted"]])
-  standard.sum <- if (un) x[["sum.un"]] else x[["sum.weighted"]]
+  un <- !is.null(x[["bal.un"]])
+  base.weighted <- !is.null(x[["bal.base.weighted"]])
+  weighted <- !is.null(x[["bal.weighted"]])
+
+  if (!un && !base.weighted && !weighted) {
+    stop("plot() can only be used on summary.lmw objects when stat = \"balance\" was specified in the call to summary().", call. = FALSE)
+  }
+
+  standard.sum <- if (un) x[["bal.un"]] else x[["bal.weighted"]]
 
   if (!any(startsWith(colnames(standard.sum), "TSMD"))) {
     stop("Not appropriate for unstandardized summary. Run summary() with the standardize = TRUE option, and then plot.", call. = FALSE)
@@ -17,13 +22,13 @@ plot.summary.lmw <- function(x, stats, abs = TRUE, var.order = "data", threshold
   stats <- match_arg(stats, colnames(standard.sum), several.ok = TRUE)
 
   if (un) {
-    stats.un <- as.data.frame(x[["sum.un"]][,stats, drop = FALSE])
+    stats.un <- as.data.frame(x[["bal.un"]][,stats, drop = FALSE])
   }
   if (base.weighted) {
-    stats.base.weighted <- as.data.frame(x[["sum.base.weighted"]][,stats, drop = FALSE])
+    stats.base.weighted <- as.data.frame(x[["bal.base.weighted"]][,stats, drop = FALSE])
   }
   if (weighted) {
-    stats.weighted <- as.data.frame(x[["sum.weighted"]][,stats, drop = FALSE])
+    stats.weighted <- as.data.frame(x[["bal.weighted"]][,stats, drop = FALSE])
   }
 
   var.names <- rownames(standard.sum)
