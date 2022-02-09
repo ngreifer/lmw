@@ -61,7 +61,7 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
 
   means_mat <- NULL
 
-  if (object$method == "MRI" && is.null(object$fixef)) {
+  if (object$method == "MRI" && is.null(object$fixef) && !inherits(object, "lmw_est_iv")) {
 
     means_se <- sqrt(diag(means_vcov))
     means_tval <- means/means_se
@@ -87,14 +87,16 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
 
   f <- object$fitted.values
   r <- object$residuals
+  y <- f + r
   w <- object$weights
-  n <- length(r)
+  n <- length(f)
   m <- mean_w(f, w)
-  if (is.null(w)) w <- 1
-  mss <- sum(w * (f - m)^2)
-  rss <- sum(w * r^2)
+  if (is.null(w)) w <- rep(1, n)
 
-  r.squared <- mss/(mss + rss)
+  rss <- sum(w * r^2)
+  tss <- sum(w * (y - mean_w(y, w))^2)
+
+  r.squared <- 1 - rss/tss
   adj.r.squared <- 1 - (1 - r.squared) * ((n - 1)/rdf)
 
   sigma <- sqrt(rss/rdf)
