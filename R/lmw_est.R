@@ -162,7 +162,7 @@ lmw_est.formula <- function(x, data = NULL, estimand = "ATE", method = "URI", tr
 
   dr.method <- process_dr.method(dr.method, base.weights, method)
 
-  treat_name <- process_treat_name(treat, formula, method, obj)
+  treat_name <- process_treat_name(treat, formula, data, method, obj)
 
   #treat changes meaning from treatment name to treatment vector
   treat <- process_treat(treat_name, data)

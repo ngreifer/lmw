@@ -156,8 +156,8 @@ process_data <- function(data = NULL, obj = NULL) {
   return(data)
 }
 
-process_treat_name <- function(treat, formula, method, obj) {
-  tt.factors <- attr(terms(formula), "factors")
+process_treat_name <- function(treat, formula, data, method, obj) {
+  tt.factors <- attr(terms(formula, data = data), "factors")
 
   obj_treat <- NULL
   if (inherits(obj, "matchit")) {
@@ -332,7 +332,7 @@ get_outcome <- function(outcome, data = NULL, formula) {
       stop("'outcome' must be supplied.", call. = FALSE)
     }
 
-    outcome_char <- deparse1(attr(terms(tt), "variables")[[2]])
+    outcome_char <- deparse1(attr(tt, "variables")[[2]])
 
     mf <- try(eval(model.frame(tt, data = data)), silent = TRUE)
     if (inherits(mf, "try-error")) {
@@ -447,7 +447,11 @@ process_target <- function(target, formula, mf, target.weights = NULL) {
 }
 
 process_iv <- function(iv, formula, data = NULL) {
-  tt.factors <- attr(terms(formula), "factors")
+  if (length(iv) == 0) {
+    stop("An argument to 'iv' specifying the instrumental variable(s) is required.", call. = FALSE)
+  }
+
+  tt.factors <- attr(terms(formula, data = data), "factors")
 
   if (is.character(iv)) {
     if (!is.null(data) && is.data.frame(data)) {
@@ -464,52 +468,69 @@ process_iv <- function(iv, formula, data = NULL) {
     iv_f <- iv
   }
   else {
-    stop("'iv' must be a one-sided formula or character vectorof instrumental variables.", call. = FALSE)
+    stop("'iv' must be a one-sided formula or character vector of instrumental variables.", call. = FALSE)
   }
 
-  iv.factors <- attr(terms(iv_f), "factors")
+  iv.factors <- attr(terms(iv_f, data = data), "term.labels")
 
-  if (any(rownames(iv.factors) %in% rownames(tt.factors))) {
+  if (any(iv.factors %in% rownames(tt.factors))) {
     stop("The instrumental variable(s) should not be present in the model formula.", call. = FALSE)
   }
 
   return(iv_f)
 }
 
-process_fixef <- function(fixef, data) {
-  fixef_sub <- substitute(fixef)
-  fixef_name <- deparse1(fixef_sub)
-  fixef <- try(eval(fixef_sub, envir = data), silent = TRUE)
-  if (inherits(fixef, "try-error")) {
-    cond <- attr(fixef, "condition")$message
-    if (startsWith(cond, "object") && endsWith(cond, "not found")) {
-      stop(sprintf("The fixed effect variable '%s' cannot befound in the supplied dataset or environment.", fixef_name),
-           call. = FALSE)
+process_fixef <- function(fixef, formula, data = NULL, treat_name) {
+  if (length(fixef) == 0) return(NULL)
+
+  tt.factors <- attr(terms(formula, data = data), "factors")
+
+  if (is.character(fixef)) {
+    if (!is.null(data) && is.data.frame(data)) {
+      if (!all(fixef %in% names(data))) {
+        stop("All variables in 'fixef' must be in 'data'.", call. = FALSE)
+      }
+      fixef_f <- reformulate(fixef)
+    }
+    else {
+      stop("If 'fixef' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
     }
   }
-  if (is.character(fixef) && length(fixef) == 1) {
-    if (is.null(data)) {
-      stop("A dataset must be present when 'fixef' is supplied as a string. Please supply an argument to 'data'.", call. = FALSE)
-    }
-    fixef_name <- fixef
-    fixef <- try(eval(str2expression(fixef_name), data), silent = TRUE)
-    if (length(fixef) == 0 || inherits(fixef, "try-error")) {
-      stop("The fixed effect variable must be present in the dataset.", call. = FALSE)
-    }
+  else if (inherits(fixef, "formula")) {
+    fixef_f <- fixef
+  }
+  else {
+    stop("'fixef' must be a one-sided formula or string naming the fixed effect variable.", call. = FALSE)
   }
 
-  if (!is.null(fixef)) {
-    fixef <- factor(fixef)
-    attr(fixef, "fixef_name") <- fixef_name
-    return(fixef)
+  fixef_name <- attr(terms(fixef_f, data = data), "term.labels")
+  if (length(fixef_name) > 1) {
+    stop("Only one fixed effect variable may be supplied.", call. = FALSE)
   }
 
-  NULL
+  if (any(fixef_name == treat_name)) {
+    stop("The fixed effect variable cannot be the same as the treatment variable.", call. = FALSE)
+  }
+  if (any(fixef_name %in% rownames(tt.factors))) {
+    stop("The fixed effect variable should not be present in the model formula.", call. = FALSE)
+  }
+
+  fixef_mf <- model.frame(fixef_f, data = data, na.action = "na.pass")
+
+  if (anyNA(fixef_mf)) {
+    stop("Missing values are not allowed in the fixed effect variable.", call. = FALSE)
+  }
+
+  fixef <- factor(fixef_mf[[fixef_name]])
+  attr(fixef, "fixef_name") <- fixef_name
+
+  return(fixef)
 }
 
 check_lengths <- function(treat, ...) {
   arg_names <- c("treatment", unlist(lapply(substitute(list(...))[-1], deparse1)))
   args <- c(list(treat), list(...))
+
   lengths <- setNames(vapply(args, function(x) {
     if (length(dim(x)) == 2) NROW(x)
     else length(x)

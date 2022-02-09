@@ -16,9 +16,9 @@ lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = 
 
   dr.method <- process_dr.method(dr.method, base.weights, method)
 
-  fixef <- do.call("process_fixef", list(substitute(fixef), data))
+  treat_name <- process_treat_name(treat, formula, data, method, obj)
 
-  treat_name <- process_treat_name(treat, formula, method, obj)
+  fixef <- process_fixef(fixef, formula, data, treat_name)
 
   #treat changes meaning from treatment name to treatment vector
   treat <- process_treat(treat_name, data)
