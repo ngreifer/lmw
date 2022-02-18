@@ -8,7 +8,7 @@ importFrom("utils", "hasName", "combn")
 export("lmw", "lmw_est", "lmw_iv")
 
 S3method("summary", "lmw")
-S3method("summary", "lmw.multi")
+S3method("summary", "lmw_multi")
 S3method("print", "lmw")
 S3method("plot", "lmw")
 S3method("influence", "lmw")
@@ -19,7 +19,6 @@ S3method("plot", "summary.lmw")
 
 S3method("print", "lmw_est")
 S3method("summary", "lmw_est")
-S3method("influence", "lmw_est")
 
 S3method("bread", "lmw_est")
 S3method("vcov", "lmw_est")
@@ -29,9 +28,12 @@ S3method("estfun", "lmw_est")
 
 S3method("print", "summary.lmw_est")
 
+#IV-related
 S3method("print", "lmw_iv")
 S3method("lmw_est", "lmw_iv")
 
 S3method("bread", "lmw_est_iv")
 
-
+#AIPW-related
+S3method("lmw_est", "lmw_aipw")
+S3method("summary", "lmw_est_aipw")

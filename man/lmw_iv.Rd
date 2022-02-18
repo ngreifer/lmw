@@ -10,9 +10,9 @@ Computes the weights implied by an instrumental variable (IV) model that would e
 \usage{
 lmw_iv(formula, data, estimand = "ATE", method = "URI",
        treat = NULL, iv, base.weights = NULL,
-       s.weights = NULL, obj = NULL, target = NULL,
-       target.weights = NULL, contrast = NULL,
-       focal = NULL)
+       s.weights = NULL, obj = NULL, fixef = NULL,
+       target = NULL, target.weights = NULL,
+       contrast = NULL, focal = NULL)
 }
 \arguments{
   \item{formula}{
@@ -34,13 +34,16 @@ the name of the treatment variable in \code{data}. If unspecified, the first var
 a character vector or one-sided formula containing the names of the IVs in \code{data}. These variables should not appear in \code{formula}. Multiple IVs are allowed. See Details. This argument is required.
 }
   \item{base.weights}{
-a vector of base weights. See Details. If omitted and \code{obj} is specified, the weights from the supplied object will be used.
+a vector of base weights. See Details. If omitted and \code{obj} is specified, the weights from the supplied object will be used. Can be supplied as a numeric vector, a string containing the name of the variable in \code{data} containing the base weights, or the unquoted name of the variable in \code{data} containing the base weights.
 }
   \item{s.weights}{
-a vector of sampling weights. See Details. If omitted and \code{obj} is specified, the sampling weights from the supplied object will be used.
+a vector of sampling weights. See Details. If omitted and \code{obj} is specified, the sampling weights from the supplied object will be used. Can be supplied as a numeric vector, a string containing the name of the variable in \code{data} containing the sampling weights, or the unquoted name of the variable in \code{data} containing the sampling weights.
 }
   \item{obj}{
 a \code{matchit} or \code{weightit} object corresponding to the matched or weighted sample in which the implied IV regression would take place. See Details.
+}
+  \item{fixef}{
+optional; a string or one-sided formula containing the name of the fixed effects variable in \code{data}. See Details.
 }
   \item{target}{
 a list or data frame containing the target values for each covariate included in \code{formula}. Ignored with a warning when \code{estimand} is not \code{"CATE"}.
@@ -79,6 +82,10 @@ Instrumental variable regression weights can be computed in a matched or weighte
 Multi-category treatments are not currently supported for \code{lmw_iv()}.
 }
 
+\subsection{Fixed effects}{
+A fixed effects variable can be supplied to the \code{fixef} argument. This is equivalent to adding the fixed effects variable as an exogenous predictor that does not interact with the treatment, IV, or any other covariate. The difference is that computation is much faster when the fixed effect has many levels because demeaning is used rather than including the fixed effect variable as a collection of dummy variables. When using URI, the weights will be the same regardless of whether the fixed effect variable is included as a covariate or supplied to \code{fixef}; when using MRI, results will differ because the fixed effect variable does not interact with treatment. The fixed effects variable will not appear in the \code{\link{summary.lmw}} output (but can be added using `addlvariables` argument) or in the model output of \code{\link{lmw_est}} or \code{\link{summary.lmw_est}}. Because it does not interact with the treatment, the distribution of the fixed effect variable may not correspond to the target population, so caution should be used if it is expected the treatment effect varies across levels of this variable (in which case it should be included as a predictor). Currently only one fixed effect variable is allowed.
+}
+
 }
 
 \value{
@@ -91,6 +98,7 @@ An \code{lmw_iv} object, which inherits from \code{lmw} objects and contains the
 \item{base.weights}{the weights supplied to \code{base.weights}.}
 \item{s.weights}{the weights supplied to \code{s.weights}.}
 \item{call}{the original call to \code{lmw_iv()}.}
+\item{fixef}{the fixed effects variable if supplied to \code{fixef}.}
 \item{formula}{the model formula.}
 \item{iv}{the instrumental variables, given as a one-sided formula.}
 \item{target}{the supplied covariate target values when \code{estimand = "CATE"}, after some initial processing.}

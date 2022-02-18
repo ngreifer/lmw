@@ -10,11 +10,11 @@ lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = 
 
   data <- process_data(data, obj)
 
-  base.weights <- process_base.weights(base.weights, obj)
+  base.weights <- do.call("process_base.weights", list(substitute(base.weights), data, obj))
 
-  s.weights <- process_s.weights(s.weights, obj)
+  s.weights <- do.call("process_s.weights", list(substitute(s.weights), data, obj))
 
-  dr.method <- process_dr.method(dr.method, base.weights, method)
+  dr.method <- process_dr.method(dr.method, base.weights, method, estimand)
 
   treat_name <- process_treat_name(treat, formula, data, method, obj)
 
@@ -52,7 +52,8 @@ lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = 
               contrast = contrast,
               focal = focal)
 
-  class(out) <- c("lmw.multi"[nlevels(treat) > 2], "lmw")
+  class(out) <- c("lmw_aipw"[!is.null(dr.method) && dr.method == "AIPW"],
+                  "lmw_multi"[nlevels(treat) > 2], "lmw")
   return(out)
 }
 
@@ -69,6 +70,11 @@ print.lmw <- function(x, ...) {
                           "matchit"  = "matching weights from MatchIt",
                           "weightit" = "weights from WeightIt",
                           "present")))
+  if (!is.null(x$dr.method)) {
+    cat(sprintf(" - doubly-robust method: %s\n", switch(x$dr.method,
+                                                        "WLS" = "weighted least sqaures (WLS)",
+                                                        "AIPW" = "augmented inverse probability weighting (AIPW)")))
+  }
   cat(sprintf(" - target estimand: %s\n", x$estimand))
   if (!is.null(x$covs)) {
     cat(sprintf(" - covariates: %s\n",

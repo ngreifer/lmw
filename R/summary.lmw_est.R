@@ -167,7 +167,9 @@ print.summary.lmw_est <- function(x, digits = max(3, getOption("digits") - 3),
                               tst.ind = if (ci) 5 else 3, ...)
     do.call("printCoefmat", c(list(coefs), printCoefmat.args))
 
-    cat("\nResidual standard error:", format(signif(x$sigma, digits)), "on", rdf, "degrees of freedom")
+    if (!is.null(df)) {
+      cat("\nResidual standard error:", format(signif(x$sigma, digits)), "on", rdf, "degrees of freedom")
+    }
     if (!is.null(x$fixef_name)) {
       cat("\nEstimated with fixed effects for", x$fixef_name)
     }
@@ -200,7 +202,7 @@ print.summary.lmw_est <- function(x, digits = max(3, getOption("digits") - 3),
       cat("\nNo Coefficients\n")
     }
     else {
-      if (nsingular <- df[3L] - df[1L])
+      if (nsingular <- sum(is.na(x$model.coefficients)))
         cat("\nCoefficients: (", nsingular, " not defined because of singularities)\n", sep = "")
       else cat("\nModel coefficients:\n")
       do.call("printCoefmat", c(list(x$model.coefficients), printCoefmat.args))
@@ -270,7 +272,7 @@ bread.lmw_est <- function(x) {
   # df <- c(p, x$df.residual)
   # b <- cov.unscaled * as.vector(sum(df))
 
-  b <- cov.unscaled * length(residuals(x))
+  b <- cov.unscaled * length(x$residuals)
   dimnames(b) <- list(names(x$coefficients[p1]), names(x$coefficients[p1]))
   return(b)
 }

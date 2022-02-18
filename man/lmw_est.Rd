@@ -2,6 +2,7 @@
 \alias{lmw_est}
 \alias{lmw_est.lmw}
 \alias{lmw_est.lmw_iv}
+\alias{lmw_est.lmw_aipw}
 
 \title{
 Fit an outcome regression model to estimate a treatment effect
@@ -13,6 +14,8 @@ Fit an outcome regression model to estimate a treatment effect
 lmw_est(x, ...)
 
 \method{lmw_est}{lmw}(x, outcome, data = NULL, robust = TRUE, cluster = NULL, ...)
+
+\method{lmw_est}{lmw_aipw}(x, outcome, data = NULL, robust = TRUE, cluster = NULL, ...)
 
 \method{lmw_est}{lmw_iv}(x, outcome, data = NULL, robust = TRUE, cluster = NULL, ...)
 }
@@ -28,10 +31,10 @@ the name of the outcome variable. Can be supplied as a string containing the nam
 an optional data frame containing the outcome variable named in \code{outcome} and the cluster variable(s) when \code{cluster} is supplied as a \code{formula}.
 }
   \item{robust}{
-whether to compute the robust covariance matrix for the model coefficients. Allowable values include those allowed for the \code{type} argument of \code{\link[sandwich]{vcovHC}} or \code{\link[sandwich]{vcovCL}} when \code{cluster} is specified. Can also be specified as \code{TRUE} (the default), which means \code{"HC3"} or \code{"HC1"} when \code{cluster} is specified, or \code{FALSE}, which means \code{"const"} (i.e., the standard non-robust covariance). When \code{cluster} is specified, \code{robust} will be set to \code{TRUE} if \code{FALSE}.
+whether to compute the robust covariance matrix for the model coefficients. Allowable values include those allowed for the \code{type} argument of \code{\link[sandwich]{vcovHC}} or \code{\link[sandwich]{vcovCL}} when \code{cluster} is specified. Can also be specified as \code{TRUE} (the default), which means \code{"HC3"} or \code{"HC1"} when \code{cluster} is specified, or \code{FALSE}, which means \code{"const"} (i.e., the standard non-robust covariance). When \code{cluster} is specified, \code{robust} will be set to \code{TRUE} if \code{FALSE}. When AIPW is used, \code{robust} is ignored; the HC0 robust covariance matrix is used.
 }
   \item{cluster}{
-the clustering variable(s) for computing a cluster-robust covariance matrix. See \code{\link[sandwich]{vcovCL}}. If supplied as a \code{formula}, the clustering variables must be present in the original dataset used to compute the weights or \code{data}.
+the clustering variable(s) for computing a cluster-robust covariance matrix. See \code{\link[sandwich]{vcovCL}}. If supplied as a \code{formula}, the clustering variables must be present in the original dataset used to compute the weights or \code{data}. When AIPW is used, \code{cluster} is ignored.
 }
   \item{\dots}{
 other arguments passed to \code{\link[sandwich]{vcovHC}} or \code{\link[sandwich]{vcovCL}}.
@@ -40,7 +43,9 @@ other arguments passed to \code{\link[sandwich]{vcovHC}} or \code{\link[sandwich
 \details{
 \code{lmw_est()} uses \code{\link{lm.fit}} or \code{\link{lm.wfit}} to fit the outcome regression model (and first stage model for \code{lmw_iv} objects) and returns the output of these functions augmented with other components related to the estimation of the weights. Unlike with \code{lm.[w]fit()}, the covariance matrix of the parameter estimates is also included in the output.
 
-For \code{lmw} objects, the model fit is that supplied to the \code{formula} input to \code{lmw()} except that it is fit in a dataset appropriately centered to ensure the estimand corresponds with the one requested. When \code{method = "MRI"} in the call to \code{lmw()}, the model is fit as an interaction between the treatment and all the (centered) terms in the model formula. The results will be similar to those from using \code{\link{lm}} on the model formula and supplied data except that the covariates are centered beforehand.
+For \code{lmw} objects, the model fit is that supplied to the \code{formula} input to \code{lmw()} except that it is fit in a dataset appropriately centered to ensure the estimand corresponds with the one requested. When \code{method = "MRI"} in the call to \code{lmw()}, the model is fit as an interaction between the treatment and all the (centered) terms in the model formula. The results will be similar to those from using \code{\link{lm}} on this model and supplied data except that the covariates are centered beforehand. The product of the sampling weights and base weights supplied to \code{lmw()}, if any, will be supplied to \code{lm.wfit()} to fit the model using weighted least squares.
+
+For \code{lmw_aipw} objects, the model is fit as above excpt that base weights are not included in the model fitting and are instead used to compute additional augmentation terms that are added to the estimated potential outcome means from the outcome regression. The variance-covariance matrix is computed using M-estimation; this corresponds to the HC0 robust covariance matrix for the model parameters with the base weights treated as fixed, which yields conservative standard errors for the ATE. Inference is only approximate for the ATT and ATC.
 
 For \code{lmw_iv} objects, the first stage model is constructed by removing the treatment from the supplied model formula, adding the instrumental variable as a main effect, and using the treatment variable as the outcome. For the second stage (reduced form) model, the fitted values of the treatment from the first stage model are used in place of the treatment in the outcome model. The results are similar to those from using \code{ivreg::ivreg()}, and the coefficients estimates will be the same except for the intercept due to the centering of covariates.
 
@@ -48,18 +53,26 @@ Although some coefficients in the model may be interpretable as treatment effect
 }
 \value{
 An \code{lmw_est} object with the following components:
-\item{coefficients, residuals, fitted.values, effects, weights, rank, df.residual, qr}{for \code{lmw} objects, the output of the \code{\link{lm.fit}} or \code{\link{lm.wfit}} call used to fit the outcome model. For \code{lmw_iv} objects, the output of the \code{\link{lm.fit}} or \code{\link{lm.wfit}} call used to fit the the second stage model, with \code{residuals} corresponding to the residuals computed when using the true treatment variable in place of the fitted treatment values in the model.}
+\item{coefficients, residuals, fitted.values, effects, weights, rank, df.residual, qr}{for \code{lmw} objects, the output of the \code{\link{lm.fit}} or \code{\link{lm.wfit}} call used to fit the outcome model. For \code{lmw_iv} objects, the output of the \code{\link{lm.fit}} or \code{\link{lm.wfit}} call used to fit the the second stage model, with \code{residuals} corresponding to the residuals computed when substituting the true treatment variable in place of the fitted treatment values in the model.}
 \item{model.matrix}{the model matrix (supplied to the \code{x} argument of \code{lm.fit}).}
 \item{vcov}{the estimated covariance matrix of the parameter estimates as produced by \code{\link[sandwich]{vcovHC}} or \code{\link[sandwich]{vcovCL}}.}
 \item{call}{the call to \code{lmw_est()}.}
 \item{estimand}{the requested estimand.}
 
-Methods exist for \code{lmw_est} objects for \code{\link{model.matrix}}, \code{\link{vcov}}, \code{\link{hatvalues}}, \code{\link[sandwich]{bread}}, and \code{\link[sandwich]{estfun}}, all of which are used internally to compute the parameter estimate covariance matrix. The first two simply extract the corresponding component from the \code{lmw_est} object and the last three imitate the corresponding methods for \code{lm} objects (or \code{ivreg} objects for \code{lmw_iv} inputs). Other regression-related functions, such as \code{\link{coef}}, \code{\link{residuals}}, and \code{\link{fitted}}, use the default methods and should work correctly with \code{lmw_est} objects.
+When AIPW is used, the object will be of class \code{lmw_est_aipw}, which inherits from \code{lmw_est}, and contains the additional components:
+\item{coef_aipw}{the model-predicted potential outcome means (\code{mu}) and the augmentation terms (\code{aug}).}
+\item{vcov_aipw}{the covariance matrix of the quantities in \code{coef_aipw}.}
+
+When weights are included in the estimation (i.e., \code{base.weights} or \code{s.weights} supplied to \code{lmw()} or \code{lmw_iv()}), any units will weights equal to zero will be removed from the data prior to model fitting.
+
+Methods exist for \code{lmw_est} objects for \code{\link{model.matrix}}, \code{\link{vcov}}, \code{\link{hatvalues}}, \code{\link[sandwich]{bread}}, and \code{\link[sandwich]{estfun}}, all of which are used internally to compute the parameter estimate covariance matrix. The first two simply extract the corresponding component from the \code{lmw_est} object and the last three immitate the corresponding methods for \code{lm} objects (or \code{ivreg} objects for \code{lmw_iv} inputs). Other regression-related functions, such as \code{\link{coef}}, \code{\link{residuals}}, and \code{\link{fitted}}, use the default methods and should work correctly with \code{lmw_est} objects.
+
+Note that when fixed effects are supplied through the \code{fixef} argument to \code{lmw()} or \code{lmw_iv()}, standard error estimates computed using functions outside \pkg{lmw} may not be accurate due to issues relating to degrees of freedom. In particular, this affects conventional and HC1-robust standard errors. Otherwise, \code{sandwich::vcovHC()} can be used to compute standard errors (setting \code{type = "const"} for conventional standard errors), though \code{sandwich::vcovCL()} may not work as expected and should not be used. To calculate cluster-robust standard errors, supply an argument to \code{cluster} in \code{lmw_est()}.
 }
 \note{
 \code{lmw_est()} uses non-standard evaluation to interpret its \code{outcome} argument. For programmers who wish to use \code{lmw_est()} inside other functions, an effective way to pass the name of an arbitrary outcome (e.g., \code{y} passed as a string) is to use \code{\link{do.call}}, for example:
-\preformatted{fun <- function(m, y, d) {
-   do.call("lmw_est", list(m, y, d))
+\preformatted{fun <- function(model, outcome, data) {
+   do.call("lmw_est", list(model, outcome, data))
 }
 }
 When using \code{lmw_est()} inside \code{\link{lapply}} or \code{purrr::map} to loop over outcomes, this syntax must be used as well.
@@ -96,4 +109,20 @@ lmw.fit2 <- lmw_est(lmw.out2, outcome = "re78", cluster = ~subclass)
 lmw.fit2
 
 summary(lmw.fit2)
+
+# AIPW for ATE with MRI regression after propensity score
+# weighting
+ps <- glm(treat ~ age + educ + race + married + nodegree +
+            re74 + re75, data = lalonde,
+            family = binomial)$fitted
+ipw <- ifelse(lalonde$treat == 1, 1/ps, 1/(1-ps))
+
+lmw.out3 <- lmw(re78 ~ treat + age + educ + race + married +
+                  nodegree + re74 + re75, data = lalonde,
+                method = "MRI", treat = "treat",
+                base.weights = ipw, dr.method = "AIPW")
+lmw.fit3 <- lmw_est(lmw.out3)
+lmw.fit3
+
+summary(lmw.fit3)
 }

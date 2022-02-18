@@ -1,5 +1,6 @@
 get_X_from_formula <- function(formula, data, treat, method, estimand, target = NULL,
-                               s.weights = NULL, target.weights = NULL, focal = NULL) {
+                               s.weights = NULL, target.weights = NULL, focal = NULL,
+                               treat_fixed = NULL) {
   formula <- delete.response(terms(formula, data = data))
 
   #Extract treatment variable
@@ -28,7 +29,14 @@ get_X_from_formula <- function(formula, data, treat, method, estimand, target = 
   #are interactions w/ treatment
   covs <- scale_covs(covs, treat, target, s.weights, focal)
 
-  t_mat <- do.call("cbind", lapply(levels(treat)[-1], function(j) as.numeric(treat == j)))
+  if (is.null(treat_fixed)) {
+    t_mat <- do.call("cbind", lapply(levels(treat)[-1], function(j) as.numeric(treat == j)))
+  }
+  else {
+    t_mat <- matrix(as.numeric(levels(treat)[-1] == treat_fixed),
+                    nrow = nrow(covs), ncol = nlevels(treat)-1,
+                    byrow = TRUE)
+  }
   colnames(t_mat) <- paste0(treat_name, levels(treat)[-1])
 
   if (method == "URI") {
@@ -223,7 +231,6 @@ get_2nd_stage_X_from_formula_iv <- function(formula, data, treat, treat_fitted, 
 
   out <- eval(m, parent.frame())
 
-  #Replace
   out$X[,colnames(treat_fitted)] <- treat_fitted
 
   return(out)

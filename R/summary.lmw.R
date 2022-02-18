@@ -163,7 +163,7 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
   return(res)
 }
 
-summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardize = TRUE, data = NULL,
+summary.lmw_multi <- function(object, un = TRUE, addlvariables = NULL, standardize = TRUE, data = NULL,
                               contrast = NULL, stat = "balance", ...) {
   #Balance assessment, similar in structure to summary.matchit()
 
@@ -347,7 +347,7 @@ summary.lmw.multi <- function(object, un = TRUE, addlvariables = NULL, standardi
               dist.weighted = dist.weighted,
               method = object$method,
               base.weights.origin = attr(object$base.weights, "origin"))
-  class(res) <- c("summary.lmw.multi"[is.null(contrast)], "summary.lmw")
+  class(res) <- c("summary.lmw_multi"[is.null(contrast)], "summary.lmw")
   return(res)
 }
 

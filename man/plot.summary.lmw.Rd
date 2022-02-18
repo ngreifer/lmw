@@ -19,7 +19,7 @@ a \code{summary.lmw} object; the output of a call to \code{\link{summary.lmw}} w
 a vector of the names of the columns in the \code{summary.lmw} output to plot; more than one is allowed. Abbreviations allowed.
 }
   \item{abs}{
-\code{logical}; whether the statistics should be plotted in absolute value (\code{TRUE}) or not (\code{FALSE}). Default is \code{TRUE}. This does not affect the display of KS statistics (which are always non-negative).
+\code{logical}; whether the statistics should be plotted in absolute value (\code{TRUE}) or not (\code{FALSE}). Default is \code{TRUE}. This does not affect the display of KS statistics (which are always non-negative). When \code{TRUE} and standardized mean differences are displayed, the x-axis title will be "TASMD", i.e., target absolute standardized mean difference.
 }
   \item{var.order}{
 how the variables should be ordered. Allowable options include \code{"data"}, ordering the variables as they appear in the summary output, \code{"alphabetical"}, ordering the variables alphabetically, and, when \code{un = TRUE} in the call to \code{summar.lmw()}, \code{"unadjusted"}, ordering the variables by the first statistic in \code{stats} in the unadjusted sample. Default is \code{"data"}. Abbreviations allowed.

@@ -1,15 +1,24 @@
 \name{summary.lmw}
 \alias{summary.lmw}
+\alias{summary.lmw_multi}
+\alias{print.summary.lmw}
 
 \title{
-Assess balance on an lmw object
+Assess balance on an \code{lmw} object
 }
 \description{
 Computes balance statistics for an \code{lmw} object created by \code{\link{lmw}}. Balance involves not only the similarity between the treatment groups but also the similarity between each treatment group and the target population.
 }
 \usage{
 \method{summary}{lmw}(object, un = TRUE, addlvariables = NULL,
-        standardize = TRUE, data = NULL, ...)
+        standardize = TRUE, data = NULL,
+        stat = "balance", ...)
+
+\method{summary}{lmw_multi}(object, un = TRUE, addlvariables = NULL,
+              standardize = TRUE, data = NULL,
+              contrast = NULL, stat = "balance", ...)
+
+\method{print}{summary.lmw}(x, digits = max(3, getOption("digits") - 4), ...)
 }
 
 \arguments{
@@ -28,18 +37,46 @@ additional variables for which balance statistics are to be computed along with 
   \item{data}{
 a optional data frame containing variables named in \code{addlvariables} if specified as a string or formula.
 }
+  \item{contrast}{
+for multi-category treatments with \code{method = "MRI"}, which two groups should be compared. If \code{NULL}, only target balance statistics will be displayed. Ignored with binary treatments or when \code{method = "URI"}.
+}
+  \item{stat}{
+\code{character}; whether to display balance statistics (i.e., standardized mean differences and Kolmogorv-Smirnov statistics; \code{"balance"}) or distribution statistics (i.e., means and standard deviations; \code{"distribution"}). Default is \code{"balance"}. Abbreviations allowed.
+}
   \item{\dots}{
 ignored.
 }
+  \item{x}{
+a \code{summary.lmw} object.
+}
+  \item{digits}{
+the number of digits to print.
+}
 }
 \details{
-\code{summary.lmw()} produces covariate balance statistics and effective samples size before and after weighting. For each covariate, the following statistics are computed: the standardized mean difference between the treated and control groups (SMD), the standardized mean difference between the treated group and target sample (TSMD Treated), the standardized mean difference between between the control group and target sample (TSMD Control), the Kolmogorov-Smirnov (KS) statistic between the treated and control groups (KS), the the KS statistic between the treated group and target sample (TKS Treated), and the the KS statistic between the control group and target sample (TKS Control). For binary covariates, the Kolmogorov-Smirnov statistic is equal to the unstandardized difference in means and is computed as such.
+\code{summary.lmw()} produces covariate balance or distribution statistics and effective samples sizes before and after adjustment by the regression weights and base weights, if supplied. For each covariate, the following balance statistics are computed when \code{stat = "balance"}:
+\itemize{
+\item \code{SMD} - the standardized mean difference (SMD) between the treated and control groups
+\item \code{TSMD Treated} - the target standardized mean difference (TSMD) between the treated group and target sample
+\item \code{TSMD Control} - the TSMD between between the control group and target sample
+\item \code{KS} - the Kolmogorov-Smirnov (KS) statistic between the treated and control groups
+\item \code{TKS Treated} - the target KS (TKS) statistic between the treated group and target sample
+\item \code{TKS Control} - the TKS statistic between the control group and target sample
+}
 
-After weighting, the standardized mean difference between the treated and control groups of each covariate included in the original call to \code{lmw()} will be equal to zero. However, the difference between each treatment group and the target sample may not be equal to zero when \code{method = "URI"} in the call to \code{lmw()}, and covariates supplied to \code{addlvariables} not included in the call to \code{lmw()} may not be well balanced.
+For multi-category treatments with \code{method = "MRI"}, balance statistics are are computed between each treatment group and the target sample.
 
-When \code{s.weights} are supplied to \code{lmw()}, the unadjusted balance statistics (if requested) will incorporate the sampling weights. When \code{base.weights} are supplied to \code{lmw()}, the unadjusted balance statistics will \emph{not} incorporate the base weights; rather, balance with base weights applied (if supplied) will be produced in a separate balance table (see Value below).
+When \code{stat = "distribution"} the mean and standard deviation of each covariate is compute before and after adjustment and for the target sample. (Stanard deviations are printed in parentheses for visual clarity.)
 
-Standardized mean differences are computed as the difference between the (weighted) means divided by a standardization factor, which is the standard deviation of the covariate in the target sample. When \code{estimand = "ATT"} in the call to \code{lmw()}, the standardization factor is the standard deviation in the treated group; when \code{estimand = "ATC"}, the standardization factor is the standard deviation in the control group; when \code{estimand = "ATE"} or when \code{estimand = "CATE"} and a target profile is supplied, the standardization factor is the square root of the average of the variances of both treatment groups; when \code{estimand = "CATE"} and a target dataset is supplied, the standardization factor is the standard deviation in the target dataset. When \code{s.weights} is supplied, the standardization factor is computed including the sampling weights; otherwise it is computed in the unweighted sample.
+After weighting with the regression weights, the mean difference between the treated and control groups of each covariate included in the original call to \code{lmw()} will be equal to zero. However, the mean difference between each treatment group and the target sample may not be equal to zero when \code{method = "URI"} in the call to \code{lmw()}, and covariates supplied to \code{addlvariables} not included in the call to \code{lmw()} may not be well balanced.
+
+When \code{s.weights} are supplied to \code{lmw()}, the unadjusted statistics (if requested) will incorporate the sampling weights. When \code{base.weights} are supplied to \code{lmw()}, the unadjusted statistics will \emph{not} incorporate the base weights; rather, balance with base weights applied (if supplied) will be produced in a separate balance table (see Value below).
+
+SMDs are computed as the difference between the (weighted) means divided by a standardization factor, which is the standard deviation of the covariate in the target sample. When \code{estimand = "ATT"} in the call to \code{lmw()}, the standardization factor is the standard deviation in the treated group; when \code{estimand = "ATC"}, the standardization factor is the standard deviation in the control group; when \code{estimand = "ATE"} or when \code{estimand = "CATE"} and a target profile is supplied, the standardization factor is the square root of the average of the variances of both treatment groups; when \code{estimand = "CATE"} and a target dataset is supplied, the standardization factor is the standard deviation in the target dataset. When \code{s.weights} is supplied, the standardization factor is computed including the sampling weights; otherwise it is computed in the unweighted sample.
+
+For binary covariates, the KS statistic is equal to the unstandardized difference in means and is computed as such.
+
+When \code{estimand = "CATE"} in the original call to \code{lmw()}, any variables supplied to \code{addlvariables} that were not given a target value will not have any target statistics computed (e.g., TSMD, TKS, target means, etc.).
 
 The effective sample size (ESS) is computed as \eqn{(\sum w)^2/\sum w^2}. With uniform weights, this is equal to the sample size.
 }
@@ -47,13 +84,17 @@ The effective sample size (ESS) is computed as \eqn{(\sum w)^2/\sum w^2}. With u
 A \code{summary.lmw} object, which contains the following components:
 \item{call}{The original call to \code{lmw()}.}
 \item{nn}{The (effective) sample sizes before and after weighting.}
-\item{sum.un}{If \code{un = TRUE}, the balance statistics prior to weighting.}
-\item{sum.base.weighted}{If \code{un = TRUE} and base weights were supplied to \code{lmw()}, the balance statistics with the base weights applied.}
-\item{sum.weighted}{The balance statistics with the implied regression weights applied.}
+\item{bal.un}{When \code{stat = "balance"} and \code{un = TRUE}, the balance statistics prior to weighting.}
+\item{bal.base.weighted}{When \code{stat = "balance"}, \code{un = TRUE} and base weights were supplied to \code{lmw()}, the balance statistics with the base weights applied.}
+\item{bal.weighted}{When \code{stat = "balance"}, the balance statistics with the implied regression weights applied.}
+\item{dist.un}{When \code{stat = "distribution"} and \code{un = TRUE}, the distribution statistics prior to weighting.}
+\item{dist.base.weighted}{When \code{stat = "distribution"}, \code{un = TRUE} and base weights were supplied to \code{lmw()}, the distribution statistics with the base weights applied.}
+\item{dist.weighted}{When \code{stat = "distribution"}, the distribution statistics with the implied regression weights applied.}
 \item{method}{The method used to estimate the weights (i.e., URI or MRI)}
 \item{base.weights.origin}{If base weights were supplied through the \code{obj} argument to \code{lmw()}, their origin (i.e, MatchIt or WeightIt)}
-}
 
+With multi-category treatments and \code{method = "MRI"}, the object will also inherit from class \code{summary.lmw_multi}.
+}
 \seealso{
 \code{\link{lmw}} for computing the implied regression weights, \code{\link{plot.summary.lmw}} for plotting the balance statistics in a Love plot, \code{\link{plot.lmw}} for assessing the representativeness and extrapolation of the weights
 }

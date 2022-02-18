@@ -1,5 +1,21 @@
-process_base.weights <- function(base.weights, obj) {
-  if (is.null(base.weights)) {
+process_base.weights <- function(base.weights = NULL, data = NULL, obj = NULL) {
+
+  base.weights_sub <- substitute(base.weights)
+  base.weights_char <- deparse1(base.weights_sub)
+  base.weights <- try(eval(base.weights_sub, data, parent.frame(2)), silent = TRUE)
+  if (inherits(base.weights, "try-error")) {
+    cond <- attr(base.weights, "condition")$message
+    if (startsWith(cond, "object") && endsWith(cond, "not found")) {
+      if (is.null(data)) {
+        stop(sprintf("The base weights variable '%s' cannot be found in the environment. Please supply an argument to 'data' containing the base weights.", base.weights_char),
+             call. = FALSE)
+      }
+      else {
+        stop(sprintf("The base weights variable '%s' must be present in the supplied dataset or environment.", base.weights_char), call. = FALSE)
+      }
+    }
+  }
+  else if (length(base.weights) == 0) {
     if (!is.null(obj) &&
         (inherits(obj, "matchit") || inherits(obj, "weightit")) &&
         !is.null(obj$weights) && is.numeric(obj$weights) &&
@@ -8,15 +24,45 @@ process_base.weights <- function(base.weights, obj) {
       attr(base.weights, "origin") <- if (inherits(obj, "matchit")) "matchit" else "weightit"
     }
   }
-  else if (!is.numeric(base.weights)) {
-    stop("'base.weights' must be a numeric vector.", call. = FALSE)
+  else if (is.character(base.weights) && length(base.weights) == 1) {
+    if (is.null(data)) {
+      stop("A dataset must be present when 'base.weights' is supplied as a string. Please supply an argument to 'data' containing the base weights.", call. = FALSE)
+    }
+    base.weights_char <- base.weights
+    base.weights <- try(eval(str2expression(base.weights_char), data), silent = TRUE)
+    if (length(base.weights) == 0 || inherits(base.weights, "try-error")) {
+      stop("The base weights variable must be present in the dataset.", call. = FALSE)
+    }
+  }
+
+  if (length(base.weights) == 0) {
+    return(NULL)
+  }
+  if (!is.numeric(base.weights)) {
+    stop("The base weights variable must be numeric.", call. = FALSE)
   }
 
   return(base.weights)
 }
 
-process_s.weights <- function(s.weights, obj) {
-  if (is.null(s.weights)) {
+process_s.weights <- function(s.weights = NULL, data = NULL, obj = NULL) {
+
+  s.weights_sub <- substitute(s.weights)
+  s.weights_char <- deparse1(s.weights_sub)
+  s.weights <- try(eval(s.weights_sub, data, parent.frame(2)), silent = TRUE)
+  if (inherits(s.weights, "try-error")) {
+    cond <- attr(s.weights, "condition")$message
+    if (startsWith(cond, "object") && endsWith(cond, "not found")) {
+      if (is.null(data)) {
+        stop(sprintf("The sampling weights variable '%s' cannot be found in the environment. Please supply an argument to 'data' containing the sampling weights.", s.weights_char),
+             call. = FALSE)
+      }
+      else {
+        stop(sprintf("The sampling weights variable '%s' must be present in the supplied dataset or environment.", s.weights_char), call. = FALSE)
+      }
+    }
+  }
+  else if (length(s.weights) == 0) {
     if (!is.null(obj) &&
         (inherits(obj, "matchit") || inherits(obj, "weightit")) &&
         !is.null(obj$s.weights) && is.numeric(obj$s.weights) &&
@@ -25,14 +71,28 @@ process_s.weights <- function(s.weights, obj) {
       attr(s.weights, "origin") <- if (inherits(obj, "matchit")) "matchit" else "weightit"
     }
   }
-  else if (!is.numeric(s.weights)) {
-    stop("'s.weights' must be a numeric vector.", call. = FALSE)
+  else if (is.character(s.weights) && length(s.weights) == 1) {
+    if (is.null(data)) {
+      stop("A dataset must be present when 's.weights' is supplied as a string. Please supply an argument to 'data' containing the sampling weights.", call. = FALSE)
+    }
+    s.weights_char <- s.weights
+    s.weights <- try(eval(str2expression(s.weights_char), data), silent = TRUE)
+    if (length(s.weights) == 0 || inherits(s.weights, "try-error")) {
+      stop("The sampling weights variable must be present in the dataset.", call. = FALSE)
+    }
+  }
+
+  if (length(s.weights) == 0) {
+    return(NULL)
+  }
+  if (!is.numeric(s.weights)) {
+    stop("The sampling weights variable must be numeric.", call. = FALSE)
   }
 
   return(s.weights)
 }
 
-process_dr.method <- function(dr.method, base.weights, method) {
+process_dr.method <- function(dr.method, base.weights, method, estimand) {
   if (is.null(base.weights)) return(NULL)
   if (length(dr.method) != 1 || !is.character(dr.method)) {
     stop("'dr.method' must be a string.", call. = FALSE)
@@ -42,6 +102,9 @@ process_dr.method <- function(dr.method, base.weights, method) {
   # dr.method <- match_arg(dr.method, c("WLS", "AIPW"[method == "MRI"]))
   dr.method <- match_arg(dr.method, c("WLS", "AIPW"))
 
+  if (estimand == "CATE" && dr.method == "AIPW") {
+    stop("The CATE cannot be used with AIPW.", call. = FALSE)
+  }
   dr.method
 }
 
@@ -351,7 +414,7 @@ get_outcome <- function(outcome, data = NULL, formula) {
       cond <- attr(outcome, "condition")$message
       if (startsWith(cond, "object") && endsWith(cond, "not found")) {
         if (is.null(data)) {
-          stop(sprintf("The outcome variable '%s' cannot befound in the environment. Please supply an argument to 'data' containing the original dataset used to estimate the weights.", outcome_char),
+          stop(sprintf("The outcome variable '%s' cannot be found in the environment. Please supply an argument to 'data' containing the original dataset used to estimate the weights.", outcome_char),
                call. = FALSE)
         }
         else {
@@ -375,7 +438,6 @@ get_outcome <- function(outcome, data = NULL, formula) {
     stop("The outcome variable cannot be NULL.", call. = FALSE)
   }
   if (!is.numeric(outcome) && !is.logical(outcome)) {
-    print(outcome)
     stop("The outcome variable must be numeric.", call. = FALSE)
   }
   if (length(outcome) != nrow(data)) {

@@ -10,6 +10,9 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
   }
 
   if (!is.null(fixef)) {
+    if (!is.null(base.weights) && dr.method == "AIPW") {
+      stop("Fixed effects cannot be used with AIPW.", call. = FALSE)
+    }
     for (i in seq_len(ncol(X))) {
       X[,i] <- demean(X[,i], fixef, w)
     }
@@ -24,8 +27,6 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
   #Remove linearly dependent columns
   X <- X[, qr_X$pivot[1:p], drop = FALSE]
 
-  # XXtX1 <- (w*X) %*% XtX1
-
   if (is.null(s.weights)) s.weights <- rep(1, nrow(X))
 
   if (method == "URI") {
@@ -33,7 +34,7 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
     weights <- drop(w * (X %*% XtX1[, qr_X$pivot[1:p] == 2, drop = FALSE]))
     weights[t == 0] <- -weights[t == 0]
   }
-  else if (method == "MRI") {
+  else { #MRI
     weights <- rep(0, length(treat))
     for (i in seq_len(nlevels(treat))) {
       in_t <- which(treat == levels(treat)[i])
@@ -48,48 +49,67 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
 
   if (!is.null(base.weights) && dr.method == "AIPW") {
 
-    for (i in levels(t)) {
-      base.weights[t == i] <- base.weights[t == i]/sum(base.weights[t == i])
+    ipw.weights <- base.weights*s.weights
+    for (i in levels(treat)) {
+      ipw.weights[treat == i] <- ipw.weights[treat == i]/sum(ipw.weights[treat == i])
     }
 
-    # pred.weights <- base.weights %*% XXtX1 %*% t(X)
-    # pred.weights <- base.weights - .lm.fit(rw*X, rw*base.weights)$residuals/rw
-    # weights <- r.weights + base.weights - pred.weights
+    if (method == "URI") {
+      #For multicategory treatments, set base.weights of groups not
+      # involved in contrast to 0
+      if (nlevels(treat) > 2) ipw.weights[!treat %in% levels(treat)[1:2]] <- 0
 
-    weights <- weights + .lm.fit(rw*X, rw*base.weights)$residuals/rw
+      #Funky formula for augmentation weights, but it works
+      ipw.weights[t == 0] <- -ipw.weights[t == 0]
+      aug.weights <- rw*.lm.fit(rw*X, ipw.weights/rw)$residuals
+      aug.weights[t == 0] <- -aug.weights[t == 0]
+    }
+    else { #MRI
+      aug.weights <- rw*.lm.fit(rw*X, ipw.weights/rw)$residuals
+    }
+
+    weights <- weights + aug.weights
   }
 
   return(drop(weights))
 }
 
-get_w_from_X_iv <- function(X, A, treat, method, base.weights = NULL, s.weights = NULL) {
+get_w_from_X_iv <- function(X, A, treat, method, base.weights = NULL, s.weights = NULL, fixef = NULL) {
   #X should be from get_1st_stage_X_from_formula_iv()$X
   #A should be from get_1st_stage_X_from_formula_iv()$A
 
   iv_names <- attr(X, "iv_names")
 
+  if (is.null(s.weights)) s.weights <- rep(1, nrow(X))
+  if (is.null(base.weights)) w <- s.weights
+  else w <- s.weights*base.weights
+
+  rw <- sqrt(w)
+
   #Remove linearly dependent columns
-  qr_X <- qr(X)
+  qr_X <- qr(rw*X)
   X <- X[, qr_X$pivot[seq_len(qr_X$rank)], drop = FALSE]
+
+  if (!is.null(fixef)) {
+    for (i in seq_len(ncol(X))) {
+      X[,i] <- demean(X[,i], fixef, w)
+    }
+    for (i in seq_len(ncol(A))) {
+      A[,i] <- demean(A[,i], fixef, w)
+    }
+  }
 
   iv_ind <- which(colnames(X) %in% iv_names)
 
-  if (is.null(s.weights)) s.weights <- rep(1, nrow(X))
-  if (is.null(base.weights)) base.weights <- rep(1, nrow(X))
+  weights_ <- rw*.lm.fit(rw*X[,-iv_ind, drop = FALSE], rw*A)$residuals -
+    rw*.lm.fit(rw*X, rw*A)$residuals
 
-  rw <- sqrt(base.weights*s.weights)
-  weights_ <- .lm.fit(rw*X[,-iv_ind, drop = FALSE], rw*A)$residuals -
-    .lm.fit(rw*X, rw*A)$residuals
-
-  weights <- rep(0, length(treat))
   if (ncol(A) == 1) {
-    #Scaling factor is a scalar, so normalizing weights does it
-    for (i in levels(treat)) {
-      weights[treat == i] <- weights_[treat == i] / sum(weights_[treat == i])
-    }
+    weights <- weights_ / sum(A * weights_)
+    weights[treat == levels(treat)[1]] <- -weights[treat == levels(treat)[1]]
   }
   else {
-    #Scaling factor is a column vector (solve(t(A) %*% weights_)[,1])
+    #Scaling factor is a [ncol(A) x 1] vector (solve(t(A) %*% weights_)[,1])
     weights <- weights_ %*% solve(crossprod(A, weights_), c(1, rep(0, ncol(A) - 1)))
     weights[treat == levels(treat)[1]] <- -weights[treat == levels(treat)[1]]
   }

@@ -31,19 +31,19 @@ the method used to estimate the weights; either \code{"URI"} (the default) for u
 the name of the treatment variable in \code{data}. If unspecified, the first variable present in \code{formula} will be taken as the treatment variable with a message. See Details.
 }
   \item{base.weights}{
-a vector of base weights. See Details. If omitted and \code{obj} is specified, the weights from the supplied object will be used.
+a vector of base weights. See Details. If omitted and \code{obj} is specified, the weights from the supplied object will be used. Can be supplied as a numeric vector, a string containing the name of the variable in \code{data} containing the base weights, or the unquoted name of the variable in \code{data} containing the base weights.
 }
   \item{s.weights}{
-a vector of sampling weights. See Details. If omitted and \code{obj} is specified, the sampling weights from the supplied object will be used.
+a vector of sampling weights. See Details. If omitted and \code{obj} is specified, the sampling weights from the supplied object will be used. Can be supplied as a numeric vector, a string containing the name of the variable in \code{data} containing the sampling weights, or the unquoted name of the variable in \code{data} containing the sampling weights.
 }
   \item{dr.method}{
-the method used to incorporate the \code{base.weights} into a doubly-robust estimator. Can be one of \code{"WLS"} for weighted least squares or \code{"AIPW"} for augmented inverse probability weighting. Only \code{"WLS"} is allowed with \code{method = "URI"}. Ignored when \code{base.weights} is \code{NULL}. Currently, only \code{"WLS"} is available.
+the method used to incorporate the \code{base.weights} into a doubly-robust estimator. Can be one of \code{"WLS"} for weighted least squares or \code{"AIPW"} for augmented inverse probability weighting. Ignored when \code{base.weights} is \code{NULL}.
 }
   \item{obj}{
 a \code{matchit} or \code{weightit} object corresponding to the matched or weighted sample in which the implied outcome regression would take place. See Details.
 }
   \item{fixef}{
-optional; a factor variable containing the fixed effects. Can be supplied either as a string or unquoted name of the variable in \code{data} or as the fixed effects variable itself. See Details.
+optional; a string or one-sided formula containing the name of the fixed effects variable in \code{data}. See Details. Cannot be used with \code{dr.method = "AIPW"}.
 }
   \item{target}{
 a list or data frame containing the target values for each covariate included in \code{formula}. Ignored with a warning when \code{estimand} is not \code{"CATE"}. See Details.
@@ -59,11 +59,11 @@ the level of the treatment variable to be considered "focal" (i.e., the "treated
 }
 }
 \details{
-\code{formula} is interpreted differently depending on whether \code{method} is \code{"URI"} or \code{"MRI"}. When \code{method = "URI"}, the formula is taken literally as the right-hand side of the outcome model formula. The only difference is that the covariates will be centered based on the argument to \code{estimand} (see below). When \code{method = "MRI"}, all references to the treatment are removed (i.e., covariate interactions with treatment become covariate main effects if not already present), and the new formula is taken as the right-hand side of the model formula fit within each treatment group. This is equivalent to allowing all covariates to have both main effects and interactions with treatment after centering the covariates based on the argument to \code{estimand}. Allowing the treatment to interact with all covariates with \code{method = "URI"} is equivalent to specifying \code{method = "MRI"}, and, for binary treatments, the returned weights will be the same.
+\code{formula} is interpreted differently depending on whether \code{method} is \code{"URI"} or \code{"MRI"}. When \code{method = "URI"}, the formula is taken literally as the right-hand side of the outcome model formula. The only difference is that the covariates will be centered based on the argument to \code{estimand} (see below). When \code{method = "MRI"}, all references to the treatment are removed (i.e., covariate interactions with treatment become covariate main effects if not already present), and the new formula is taken as the right-hand side of the model formula fit within each treatment group. This is equivalent to allowing all covariates to have both main effects and interactions with treatment after centering the covariates based on the argument to \code{estimand}. Allowing the treatment to interact with all covariates with \code{method = "URI"} is equivalent to specifying \code{method = "MRI"}, and, for binary treatments, the returned weights will be the same when \code{fixef = NULL}.
 
 When any treatment-by-covariate interactions are present in \code{formula} or when \code{method = "MRI"}, covariates are centered at specific values to ensure the resulting weights correspond to the desired estimand as supplied to the \code{estimand} argument. For the ATE, the covariates are centered at their means in the full sample. For the ATT and ATC, the covariates are centered at their means in the treatment or control group (i.e., the \code{focal} group), respectively. For the CATE, the covariates are centered according to the argument supplied to \code{target} (see below). Note that when covariate-by-covariate interactions are present, they will be centered after computing the interaction rather than the interaction being computed on the centered covariates unless \code{estimand = "CATE"}, in which case the covariates will be centered at the values specified in \code{target} prior to involvement in interactions.
 
-\subsection{Estimating the CATE}{
+\subsection{Estimating a CATE}{
 
 When \code{estimand = "CATE"}, \code{target} can be supplied either as a single target profile (i.e., a list or a data frame with one row) or as a target dataset, potentially with its own sampling weights, which are supplied to \code{target.weights}. The variables included in \code{target} must correspond to all the named \emph{covariates} in \code{formula}; for example, if \code{formula = ~ X1 + log(X1) + X2 + X1:X2}, values in \code{target} must be given for \code{X1} and \code{X2}, but not \code{log(X1)} or \code{X1:X2}. To choose a target profile value for a factor corresponding to a proportion (e.g., a target value of .5 for a variable like \code{sex} indicating a target population with a 50-50 sex split), the factor variable must be split into a numeric variable beforehand, e.g., using \code{\link{model.matrix}} or \code{cobalt::splitfactor()}. \code{target} values cannot be given to variables specified using \code{$}, \code{[[]]}, or \code{[]} (e.g., \code{data$X1}), so an error will be thrown if they are used in \code{formula}. When a target dataset is supplied, covariates will be centered at their means in the (\code{target.weights}-weighted) target dataset.
 }
@@ -172,7 +172,8 @@ summary(lmw.out4)
 #URI regression with fixed effects for 'race'
 lmw.out5 <- lmw(~ treat + age + educ + married +
                   nodegree + re74 + re75, data = lalonde,
-                method = "URI", fixef = race)
+                method = "URI", treat = "treat",
+                fixef = ~race)
 lmw.out5
 
 #Produces the same weights as when included as a covariate

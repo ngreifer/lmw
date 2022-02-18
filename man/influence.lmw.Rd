@@ -6,23 +6,21 @@
 Regression Diagnostics for \code{lmw} and \code{lmw_est} objects
 }
 \description{
-\code{influence()} produces influence measures for \code{lmw} and \code{lmw_est} object that can be used as regression diagnostics to identify influential cases. These functions produce similar outputs to \code{\link{lm.influence}} but also include the sample influence curve (SIC) values, which combine information about the hat values, residuals, and implied regression weights.
+\code{influence()} produces influence measures for \code{lmw} objects that can be used as regression diagnostics to identify influential cases. These functions produce similar outputs to \code{\link{lm.influence}} but also include the sample influence curve (SIC) values, which combine information about the hat values, residuals, and implied regression weights.
 }
 \usage{
 \method{influence}{lmw}(model, outcome, data = NULL, ...)
-
-\method{influence}{lmw_est}(model, ...)
 }
 
 \arguments{
   \item{model}{
-an \code{lmw} or \code{lmw_est} object; the output of a call to \code{\link{lmw}} or \code{\link{lmw_est}}
+an \code{lmw} object; the output of a call to \code{\link{lmw}}.
 }
   \item{outcome}{
-for \code{lmw} objects, the name of the outcome variable. Can be supplied as a string containing the name of the outcome variable or as the outcome variable itself. If not supplied, the outcome variable in the \code{formula} supplied to \code{lmw()}, if any, will be used. Ignored for \code{lmw_est} objects.
+the name of the outcome variable. Can be supplied as a string containing the name of the outcome variable or as the outcome variable itself. If not supplied, the outcome variable in the \code{formula} supplied to \code{lmw()}, if any, will be used.
 }
   \item{data}{
-an optional data frame containing the outcome variable named in \code{outcome}. Ignored for \code{lmw_est} objects.
+an optional data frame containing the outcome variable named in \code{outcome}.
 }
   \item{\dots}{
 ignored.

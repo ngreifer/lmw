@@ -1,6 +1,6 @@
 #Compute weights from formula
 lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = NULL, iv, base.weights = NULL,
-                s.weights = NULL, obj = NULL, target = NULL, target.weights = NULL, contrast = NULL, focal = NULL) {
+                s.weights = NULL, obj = NULL, fixef = NULL, target = NULL, target.weights = NULL, contrast = NULL, focal = NULL) {
   call <- match.call()
 
   if (missing(iv)) {
@@ -13,14 +13,18 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
 
   data <- process_data(data, obj)
 
-  base.weights <- process_base.weights(base.weights, obj)
+  base.weights <- do.call("process_base.weights", list(substitute(base.weights), data, obj))
 
-  s.weights <- process_s.weights(s.weights, obj)
+  s.weights <- do.call("process_s.weights", list(substitute(s.weights), data, obj))
 
   treat_name <- process_treat_name(treat, formula, data, method, obj)
 
+  fixef <- process_fixef(fixef, formula, data, treat_name)
+
   #treat changes meaning from treatment name to treatment vector
   treat <- process_treat(treat_name, data, multi.ok = FALSE)
+
+  check_lengths(treat, data, s.weights, base.weights, fixef)
 
   contrast <- process_contrast(contrast, treat, method)
 
@@ -35,7 +39,8 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
                                            method, estimand, target, s.weights,
                                            target.weights, focal)
 
-  weights <- get_w_from_X_iv(X_obj$X, X_obj$A, treat_contrast, method, base.weights, s.weights)
+  weights <- get_w_from_X_iv(X_obj$X, X_obj$A, treat_contrast, method, base.weights, s.weights,
+                             fixef)
 
   out <- list(treat = treat,
               weights = weights,
@@ -45,6 +50,7 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
               base.weights = base.weights,
               s.weights = s.weights,
               call = call,
+              fixef = fixef,
               formula = formula,
               iv = iv,
               target = attr(X_obj$target, "target_original"),
@@ -75,5 +81,9 @@ print.lmw_iv <- function(x, ...) {
     cat(sprintf(" - covariates: %s\n",
                 if (length(names(x$covs)) > 30) paste(c(names(x$covs)[1:30], sprintf("and %s more", ncol(x$covs) - 30)), collapse = ", ")
                 else paste(names(x$covs), collapse = ", ")))
+  }
+  if (!is.null(x$fixef)) {
+    cat(sprintf(" - fixed effect: %s\n",
+                attr(x$fixef, "fixef_name")))
   }
 }
