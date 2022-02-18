@@ -1,0 +1,1227 @@
+---
+title: "Benchmarking lmw"
+author: "Noah Greifer"
+date: '2022-02-08'
+output: 
+    html_document:
+        toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Here we benchmark `lmw` to results from other procedures and packages to ensure `lmw` is working as expected.
+
+```{r}
+library(lmw)
+data("lalonde")
+lalonde$treatf <- factor(lalonde$treat) #factor version of treat for marginaleffects()
+lalonde$sw <- runif(nrow(lalonde)) #sampling weights
+
+library(lmtest); library(sandwich);
+library(marginaleffects); library(estimatr)
+library(fixest)
+```
+
+# No Weights
+
+### URI, binary treatment
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde)
+
+coeftest(f, vcov. = vcovHC)["treat",,drop = FALSE]
+```
+
+### MRI, binary treatment, ATE
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat",
+         estimand = "ATE")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### marginaleffects() output
+f <- lm(re78 ~ treatf * (age + educ + race + married + re74 + re75),
+         data = lalonde)
+
+summary(marginaleffects(f, var = "treatf", vcov = vcovHC(f)))
+
+### estimatr output
+fl <- estimatr::lm_lin(re78 ~ treat,
+                       ~ age + educ + race + married + re74 + re75,
+                       data = lalonde, se_type = "HC3")
+summary(fl)$coefficients["treat",,drop=FALSE]
+```
+
+### MRI, binary treatment, ATT
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat",
+         estimand = "ATT")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### marginaleffects() output
+f <- lm(re78 ~ treatf * (age + educ + race + married + re74 + re75),
+         data = lalonde)
+
+summary(marginaleffects(f, var = "treatf", vcov = vcovHC(f), 
+                        newdata = subset(lalonde, treat == 1)))
+```
+
+### URI, binary treatment, fixed effects
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat",
+         fixef = ~race)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ treat + age + educ + married + re74 + re75 + race,
+         data = lalonde)
+
+coeftest(f, vcov. = vcovHC)["treat",,drop = FALSE]
+
+### lm_robust() output
+fl <- estimatr::lm_robust(re78 ~ treat + age + educ + married + re74 + re75,
+                          data = lalonde, fixed_effects = ~race,
+                          se_type = "HC3")
+coeftest(fl)["treat",,drop = FALSE]
+```
+
+### MRI, binary treatment, ATE, fixed effects
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat",
+         fixef = ~race)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### URI + covariate version
+l2 <- lmw(re78 ~ treat * (age + educ + married + re74 + re75) + race,
+         data = lalonde, method = "URI", treat = "treat")
+weighted.mean(lalonde$re78[lalonde$treat == 1], l2$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l2$weights[lalonde$treat==0])
+summary(lmw_est(l2))
+
+### lm() output
+f <- lm(re78 ~ treatf * (age + educ + married + re74 + re75) + race,
+         data = lalonde)
+
+summary(marginaleffects(f, var = "treatf", vcov = vcovHC(f), 
+                data = lalonde))
+```
+
+### URI, binary treatment, 2SLS (mutliple IVs)
+
+```{r}
+l <- lmw_iv(re78 ~ treat + age + educ + married + re74 + re75,
+            data = lalonde, treat = "treat",
+            iv = ~nodegree + race)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l, robust = "HC1"))
+
+### feols() output
+f <- feols(re78 ~ age + educ + married + re74 + re75 | treat ~ nodegree + race,
+           data = lalonde, vcov = "HC1")
+coeftest(f)["fit_treat",,drop=F]
+
+### iv_robust()
+fl <- estimatr::iv_robust(re78 ~ treat + age + educ + married + re74 + re75 | 
+                            nodegree + race + age + educ + married + re74 + re75,
+                          data = lalonde, se_type = "HC1")
+coeftest(fl)["treat",,drop=F]
+```
+
+### URI, binary treatment, 2SLS, fixed effects, CR SEs
+
+```{r}
+l <- lmw_iv(re78 ~ treat + age + educ + married + re74 + re75,
+            data = lalonde, treat = "treat",
+            iv = ~nodegree, fixef = ~race)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l, robust = "HC1", cluster = ~race))
+
+### feols() output
+f <- feols(re78 ~ age + educ + married + re74 + re75 + race | treat ~ nodegree,
+           data = lalonde, cluster = ~race)
+coeftest(f)["fit_treat",,drop=F]
+
+### iv_robust()
+fl <- estimatr::iv_robust(re78 ~ treat + age + educ + married + re74 + re75 | 
+                            nodegree + race + age + educ + married + re74 + re75,
+                          data = lalonde, fixed_effects = ~race,
+                          se_type = "stata", cluster = race)
+coeftest(fl)["treat",,drop=F]
+
+#Note: SEs agree for cluster HC1 (aka iv_robust() "stata" and feols() "cluster") and 
+#      HC2 (aka iv_robust() "CR2") but not HC0 (aka iv_robust() "CR0"). feols() only
+#      has HC1. Full agreement with vcovCL() used on ivreg::ivreg().
+```
+
+### MRI, binary treatment, 2SLS (mutliple IVs)
+
+```{r}
+l <- lmw_iv(re78 ~ treat + age + educ,
+            data = lalonde, treat = "treat", method = "MRI",
+            iv = ~nodegree + race)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l, robust = "HC1"))
+
+### iv_robust()
+fl <- estimatr::iv_robust(re78 ~ treat * (scale(age, s=F) + scale(educ, s=F)) | 
+                            (nodegree + race) * (scale(age, s=F) + scale(educ, s=F)),
+                          data = lalonde, se_type = "HC1")
+coeftest(fl)["treat",,drop=F]
+```
+
+### URI Regression, multi-category treatment
+
+```{r}
+l <- lmw(re78 ~ race + age + educ + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "race",
+         contrast = c("hispan", "white"))
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "hispan"], l$weights[lalonde$race == "hispan"]) -
+  weighted.mean(lalonde$re78[lalonde$race != "hispan"], l$weights[lalonde$race != "hispan"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ relevel(race, "white") + age + educ + married + re74 + re75,
+         data = lalonde)
+
+coeftest(f, vcov. = vcovHC)[3,,drop=FALSE]
+```
+
+### MRI Regression, multi-category treatment, ATE
+
+```{r}
+l <- lmw(re78 ~ race + age + educ + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "race",
+         estimand = "ATE")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "black"], l$weights[lalonde$race=="black"]) -
+  weighted.mean(lalonde$re78[lalonde$race == "white"], l$weights[lalonde$race=="white"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### marginaleffects() output
+f <- lm(re78 ~ race * (age + educ + married + re74 + re75),
+         data = lalonde)
+
+summary(marginaleffects(f, var = "race", vcov = vcovHC(f)))
+
+### estimatr output
+fl <- estimatr::lm_lin(re78 ~ race,
+                       ~ age + educ + married + re74 + re75,
+                       data = lalonde, se_type = "HC3")
+summary(fl)$coefficients[1:3,]
+```
+
+### MRI Regression, multi-category treatment, ATT
+
+```{r}
+l <- lmw(re78 ~ race + age + educ + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "race",
+         estimand = "ATT", focal = "black")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "hispan"], l$weights[lalonde$race=="hispan"]) -
+  weighted.mean(lalonde$re78[lalonde$race == "black"], l$weights[lalonde$race=="black"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### marginaleffects() output
+f <- lm(re78 ~ race * (age + educ + married + re74 + re75),
+         data = lalonde)
+
+summary(marginaleffects(f, var = "race", vcov = vcovHC(f),
+                        newdata = subset(lalonde, race == "black")))
+```
+
+### URI Regression, multi-category treatment, fixed effects
+
+```{r}
+l <- lmw(re78 ~ race + age + educ + re74 + re75,
+         data = lalonde, method = "URI", treat = "race",
+         contrast = c("hispan", "white"), fixef = ~married)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "hispan"], l$weights[lalonde$race == "hispan"]) -
+  weighted.mean(lalonde$re78[lalonde$race != "hispan"], l$weights[lalonde$race != "hispan"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ relevel(race, "white") + age + educ + married + re74 + re75,
+         data = lalonde)
+
+coeftest(f, vcov. = vcovHC)[3,,drop=FALSE]
+
+### estimatr output
+fl <- estimatr::lm_robust(re78 ~ relevel(race, "white") + age + educ + re74 + re75,
+                          data = lalonde, fixed_effects = ~married,
+                          se_type = "HC3")
+coeftest(fl)[2,,drop = FALSE]
+```
+
+
+# Sampling Weights
+
+```{r}
+lalonde$sw <- runif(nrow(lalonde))
+```
+
+### URI, binary treatment
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat",
+         s.weights = sw)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, weights = sw)
+
+coeftest(f, vcov. = vcovHC)["treat",,drop = FALSE]
+```
+
+### MRI, binary treatment, ATE
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat",
+         estimand = "ATE", s.weights = sw)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### estimatr output
+fl <- estimatr::lm_lin(re78 ~ treat,
+                       ~ age + educ + race + married + re74 + re75,
+                       data = lalonde, se_type = "HC3",
+                       weights = sw)
+summary(fl)$coefficients["treat",,drop=FALSE]
+```
+
+### URI, binary treatment, fixed effects
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat",
+         fixef = ~race, s.weights = sw)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ treat + age + educ + married + re74 + re75 + race,
+         data = lalonde, weights = sw)
+
+coeftest(f, vcov. = vcovHC)["treat",,drop = FALSE]
+
+### lm_robust() output
+fl <- estimatr::lm_robust(re78 ~ treat + age + educ + married + re74 + re75,
+                          data = lalonde, fixed_effects = ~race,
+                          se_type = "HC3", weights = sw)
+coeftest(fl)["treat",,drop = FALSE]
+```
+
+### MRI, binary treatment, ATE, fixed effects
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat",
+         fixef = ~race, s.weights = sw)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### URI + covariate version
+l2 <- lmw(re78 ~ treat * (age + educ + married + re74 + re75) + race,
+         data = lalonde, method = "URI", treat = "treat", s.weights = sw)
+weighted.mean(lalonde$re78[lalonde$treat == 1], l2$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l2$weights[lalonde$treat==0])
+summary(lmw_est(l2))$coef
+```
+
+### URI, binary treatment, 2SLS (mutliple IVs)
+
+```{r}
+l <- lmw_iv(re78 ~ treat + age + educ + married + re74 + re75,
+            data = lalonde, treat = "treat",
+            iv = ~nodegree + race, s.weights = sw)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l, robust = "HC1"))$coef
+
+### feols() output
+f <- feols(re78 ~ age + educ + married + re74 + re75 | treat ~ nodegree + race,
+           data = lalonde, vcov = "HC1", weights = ~sw)
+coeftest(f)["fit_treat",,drop=F]
+
+### iv_robust()
+fl <- estimatr::iv_robust(re78 ~ treat + age + educ + married + re74 + re75 | 
+                            nodegree + race + age + educ + married + re74 + re75,
+                          data = lalonde, se_type = "HC1", weights = sw)
+coeftest(fl)["treat",,drop=F]
+```
+
+### URI, binary treatment, 2SLS, fixed effects, CR SEs
+
+```{r}
+l <- lmw_iv(re78 ~ treat + age + educ + married + re74 + re75,
+            data = lalonde, treat = "treat",
+            iv = ~nodegree, fixef = ~race, s.weights = sw)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l, robust = "HC1", cluster = ~race))$coef
+
+### feols() output
+f <- feols(re78 ~ age + educ + married + re74 + re75 + race | treat ~ nodegree,
+           data = lalonde, cluster = ~race, weights= ~sw)
+coeftest(f)["fit_treat",,drop=F]
+
+### iv_robust()
+fl <- estimatr::iv_robust(re78 ~ treat + age + educ + married + re74 + re75 | 
+                            nodegree + race + age + educ + married + re74 + re75,
+                          data = lalonde, fixed_effects = ~race,
+                          se_type = "stata", cluster = race, weights = sw)
+coeftest(fl)["treat",,drop=F]
+
+#Note: SEs agree for cluster HC1 (aka iv_robust() "stata" and feols() "cluster") and 
+#      HC2 (aka iv_robust() "CR2") but not HC0 (aka iv_robust() "CR0"). feols() only
+#      has HC1. Full agreement with vcovCL() used on ivreg::ivreg().
+```
+
+### MRI, binary treatment, 2SLS (mutliple IVs)
+
+```{r}
+l <- lmw_iv(re78 ~ treat + age + educ,
+            data = lalonde, treat = "treat", method = "MRI",
+            iv = ~nodegree, s.weights = sw)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l, robust = "HC1"))$coef
+
+### iv_robust()
+age_c_sw <- lalonde$age - weighted.mean(lalonde$age, lalonde$sw)
+educ_c_sw <- lalonde$educ - weighted.mean(lalonde$educ, lalonde$sw)
+fl <- estimatr::iv_robust(re78 ~ treat * (age_c_sw + educ_c_sw) | 
+                            nodegree * (age_c_sw + educ_c_sw),
+                          data = lalonde, se_type = "HC1", weights = sw)
+coeftest(fl)["treat",,drop=F]
+```
+
+### URI Regression, multi-category treatment
+
+```{r}
+l <- lmw(re78 ~ race + age + educ + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "race",
+         contrast = c("hispan", "white"), s.weights = sw)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "hispan"], l$weights[lalonde$race == "hispan"]) -
+  weighted.mean(lalonde$re78[lalonde$race != "hispan"], l$weights[lalonde$race != "hispan"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ relevel(race, "white") + age + educ + married + re74 + re75,
+         data = lalonde, weights = sw)
+
+coeftest(f, vcov. = vcovHC)[3,,drop=FALSE]
+```
+
+### MRI Regression, multi-category treatment, ATE
+
+```{r}
+l <- lmw(re78 ~ race + age + educ + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "race",
+         estimand = "ATE", s.weights = sw)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "white"], l$weights[lalonde$race=="white"]) -
+  weighted.mean(lalonde$re78[lalonde$race == "black"], l$weights[lalonde$race=="black"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### estimatr output
+fl <- estimatr::lm_lin(re78 ~ race,
+                       ~ age + educ + married + re74 + re75,
+                       data = lalonde, se_type = "HC3", weights = sw)
+summary(fl)$coefficients[1:3,]
+```
+
+### URI Regression, multi-category treatment, fixed effects
+
+```{r}
+l <- lmw(re78 ~ race + age + educ + re74 + re75,
+         data = lalonde, method = "URI", treat = "race",
+         contrast = c("hispan", "white"), fixef = ~married,
+         s.weights = sw)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "hispan"], l$weights[lalonde$race == "hispan"]) -
+  weighted.mean(lalonde$re78[lalonde$race != "hispan"], l$weights[lalonde$race != "hispan"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ relevel(race, "white") + age + educ + married + re74 + re75,
+         data = lalonde, weights = sw)
+
+coeftest(f, vcov. = vcovHC)[3,,drop=FALSE]
+
+### estimatr output
+fl <- estimatr::lm_robust(re78 ~ relevel(race, "white") + age + educ + re74 + re75,
+                          data = lalonde, fixed_effects = ~married,
+                          se_type = "HC3", weights = sw)
+coeftest(fl)[2,,drop = FALSE]
+```
+
+
+# Base Weights from MatchIt
+
+```{r}
+library(MatchIt)
+M <- matchit(treat ~ age + educ + race + married + re74 + re75, data = lalonde,
+             method = "nearest", estimand = "ATT")
+md <- match.data(M, data = lalonde)
+```
+
+### URI, binary treatment
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat",
+         base.weights = M$weights)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = md, weights = weights)
+
+coeftest(f, vcov. = vcovHC)["treat",,drop = FALSE]
+```
+
+### MRI, binary treatment, ATT
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat",
+         estimand = "ATT", base.weights = M$weights)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### marginaleffects() output
+f <- lm(re78 ~ treatf * (age + educ + race + married + re74 + re75),
+         data = md, weights = weights)
+
+summary(marginaleffects(f, var = "treatf", vcov = vcovHC(f),
+                        newdata = subset(md, treat == 1)))
+```
+
+### URI, binary treatment, fixed effects
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat",
+         fixef = ~race, base.weights = M$weights)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ treat + age + educ + married + re74 + re75 + race,
+         data = md, weights = weights)
+
+coeftest(f, vcov. = vcovHC)["treat",,drop = FALSE]
+
+### lm_robust() output
+fl <- estimatr::lm_robust(re78 ~ treat + age + educ + married + re74 + re75,
+                          data = md, fixed_effects = ~race,
+                          se_type = "HC3", weights = weights)
+coeftest(fl)["treat",,drop = FALSE]
+```
+
+### MRI, binary treatment, ATT, fixed effects
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat",
+         fixef = ~race, estimand = "ATT", base.weights = M$weights)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### URI + covariate version
+l2 <- lmw(re78 ~ treat * (age + educ + married + re74 + re75) + race,
+         data = lalonde, method = "URI", treat = "treat",
+         estimand = "ATT", base.weights = M$weights)
+weighted.mean(lalonde$re78[lalonde$treat == 1], l2$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l2$weights[lalonde$treat==0])
+summary(lmw_est(l2))$coef
+
+### lm() output
+f <- lm(re78 ~ treatf * (age + educ + married + re74 + re75) + race,
+         data = md, weights = weights)
+
+summary(marginaleffects(f, var = "treatf", vcov = vcovHC(f), 
+                newdata = subset(md, treat == 1)))
+```
+
+### URI, binary treatment, 2SLS (mutliple IVs)
+
+```{r}
+l <- lmw_iv(re78 ~ treat + age + educ + married + re74 + re75,
+            data = lalonde, treat = "treat",
+            iv = ~nodegree + race, base.weights = M$weights)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l, robust = "HC1"))$coef
+
+### feols() output
+f <- feols(re78 ~ age + educ + married + re74 + re75 | treat ~ nodegree + race,
+           data = md, vcov = "HC1", weights = ~weights)
+coeftest(f)["fit_treat",,drop=F]
+
+### iv_robust()
+fl <- estimatr::iv_robust(re78 ~ treat + age + educ + married + re74 + re75 | 
+                            nodegree + race + age + educ + married + re74 + re75,
+                          data = md, se_type = "HC1", weights = weights)
+coeftest(fl)["treat",,drop=F]
+```
+
+### URI, binary treatment, 2SLS, fixed effects, CR SEs
+
+```{r}
+l <- lmw_iv(re78 ~ treat + age + educ + married + re74 + re75,
+            data = lalonde, treat = "treat",
+            iv = ~nodegree, fixef = ~race, base.weights = M$weights)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l, robust = "HC1", cluster = ~race))$coef
+
+### feols() output
+f <- feols(re78 ~ age + educ + married + re74 + re75 + race | treat ~ nodegree,
+           data = md, cluster = ~race, weights = ~weights)
+coeftest(f)["fit_treat",,drop=F]
+
+### iv_robust()
+fl <- estimatr::iv_robust(re78 ~ treat + age + educ + married + re74 + re75 | 
+                            nodegree + race + age + educ + married + re74 + re75,
+                          data = md, fixed_effects = ~race,
+                          se_type = "stata", cluster = race, weights = weights)
+coeftest(fl)["treat",,drop=F]
+
+#Note: SEs agree for cluster HC1 (aka iv_robust() "stata" and feols() "cluster") and 
+#      HC2 (aka iv_robust() "CR2") but not HC0 (aka iv_robust() "CR0"). feols() only
+#      has HC1. Full agreement with vcovCL() used on ivreg::ivreg().
+```
+
+# Base Weights from WeightIt
+
+```{r}
+library(WeightIt)
+#Binary treatment, ATE
+W_ate <- weightit(treat ~ age + educ + race + married + re74 + re75, data = lalonde,
+              method = "ps", estimand = "ATE")
+#Binary treatment, ATT
+W_att <- weightit(treat ~ age + educ + race + married + re74 + re75, data = lalonde,
+              method = "ps", estimand = "ATT")
+
+#Multi-category treatment, ATE
+#install.packages("mclogit")
+W3 <- weightit(race ~ age + educ + married + re74 + re75, data = lalonde,
+              method = "ps", estimand = "ATE", use.mclogit = TRUE, 
+              include.obj = TRUE)
+```
+
+### URI, binary treatment
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat", obj = W_ate)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, weights = W_ate$weights)
+
+coeftest(f, vcov. = vcovHC)["treat",,drop = FALSE]
+```
+
+### MRI, binary treatment, ATE
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat", obj = W_ate)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### marginaleffects() output
+f <- lm(re78 ~ treatf * (age + educ + race + married + re74 + re75),
+         data = lalonde, weights = W_ate$weights)
+
+summary(marginaleffects(f, var = "treatf", vcov = vcovHC(f)))
+```
+
+### URI, binary treatment, fixed effects
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat",
+         fixef = ~race, obj = W_ate)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ treat + age + educ + married + re74 + re75 + race,
+         data = lalonde, weights = W_ate$weights)
+
+coeftest(f, vcov. = vcovHC)["treat",,drop = FALSE]
+
+### lm_robust() output
+fl <- estimatr::lm_robust(re78 ~ treat + age + educ + married + re74 + re75,
+                          data = lalonde, fixed_effects = ~race,
+                          se_type = "HC3", weights = W_ate$weights)
+coeftest(fl)["treat",,drop = FALSE]
+```
+
+### MRI, binary treatment, ATE, fixed effects
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat",
+         fixef = ~race, obj = W_ate)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### URI + covariate version
+l2 <- lmw(re78 ~ treat * (age + educ + married + re74 + re75) + race,
+         data = lalonde, method = "URI", treat = "treat", obj = W_ate)
+weighted.mean(lalonde$re78[lalonde$treat == 1], l2$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l2$weights[lalonde$treat==0])
+summary(lmw_est(l2))$coef
+
+### lm() output
+f <- lm(re78 ~ treatf * (age + educ + married + re74 + re75) + race,
+         data = lalonde, weights = W_ate$weights)
+
+summary(marginaleffects(f, var = "treatf", vcov = vcovHC(f)))
+```
+
+### URI, binary treatment, 2SLS (mutliple IVs)
+
+```{r}
+l <- lmw_iv(re78 ~ treat + age + educ + married + re74 + re75,
+            data = lalonde, treat = "treat",
+            iv = ~nodegree + race, obj = W_ate)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l, robust = "HC1"))$coef
+
+### feols() output
+f <- feols(re78 ~ age + educ + married + re74 + re75 | treat ~ nodegree + race,
+           data = lalonde, vcov = "HC1", weights = W_ate$weights)
+coeftest(f)["fit_treat",,drop=F]
+
+### iv_robust()
+fl <- estimatr::iv_robust(re78 ~ treat + age + educ + married + re74 + re75 | 
+                            nodegree + race + age + educ + married + re74 + re75,
+                          data = lalonde, se_type = "HC1", weights = W_ate$weights)
+coeftest(fl)["treat",,drop=F]
+```
+
+### MRI, binary treatment, ATE, AIPW
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat", obj = W_ate,
+         dr.method = "AIPW")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### PSweight() output
+P <- PSweight::PSweight(ps.estimate = W_ate$ps, zname = "treat", yname = "re78",
+                        data = lalonde, weight = "IPW", augmentation = TRUE,
+                        out.formula = re78 ~ age + educ + race + married + re74 + re75)
+
+summary(P)
+```
+
+### MRI, binary treatment, ATT, AIPW
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat", obj = W_att,
+         dr.method = "AIPW")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### PSweight() output
+P <- PSweight::PSweight(ps.estimate = W_att$ps, zname = "treat", yname = "re78",
+                        data = lalonde, weight = "treated", augmentation = TRUE,
+                        out.formula = re78 ~ age + educ + race + married + re74 + re75)
+
+summary(P)
+
+#Note: SEs don't agree for ATT; PSweight's will be a little smaller. See lmw_est.lmw_aipw
+#for details. PSweight's are more trustworthy because they use a more accurate formula
+#that involves the propensity score (but it requires a propensity score!). Some 
+#evidence that analytical SEs perform poorly with incorrect outcome model anyway;
+#Mao, LI, & Greene (2018, SMMR)
+```
+
+
+### URI, binary treatment, ATE, AIPW
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat", obj = W_ate,
+         dr.method = "AIPW")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### PSweight() output
+fit <- lm(re78 ~ treat + age + educ + race + married + re74 + re75,
+          data = lalonde)
+ll0 <- lalonde; ll0$treat <- 0
+ll1 <- lalonde; ll1$treat <- 1
+
+y0 <- predict(fit, newdata = ll0)
+y1 <- predict(fit, newdata = ll1)
+
+P <- PSweight::PSweight(ps.estimate = W_ate$ps, zname = "treat", yname = "re78",
+                        data = lalonde, weight = "IPW", augmentation = TRUE,
+                        out.estimate = cbind(`0` = y0, `1` = y1))
+
+summary(P)
+
+#Note: PSweight SE doesn't incorporate estimation of outcome model
+#      because it only supports MRI natively. Point estimates are
+#      correct though.
+```
+
+
+### MRI, multi-category treatment, ATE, AIPW
+```{r}
+l <- lmw(re78 ~ race + age + educ + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "race", obj = W3,
+         dr.method = "AIPW")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "white"], l$weights[lalonde$race=="white"]) -
+  weighted.mean(lalonde$re78[lalonde$race == "black"], l$weights[lalonde$race=="black"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### PSweight() output
+ps_mat <- fitted(W3$obj); colnames(ps_mat) <- levels(lalonde$race)
+P <- PSweight::PSweight(ps.estimate = ps_mat, zname = "race", yname = "re78",
+                        data = lalonde, weight = "IPW", augmentation = TRUE,
+                        out.formula = re78 ~ age + educ + married + re74 + re75)
+
+summary(P)
+```
+
+### URI, multi-category treatment, ATE, AIPW
+```{r}
+l <- lmw(re78 ~ race + age + educ + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "race", obj = W3,
+         dr.method = "AIPW", contrast = c("white", "black"))
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "white"], l$weights[lalonde$race=="white"]) -
+  weighted.mean(lalonde$re78[lalonde$race != "white"], l$weights[lalonde$race!="white"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### PSweight() output
+ps_mat <- fitted(W3$obj); colnames(ps_mat) <- levels(lalonde$race)
+
+fit <- lm(re78 ~ race + age + educ + married + re74 + re75,
+          data = lalonde)
+llb <- lalonde; llb$race[] <- "black"
+llh <- lalonde; llh$race[] <- "hispan"
+llw <- lalonde; llw$race[] <- "white"
+
+yb <- predict(fit, newdata = llb)
+yh <- predict(fit, newdata = llh)
+yw <- predict(fit, newdata = llw)
+
+P <- PSweight::PSweight(ps.estimate = ps_mat, zname = "race", yname = "re78",
+                        data = lalonde, weight = "IPW", augmentation = TRUE,
+                         out.estimate = cbind(black = yb, hispan = yh, white = yw))
+
+summary(P)
+```
+
+# Sampling Weights + Base Weights from WeightIt
+
+```{r}
+library(WeightIt)
+#Binary treatment, ATE
+W_ate <- weightit(treat ~ age + educ + race + married + re74 + re75, data = lalonde,
+              method = "ps", estimand = "ATE", s.weights = lalonde$sw)
+#Binary treatment, ATT
+W_att <- weightit(treat ~ age + educ + race + married + re74 + re75, data = lalonde,
+              method = "ps", estimand = "ATT", s.weights = lalonde$sw)
+
+#Multi-category treatment, ATE
+#install.packages("mclogit")
+W3 <- weightit(race ~ age + educ + married + re74 + re75, data = lalonde,
+              method = "ps", estimand = "ATE", use.mclogit = TRUE, 
+              include.obj = TRUE, s.weights = lalonde$sw)
+```
+
+### URI, binary treatment
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat", obj = W_ate)
+#Note: sampling weights and base weights are both in W_ate
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, weights = W_ate$weights * lalonde$sw)
+
+coeftest(f, vcov. = vcovHC)["treat",,drop = FALSE]
+```
+
+### MRI, binary treatment, ATE
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat", obj = W_ate)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+# Note: not straightforward to compute marginal effects using another package;
+#       need to take weighted average of predicted values where weights are
+#       only the smapling weights, but model is fit using product of sampling
+#       and base weights. marginaleffects() cannot do this. One option is to
+#       center the covariates first at sampling-weighted means.
+```
+
+### URI, binary treatment, fixed effects
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat",
+         fixef = ~race, obj = W_ate)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### lm() output
+f <- lm(re78 ~ treat + age + educ + married + re74 + re75 + race,
+         data = lalonde, weights = W_ate$weights * lalonde$sw)
+
+coeftest(f, vcov. = vcovHC)["treat",,drop = FALSE]
+
+### lm_robust() output
+fl <- estimatr::lm_robust(re78 ~ treat + age + educ + married + re74 + re75,
+                          data = lalonde, fixed_effects = ~race,
+                          se_type = "HC3", weights = W_ate$weights * lalonde$sw)
+coeftest(fl)["treat",,drop = FALSE]
+```
+
+### MRI, binary treatment, ATE, fixed effects
+
+```{r}
+l <- lmw(re78 ~ treat + age + educ + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat",
+         fixef = ~race, obj = W_ate)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+
+### URI + covariate version
+l2 <- lmw(re78 ~ treat * (age + educ + married + re74 + re75) + race,
+         data = lalonde, method = "URI", treat = "treat", obj = W_ate)
+weighted.mean(lalonde$re78[lalonde$treat == 1], l2$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l2$weights[lalonde$treat==0])
+summary(lmw_est(l2))$coef
+```
+
+### URI, binary treatment, 2SLS (mutliple IVs)
+
+```{r}
+l <- lmw_iv(re78 ~ treat + age + educ + married + re74 + re75,
+            data = lalonde, treat = "treat",
+            iv = ~nodegree + race, obj = W_ate)
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l, robust = "HC1"))$coef
+
+### feols() output
+f <- feols(re78 ~ age + educ + married + re74 + re75 | treat ~ nodegree + race,
+           data = lalonde, vcov = "HC1", weights = W_ate$weights * lalonde$sw)
+coeftest(f)["fit_treat",,drop=F]
+
+### iv_robust()
+fl <- estimatr::iv_robust(re78 ~ treat + age + educ + married + re74 + re75 | 
+                            nodegree + race + age + educ + married + re74 + re75,
+                          data = lalonde, se_type = "HC1", 
+                          weights = W_ate$weights * lalonde$sw)
+coeftest(fl)["treat",,drop=F]
+```
+
+### MRI, binary treatment, ATE, AIPW
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat", obj = W_ate,
+         dr.method = "AIPW")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+```
+
+### MRI, binary treatment, ATT, AIPW
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "treat", obj = W_att,
+         dr.method = "AIPW")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+```
+
+
+### URI, binary treatment, ATE, AIPW
+```{r}
+l <- lmw(re78 ~ treat + age + educ + race + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "treat", obj = W_ate,
+         dr.method = "AIPW")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$treat == 1], l$weights[lalonde$treat==1]) -
+  weighted.mean(lalonde$re78[lalonde$treat == 0], l$weights[lalonde$treat==0])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+```
+
+
+### MRI, multi-category treatment, ATE, AIPW
+```{r}
+l <- lmw(re78 ~ race + age + educ + married + re74 + re75,
+         data = lalonde, method = "MRI", treat = "race", obj = W3,
+         dr.method = "AIPW")
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "white"], l$weights[lalonde$race=="white"]) -
+  weighted.mean(lalonde$re78[lalonde$race == "black"], l$weights[lalonde$race=="black"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+```
+
+### URI, multi-category treatment, ATE, AIPW
+```{r}
+l <- lmw(re78 ~ race + age + educ + married + re74 + re75,
+         data = lalonde, method = "URI", treat = "race", obj = W3,
+         dr.method = "AIPW", contrast = c("white", "black"))
+
+### Weighted difference in means
+weighted.mean(lalonde$re78[lalonde$race == "white"], l$weights[lalonde$race=="white"]) -
+  weighted.mean(lalonde$re78[lalonde$race != "white"], l$weights[lalonde$race!="white"])
+
+### lmw_est() output
+summary(lmw_est(l))$coef
+```
