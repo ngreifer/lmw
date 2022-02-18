@@ -15,7 +15,7 @@ We use the `lalonde` dataset from `MatchIt`, which must be installed (but doesn'
 
 ```{r}
 library(lmw)
-data("lalonde", package = "MatchIt")
+data("lalonde")
 ```
 
 ## A complete workflow for estimating the ATT
@@ -426,7 +426,5 @@ The results agree with `ivreg::ivreg()` when the correct standard error is used.
 Things to improve or fix:
 
 * URI regression for multi-category treatments; it works, but there are some inconsistencies with the weights because of how strange they are mathematically
-* AIPW estimation; the weights can be produced, but it is not straightforward to estimate the standard errors of the treatment effects.
-* Testing and evaluation; making sure results agree with other functions like `lm()`, `margins()`, and `ivreg()`
 * Datasets and example; using a strong example dataset to allow a wide variety of examples, including for multi-category treatments and 2SLS
 * Vignettes; vignettes for users

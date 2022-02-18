@@ -9,15 +9,13 @@
 
 ### Overview
 
-`lmw` provides diagnostic tools for the implied weights of linear
-regression for use in estimating treatment effects in observational
-studies under unconfoundedness. When a sufficient set of covariates have
-been measured to eliminate confounding, adjusting for them in a
-regression model for the outcome with the treatment and covariates as
-predictors can be an effective way to isolate the causal effect of the
-treatment. The treatment effect resulting from this model can be
-represented as a difference between the weighted outcome means in the
-treatment groups, similar to inverse probability weighting.
+`lmw` computes weights implied by a linear regression model used to
+estimate an average treatment effect and provides diagnostics that
+incorporate these weights as described in [Chattopadhyay & Zubizarreta
+(2021)](https://arxiv.org/abs/2104.06581). The treatment effect
+resulting from this model can be represented as a difference between the
+weighted outcome means in the treatment groups, similar to inverse
+probability weighting.
 
 The weights implied by the regression model have several interesting
 characteristics: they yield exact mean balance between the treatment
@@ -26,13 +24,20 @@ variance among all weights that do so, and they may be negative. Despite
 yielding exact mean balance between treatment groups, they may not yield
 balance between the treatment groups and the target population
 corresponding to the desired estimand; in addition, the negative weights
-they produce indicate extrapolation beyond the original covariate space.
+they produce indicate extrapolation beyond the support of the covariate.
 `lmw` provides tools to compute the implied weights and perform
-diagnostics to assess balance, extrapolation, and influence.
+diagnostics to assess balance, extrapolation, influence, and
+distributional properties of the weights. In addition, `lmw` provides
+tools to estimate average treatment effects from the specified models
+that correspond to selected target populations.
 
-Below is an example of the use of `lmw` to diagnose regression weights
-for estimating the average treatment effect on the treated (ATT) of a
-job training program on earnings using the Lalonde dataset.
+Below is an example of the use of `lmw` to obtain and evaluate
+regression weights for estimating the average treatment effect on the
+treated (ATT) of a job training program on earnings using the Lalonde
+dataset (see `help("lalonde", package = "lmw")` for details). Here, the
+treatment variable is `treat`, the outcome is `re78` (1978 earnings) and
+`age`, `educ`, `race`, `married`, `nodegree`, `re74`, and `re75` are
+pretreatment covariates.
 
 ``` r
 #Load lmw and the data
@@ -41,7 +46,7 @@ data("lalonde")
 
 #Estimate the weights
 lmw.out <- lmw(~ treat + age + educ + race + married + nodegree + re74 + re75,
-               data = lalonde, treat = "treat", estimand = "ATT", type = "URI")
+               data = lalonde, treat = "treat", estimand = "ATT", method = "URI")
 ```
 
 `lmw.out` contains the implied regression weights. We can see that the
@@ -79,32 +84,32 @@ target population (in the case, the treated sample)?
     #> 
     #> Call:
     #> lmw(formula = ~treat + age + educ + race + married + nodegree + 
-    #>     re74 + re75, data = lalonde, type = "URI", estimand = "ATT", 
+    #>     re74 + re75, data = lalonde, estimand = "ATT", method = "URI", 
     #>     treat = "treat")
     #> 
     #> Summary of Balance for Unweighted Data:
-    #>                SMD TSMD Control TSMD Treated     KS TKS Control TKS Treated
-    #> age        -0.3094       0.3094            0 0.1577      0.1577           0
-    #> educ        0.0550      -0.0550            0 0.1114      0.1114           0
-    #> raceblack   1.7615      -1.7615            0 0.6404      0.6404           0
-    #> racehispan -0.3498       0.3498            0 0.0827      0.0827           0
-    #> racewhite  -1.8819       1.8819            0 0.5577      0.5577           0
-    #> married    -0.8263       0.8263            0 0.3236      0.3236           0
-    #> nodegree    0.2450      -0.2450            0 0.1114      0.1114           0
-    #> re74       -0.7211       0.7211            0 0.4470      0.4470           0
-    #> re75       -0.2903       0.2903            0 0.2876      0.2876           0
+    #>               SMD TSMD Control TSMD Treated    KS TKS Control TKS Treated
+    #> age        -0.309        0.309            0 0.158       0.158           0
+    #> educ        0.055       -0.055            0 0.111       0.111           0
+    #> raceblack   1.762       -1.762            0 0.640       0.640           0
+    #> racehispan -0.350        0.350            0 0.083       0.083           0
+    #> racewhite  -1.882        1.882            0 0.558       0.558           0
+    #> married    -0.826        0.826            0 0.324       0.324           0
+    #> nodegree    0.245       -0.245            0 0.111       0.111           0
+    #> re74       -0.721        0.721            0 0.447       0.447           0
+    #> re75       -0.290        0.290            0 0.288       0.288           0
     #> 
     #> Summary of Balance for Weighted Data:
-    #>            SMD TSMD Control TSMD Treated     KS TKS Control TKS Treated
-    #> age         -0      -0.0262      -0.0262 0.2625      0.2547      0.0296
-    #> educ        -0       0.0054       0.0054 0.0447      0.0472      0.0395
-    #> raceblack   -0      -0.4280      -0.4280 0.0000      0.1556      0.1556
-    #> racehispan   0       0.2234       0.2234 0.0000      0.0528      0.0528
-    #> racewhite    0       0.3468       0.3468 0.0000      0.1028      0.1028
-    #> married     -0       0.0834       0.0834 0.0000      0.0326      0.0326
-    #> nodegree    -0      -0.0869      -0.0869 0.0000      0.0395      0.0395
-    #> re74         0       0.0610       0.0610 0.2568      0.2820      0.0360
-    #> re75        -0       0.0436       0.0436 0.1349      0.1661      0.0312
+    #>            SMD TSMD Control TSMD Treated    KS TKS Control TKS Treated
+    #> age          0       -0.026       -0.026 0.263       0.255       0.030
+    #> educ         0        0.005        0.005 0.045       0.047       0.039
+    #> raceblack    0       -0.428       -0.428 0.000       0.156       0.156
+    #> racehispan   0        0.223        0.223 0.000       0.053       0.053
+    #> racewhite    0        0.347        0.347 0.000       0.103       0.103
+    #> married      0        0.083        0.083 0.000       0.033       0.033
+    #> nodegree     0       -0.087       -0.087 0.000       0.039       0.039
+    #> re74         0        0.061        0.061 0.257       0.282       0.036
+    #> re75         0        0.044        0.044 0.135       0.166       0.031
     #> 
     #> Effective Sample Sizes:
     #>          Control Treated
@@ -117,7 +122,8 @@ all equal to zero because of the properties of the implied regression
 weights. However, the difference between each treatment group and target
 sample remain, as displayed in the `TSMD Treated` and `TSMD Control`
 columns, which contain the standardized mean differences between each
-treatment group and the target sample.
+treatment group and the target sample (which in this case is the treated
+group because the ATT was requested).
 
 We can summarize this balance table in a plot:
 
@@ -136,14 +142,21 @@ plot(lmw.out, type = "weights")
 
 <img src="man/figures/README-unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
-Negative weights are present in the control group. We can further
-examine extrapolation for specific covariates:
+Negative weights are present in the control group.
+
+We can further examine extrapolation for specific covariates:
 
 ``` r
 plot(lmw.out, type = "extrapolation", var = ~married + re75)
 ```
 
 <img src="man/figures/README-unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
+
+The × indicates the mean of the covariate in the target population (the
+treated group), and the vertical line indicates the mean of the
+covariate weighted by the implied regression weights. For these
+covariates, the implied regression weights yield a sample fairly
+representative of the target population.
 
 We can examine how influential individual points are using their sample
 influence curves, which are a function of their residuals, leverages,
@@ -155,8 +168,8 @@ plot(lmw.out, type = "influence", outcome = re78)
 
 <img src="man/figures/README-unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
 
-Finally, we can fit the outcome model and extract estimates of the mean
-potential outcomes and their difference:
+Finally, we can fit the outcome model and extract the average treatment
+effecy estimates:
 
 ``` r
 lmw.fit <- lmw_est(lmw.out, outcome = re78)
@@ -173,6 +186,8 @@ summary(lmw.fit)
     #> 
     #> Residual standard error: 6948 on 604 degrees of freedom
 
-`lmw` also interfaces with the `MatchIt` and `WeightIt` packages to
-implement these diagnostics for regression in a matched or weighted
-sample.
+In addition, `lmw` can be used with multi-category treatments, two-stage
+least squares estimation of instrumental variable models, and
+double-robust estimators by interfacing with the `MatchIt` and
+`WeightIt` packages to implement these diagnostics for regression in a
+matched or weighted sample.

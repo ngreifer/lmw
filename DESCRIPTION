@@ -5,17 +5,17 @@ Version: 0.0.0.9001
 Authors@R: c(
   person("Ambarish", "Chattopadhyay", email = "ambarish_chattopadhyay@g.harvard.edu", role = c("aut"),
          comment = c(ORCID = "0000-0002-1502-0974")),
-  person("Jose", "Zubizarreta", email = "zubizarreta@hcp.med.harvard.edu", role = c("aut"),
-         comment = c(ORCID = "0000-0002-0322-147X")),
   person("Noah", "Greifer", role = c("aut", "cre"), 
          email = "ngreifer@iq.harvard.edu",
-	       comment = c(ORCID="0000-0003-3067-7154"))
+	       comment = c(ORCID="0000-0003-3067-7154")),
+  person("Jose", "Zubizarreta", email = "zubizarreta@hcp.med.harvard.edu", role = c("aut"),
+         comment = c(ORCID = "0000-0002-0322-147X"))
   )
 Description: Computes the implied weights of linear regression models for estimating causal effects and provides diagnostics based
-             on these weights. These diagnostics rely on the finding presented in Chattopadhyay and Zubizarreta (2021) <http://arxiv.org/abs/2104.06581> that 
-             using outcome regression to estimate causal effects is equivalent to computing a weighted difference in outcome means, where
-             the weights have a particular formulation and interesting properties that make them comparable to inverse probability weights 
-             in form and function, but with greater potential for extrapolation in exchange for lower variance. 'lmw' provides tools
+             on these weights. These diagnostics rely on the findings presented in Chattopadhyay and Zubizarreta (2021) <http://arxiv.org/abs/2104.06581> that 
+             using outcome regression to estimate causal effects is equivalent to computing a difference in weighted outcome means, where
+             the weights have a particular formulation and properties that make them comparable to inverse probability weights 
+             in form and function, but with lower variance in exchange for increased potential for extrapolation. 'lmw' provides tools
              to diagnose representativeness, balance, extrapolation, and influence for these models, clarifying the target population
              of inference. Tools are also available to simplify estimating treatment effects for specific target populations of interest.
 License: GPL (>= 2)

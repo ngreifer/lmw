@@ -9,7 +9,7 @@ We use the `lalonde` dataset from `MatchIt`, which must be installed
 
 ``` r
 library(lmw)
-data("lalonde", package = "MatchIt")
+data("lalonde")
 ```
 
 ## A complete workflow for estimating the ATT
