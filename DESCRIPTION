@@ -1,7 +1,7 @@
 Package: lmw
 Type: Package
 Title: Linear Model Weights
-Version: 0.0.0.9001
+Version: 0.0.0.9002
 Authors@R: c(
   person("Ambarish", "Chattopadhyay", email = "ambarish_chattopadhyay@g.harvard.edu", role = c("aut"),
          comment = c(ORCID = "0000-0002-1502-0974")),
