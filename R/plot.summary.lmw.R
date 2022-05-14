@@ -123,7 +123,7 @@ plot.summary.lmw <- function(x, stats, abs = TRUE, var.order = "data", threshold
       }
     }
 
-    title(ylab = "Covariate", mgp = c(5.25, 0.5, 0), cex = .8)
+    # title(ylab = "Covariate", mgp = c(5.25, 0.5, 0), cex = .8)
 
     legend(x=maxx + .1*(maxx-minx),
            y=length(var.names)+0.65,
