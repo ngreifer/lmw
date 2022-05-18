@@ -186,7 +186,7 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
     if (length(unique(vj)) <= 2) vj <- vj + rnorm(length(vj), 0, .01)
 
     plot(x = vj,
-         y = .5 + 2*(as.numeric(t) - 1) + 1*(w >= 0) + rnorm(length(t), 0,.05),
+         y = .5 + 2*(length(tlevs) - as.numeric(t) + 0) + 1*(w >= 0) + rnorm(length(t), 0,.05),
          pch = 20,
          col = ifelse(w >= 0, adjustcolor("black", alpha.f = .4), adjustcolor("red", alpha.f = .5)),
          ylim = c(0, 2*length(tlevs)),
@@ -216,9 +216,11 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
                    else if (!is.null(x$target)) target_means[j]
                    else mean_w(vj, x$s.weights), length(tlevs)),
            y = -1 + 2*seq_along(tlevs), pch = 4, cex = 4, lwd = 0.5)
-    axis(2, at = -1 + 2*seq_along(tlevs),
+    axis(2, at = -1 + 2*rev(seq_along(tlevs)),
          labels = {
-           if (length(tlevs) == 2 && all(tlevs == c("0", "1"))) c("Control", "Treated")
+           if (length(tlevs) == 2 && all(tlevs %in% c("0", "1"))) {
+             c("0" = "Control", "1" = "Treated")[tlevs]
+           }
            else tlevs
          },
          tick = FALSE, cex.axis = cex.text)
