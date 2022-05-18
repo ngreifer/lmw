@@ -243,6 +243,7 @@ summary.lmw_multi <- function(object, un = TRUE, addlvariables = NULL, standardi
     un_weights <- s.weights * (treat %in% contrast)
     treat <- apply_contrast_to_treat(treat, contrast)
     if (object$method == "MRI") weights <- weights * (treat %in% contrast)
+    else treat[treat != levels(treat)[2]] <- levels(treat)[1]
     if (stat == "balance") {
       balance_fun <- balance_one_var
     }
@@ -298,7 +299,7 @@ summary.lmw_multi <- function(object, un = TRUE, addlvariables = NULL, standardi
       #Compute distribution statistics - mean, SD
       if (un) {
         aa.un <- lapply(colnames(X), function(i) {
-          distribution_one_var(X[,i], treat = treat, weights = s.weights, s.weights = s.weights,
+          distribution_one_var(X[,i], treat = treat, weights = un_weights, s.weights = s.weights,
                                contrast = contrast)
         })
 
