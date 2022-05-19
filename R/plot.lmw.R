@@ -181,7 +181,25 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
   for (j in names(v)) {
     vj <- v[[j]]
 
-    xlim <- range(vj)
+    means_vj <- vapply(tlevs, function(i) {
+      if (length(tlevs) == 2 && i != tlevs[1] && x$method == "URI") {
+        in_i <- which(t != tlevs[1])
+      }
+      else {
+        in_i <- which(t == i)
+      }
+      mean_w(vj, w, in_i)
+    }, numeric(1L))
+
+    target_vj <- {
+      if (!is.null(x$focal)) mean_w(vj, x$s.weights, t==x$focal)
+      else if (!is.null(x$target)) target_means[j]
+      else mean_w(vj, x$s.weights)
+    }
+
+    range_vj <- range(vj)
+    xlim <- c(min(range(vj)[1], target_vj, means_vj) - .025 * diff(range_vj),
+              max(range(vj)[2], target_vj, means_vj) + .025 * diff(range_vj))
 
     if (length(unique(vj)) <= 2) vj <- vj + rnorm(length(vj), 0, .01)
 
@@ -202,19 +220,11 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
          cex.lab = cex.text)
     abline(h = 2 * seq_along(tlevs)[-length(tlevs)])
 
-    for (i in tlevs) {
-      if (length(tlevs) == 2 && i != tlevs[1] && x$method == "URI") {
-        in_i <- which(t != tlevs[1])
-      }
-      else {
-        in_i <- which(t == i)
-      }
-      segments(x0 = mean_w(vj, w, in_i), y0 = 2 * (which(tlevs == i) - 1), y1 = 2 + 2 * (which(tlevs == i) - 1))
+    for (i in seq_along(tlevs)) {
+      segments(x0 = means_vj[i], y0 = 2 * (i - 1), y1 = 2 + 2 * (i - 1))
     }
 
-    points(x = rep(if (!is.null(x$focal)) mean_w(vj, x$s.weights, t==x$focal)
-                   else if (!is.null(x$target)) target_means[j]
-                   else mean_w(vj, x$s.weights), length(tlevs)),
+    points(x = rep(target_vj, length(tlevs)),
            y = -1 + 2*seq_along(tlevs), pch = 4, cex = 4, lwd = 0.5)
     axis(2, at = -1 + 2*rev(seq_along(tlevs)),
          labels = {
