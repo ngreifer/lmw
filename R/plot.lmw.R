@@ -49,7 +49,7 @@ weights_plot <- function(x, rug = TRUE, mean = TRUE, ess = TRUE, ...) {
     }
 
     wi_range <- range(wi)
-    if (abs(diff(wi_range)) < .Machine$double.eps) {
+    if (abs(diff(wi_range)) < sqrt(.Machine$double.eps)) {
       withCallingHandlers(
         dens <- density(wi, adjust = 1e-4, ...),
         warning = function(w){
@@ -83,7 +83,7 @@ weights_plot <- function(x, rug = TRUE, mean = TRUE, ess = TRUE, ...) {
          yaxs = "i",
          main = "")
     title(main = sprintf("Distributon of Weights (%s)", {
-      if (length(tlevs) == 2 && all(tlevs == c("0", "1"))) switch(i, "0" = "Control", "1" = "Treated")
+      if (length(tlevs) == 2 && all(tlevs %in% c("0", "1"))) switch(i, "0" = "Control", "1" = "Treated")
       else i
     }),
     cex.main = 0.9,
@@ -172,11 +172,25 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
     else {
       in_i <- which(t == i)
     }
-    cex[in_i] <- 300*abs(w[in_i])/sum(abs(w[in_i]))
+    # sqrt(): makes it so size of weigth corresponds to area, not radius
+    # length(in_i)*: makes it so
+    # cex[in_i] <- sqrt(sum(abs(w[in_i]) > 1e-8)*abs(w[in_i] / sum(w[in_i]))) #Total weights sum to n on each side
+    cex[in_i] <- 30*sqrt(abs(w[in_i])/sum(w[in_i])) #Total weights sum to 1 on each side, negative weights count as negative
+    # cex[in_i] <- 30*sqrt(abs(w[in_i])/sum(abs(w[in_i]))) #Total abs(weights) sum to 1 on each side, same amount of ink on both sides
   }
 
   if (length(v) <= 2) cex.text <- .8
   else cex.text <- .8/.66
+
+  #Transparency of points depends on number of points logarithmically
+  alpha <- vapply(tlevs, function(i) min(1, .6/log10(sum(abs(w[t == i]) > 1e-8))),
+                  numeric(1L))
+
+  col <- character(length(t))
+  for (i in tlevs) {
+    col[t == i & w >= 0] <- adjustcolor("black", alpha.f = alpha[i])
+    col[t == i & w < 0] <- adjustcolor("red", alpha.f = alpha[i])
+  }
 
   for (j in names(v)) {
     vj <- v[[j]]
@@ -197,16 +211,19 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
       else mean_w(vj, x$s.weights)
     }
 
+    if (length(unique(vj)) <= 2) vj <- vj + runif(length(vj), -.02, .02)
+
     range_vj <- range(vj)
     xlim <- c(min(range(vj)[1], target_vj, means_vj) - .025 * diff(range_vj),
               max(range(vj)[2], target_vj, means_vj) + .025 * diff(range_vj))
 
-    if (length(unique(vj)) <= 2) vj <- vj + rnorm(length(vj), 0, .01)
+    jitter <- runif(length(t), -.1, .1)
 
+    #Data points
     plot(x = vj,
-         y = .5 + 2*(length(tlevs) - as.numeric(t) + 0) + 1*(w >= 0) + rnorm(length(t), 0,.05),
+         y = .5 + 2*(length(tlevs) - as.numeric(t)) + 1*(w >= 0) + jitter,
          pch = 20,
-         col = ifelse(w >= 0, adjustcolor("black", alpha.f = .4), adjustcolor("red", alpha.f = .5)),
+         col = col,
          ylim = c(0, 2*length(tlevs)),
          xlim = xlim,
          xlab = j,
@@ -218,15 +235,23 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
          frame.plot = TRUE,
          cex.axis = cex.text,
          cex.lab = cex.text)
+
+    #Lines seperating treatment groups
     abline(h = 2 * seq_along(tlevs)[-length(tlevs)])
 
+    #Vertical lines for observed weighted means
     for (i in seq_along(tlevs)) {
-      segments(x0 = means_vj[i], y0 = 2 * (i - 1), y1 = 2 + 2 * (i - 1))
+      segments(x0 = means_vj[i],
+               y0 = 2*(length(tlevs) - i + 1),
+               y1 = 2*(length(tlevs) - i))
     }
 
+    #Xs for target means
     points(x = rep(target_vj, length(tlevs)),
-           y = -1 + 2*seq_along(tlevs), pch = 4, cex = 4, lwd = 0.5)
-    axis(2, at = -1 + 2*rev(seq_along(tlevs)),
+           y = 2*seq_along(tlevs) - 1,
+           pch = 4, cex = 4, lwd = 0.5)
+
+    axis(2, at = 2*rev(seq_along(tlevs)) - 1,
          labels = {
            if (length(tlevs) == 2 && all(tlevs %in% c("0", "1"))) {
              c("0" = "Control", "1" = "Treated")[tlevs]
