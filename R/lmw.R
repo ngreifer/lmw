@@ -72,7 +72,7 @@ print.lmw <- function(x, ...) {
                           "present")))
   if (!is.null(x$dr.method)) {
     cat(sprintf(" - doubly-robust method: %s\n", switch(x$dr.method,
-                                                        "WLS" = "weighted least sqaures (WLS)",
+                                                        "WLS" = "weighted least squares (WLS)",
                                                         "AIPW" = "augmented inverse probability weighting (AIPW)")))
   }
   cat(sprintf(" - target estimand: %s\n", x$estimand))

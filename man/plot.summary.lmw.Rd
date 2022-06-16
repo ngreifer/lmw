@@ -16,7 +16,7 @@ Produces Love plots (also known as dot plots) of balance statistics to summarize
 a \code{summary.lmw} object; the output of a call to \code{\link{summary.lmw}} with \code{standardize = TRUE}.
 }
   \item{stats}{
-a vector of the names of the columns in the \code{summary.lmw} output to plot; more than one is allowed. Abbreviations allowed.
+a vector of the names of the columns in the \code{summary.lmw} output to plot; more than one is allowed. Abbreviations allowed. When unspecified, the TSMD statistics for each treatment group will be plotted.
 }
   \item{abs}{
 \code{logical}; whether the statistics should be plotted in absolute value (\code{TRUE}) or not (\code{FALSE}). Default is \code{TRUE}. This does not affect the display of KS statistics (which are always non-negative). When \code{TRUE} and standardized mean differences are displayed, the x-axis title will be "TASMD", i.e., target absolute standardized mean difference.

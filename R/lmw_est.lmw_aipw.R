@@ -72,7 +72,7 @@ lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = N
   yA <- vector("list", nA)
 
   #"estimand" weights; ensure means are taken
-  #over corect estimand.
+  #over correct estimand.
   ew <- {
     if (is.null(x$focal)) as.numeric(reg_w > 0)
     else as.numeric(reg_w > 0)*as.numeric(x$treat == x$focal)

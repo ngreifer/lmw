@@ -15,8 +15,8 @@ Computes balance statistics for an \code{lmw} object created by \code{\link{lmw}
         stat = "balance", ...)
 
 \method{summary}{lmw_multi}(object, un = TRUE, addlvariables = NULL,
-              standardize = TRUE, data = NULL,
-              contrast = NULL, stat = "balance", ...)
+        standardize = TRUE, data = NULL,
+        contrast = NULL, stat = "balance", ...)
 
 \method{print}{summary.lmw}(x, digits = max(3, getOption("digits") - 4), ...)
 }
