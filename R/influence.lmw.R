@@ -33,6 +33,7 @@ influence.lmw <- function(model, outcome, data = NULL, ...) {
   wr <- fit$residuals * w
 
   nm <- names(fit$residuals)
+  if (is.null(nm)) nm <- seq_along(fit$residuals)
 
   lmw_hat <- hat_fast(obj$X, w)
 
