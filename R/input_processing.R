@@ -4,15 +4,19 @@ process_base.weights <- function(base.weights = NULL, data = NULL, obj = NULL) {
   base.weights_char <- deparse1(base.weights_sub)
   base.weights <- try(eval(base.weights_sub, data, parent.frame(2)), silent = TRUE)
   if (inherits(base.weights, "try-error")) {
-    cond <- attr(base.weights, "condition")$message
+    cond <- conditionMessage(attr(base.weights, "condition"))
     if (startsWith(cond, "object") && endsWith(cond, "not found")) {
       if (is.null(data)) {
-        stop(sprintf("The base weights variable '%s' cannot be found in the environment. Please supply an argument to 'data' containing the base weights.", base.weights_char),
-             call. = FALSE)
+        stop(sprintf("The base weights variable '%s' cannot be found in the environment. Please supply an argument to 'data' containing the base weights.",
+                     base.weights_char), call. = FALSE)
       }
       else {
-        stop(sprintf("The base weights variable '%s' must be present in the supplied dataset or environment.", base.weights_char), call. = FALSE)
+        stop(sprintf("The base weights variable '%s' must be present in the supplied dataset or environment.",
+                     base.weights_char), call. = FALSE)
       }
+    }
+    else {
+      stop(cond, call. = FALSE)
     }
   }
   else if (length(base.weights) == 0) {
@@ -51,7 +55,7 @@ process_s.weights <- function(s.weights = NULL, data = NULL, obj = NULL) {
   s.weights_char <- deparse1(s.weights_sub)
   s.weights <- try(eval(s.weights_sub, data, parent.frame(2)), silent = TRUE)
   if (inherits(s.weights, "try-error")) {
-    cond <- attr(s.weights, "condition")$message
+    cond <- conditionMessage(attr(s.weights, "condition"))
     if (startsWith(cond, "object") && endsWith(cond, "not found")) {
       if (is.null(data)) {
         stop(sprintf("The sampling weights variable '%s' cannot be found in the environment. Please supply an argument to 'data' containing the sampling weights.", s.weights_char),
@@ -60,6 +64,9 @@ process_s.weights <- function(s.weights = NULL, data = NULL, obj = NULL) {
       else {
         stop(sprintf("The sampling weights variable '%s' must be present in the supplied dataset or environment.", s.weights_char), call. = FALSE)
       }
+    }
+    else {
+      stop(cond, call. = FALSE)
     }
   }
   else if (length(s.weights) == 0) {
@@ -166,7 +173,7 @@ process_estimand <- function(estimand, target, obj) {
     estimand <- "CATE"
   }
 
-  if (!is.null(obj) && inherits(obj, "matchit") || inherits(obj, "weightit")) {
+  if (!is.null(obj) && (inherits(obj, "matchit") || inherits(obj, "weightit"))) {
     if (!estimand.supplied) {
       estimand <- obj$estimand
     }
@@ -177,7 +184,7 @@ process_estimand <- function(estimand, target, obj) {
     }
   }
 
-  estimand
+  return(estimand)
 }
 
 process_mf <- function(mf) {
@@ -190,32 +197,38 @@ process_mf <- function(mf) {
 
 process_data <- function(data = NULL, obj = NULL) {
 
+  null.data <- is.null(data)
+  if (!null.data) {
+    if (is.matrix(data)) {
+      data <- as.data.frame(data)
+    }
+    else if (!is.data.frame(data)) {
+      stop("'data' must be a data.frame object.", call. = FALSE)
+    }
+  }
+
   obj.data <- NULL
   if (inherits(obj, "matchit")) {
     if (!requireNamespace("MatchIt", quietly = TRUE)) {
-      warning("The 'MatchIt' package should be installed when a matchit object is supplied to 'obj'.", call. = FALSE)
+      if (null.data) {
+        warning("The 'MatchIt' package should be installed when a matchit object is supplied to 'obj'.",
+                call. = FALSE)
+      }
     }
     else {
       obj.data <- MatchIt::match.data(obj, drop.unmatched = FALSE, include.s.weights = FALSE)
     }
   }
 
-  if (is.null(data)) {
-    if (!is.null(obj.data)) {
-      data <- obj.data
-    }
-  }
-  else {
-    if (is.matrix(data)) {
-      data <- as.data.frame(data)
-    }
-    if (!is.data.frame(data)) {
-      stop("'data' must be a data.frame object.", call. = FALSE)
-    }
+  if (!null.data) {
     if (!is.null(obj.data)) {
       data <- cbind(data, obj.data[setdiff(names(obj.data), names(data))])
     }
   }
+  else {
+    data <- obj.data #NULL if no obj
+  }
+
   return(data)
 }
 
