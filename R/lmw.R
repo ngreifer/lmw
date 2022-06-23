@@ -75,7 +75,13 @@ print.lmw <- function(x, ...) {
                                                         "WLS" = "weighted least squares (WLS)",
                                                         "AIPW" = "augmented inverse probability weighting (AIPW)")))
   }
-  cat(sprintf(" - target estimand: %s\n", x$estimand))
+  if (inherits(x, "lmw_multi") && !is.null(x$focal)) {
+    cat(sprintf(" - target estimand: %s (focal = \"%s\")\n",
+                x$estimand, x$focal))
+  }
+  else {
+    cat(sprintf(" - target estimand: %s\n", x$estimand))
+  }
   if (!is.null(x$covs)) {
     cat(sprintf(" - covariates: %s\n",
         if (length(names(x$covs)) > 30) paste(c(names(x$covs)[1:30], sprintf("and %s more", ncol(x$covs) - 30)), collapse = ", ")
