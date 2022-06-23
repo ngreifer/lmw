@@ -30,10 +30,11 @@ influence.lmw <- function(model, outcome, data = NULL, ...) {
 
   fit <- lm.wfit(x = obj$X[pos_w,,drop = FALSE], y = outcome[pos_w], w = w[pos_w])
 
-  wr <- fit$residuals * w
+  wr <- numeric(length(outcome))
+  wr[pos_w] <- fit$residuals * w[pos_w]
 
-  nm <- names(fit$residuals)
-  if (is.null(nm)) nm <- seq_along(fit$residuals)
+  nm <- rownames(obj$X)
+  if (is.null(nm)) nm <- seq_along(outcome)
 
   lmw_hat <- hat_fast(obj$X, w)
 
