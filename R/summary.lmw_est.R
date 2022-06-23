@@ -26,11 +26,15 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
   means <- drop(a %*% coefs)[means_order]
   means_vcov <- (a %*% vcov %*% t(a))[means_order, means_order]
 
-  contrasts <- combn(object$treat_levels, 2, simplify = FALSE)
+  if (!is.null(object$focal)) {
+    treat_levels <- c(object$focal, setdiff(object$treat_levels, object$focal))
+  }
 
-  a0 <- setNames(rep(0, length(object$treat_levels)), object$treat_levels)
+  contrasts <- combn(treat_levels, 2, simplify = FALSE)
+
+  a0 <- setNames(rep(0, length(treat_levels)), treat_levels)
   a <- do.call("rbind", lapply(contrasts, function(i) {
-    a0[i] <- c(-1, 1)
+    a0[i] <- switch(object$estimand, "ATT" = c(1, -1), c(-1, 1))
     a0
   }))
 
@@ -56,7 +60,12 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
   }
 
   rownames(effects_mat) <- lapply(contrasts, function(i) {
-    sprintf("E[Y%s-Y%s]", treat_level_inds[i[2]], treat_level_inds[i[1]])
+    if (object$estimand == "ATT") {
+      sprintf("E[Y%s-Y%s]", treat_level_inds[i[1]], treat_level_inds[i[2]])
+    }
+    else {
+      sprintf("E[Y%s-Y%s]", treat_level_inds[i[2]], treat_level_inds[i[1]])
+    }
   })
 
   means_mat <- NULL
