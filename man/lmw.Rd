@@ -109,7 +109,7 @@ An \code{lmw} object, which contains the following components:
 \item{formula}{the model formula.}
 \item{target}{the supplied target profile or dataset when \code{estimand = "CATE"}, after some initial processing. The \code{"target.weights"} attribute contains the \code{target.weights} if supplied.}
 \item{contrast}{the contrasted treatment groups.}
-\item{focal}{the focal treatment levels when \code{estimand} is \code{"ATT"} or \code{"ATC"}.}
+\item{focal}{the focal treatment level when \code{estimand} is \code{"ATT"} or \code{"ATC"}.}
 }
 \references{
 Chattopadhyay, A., & Zubizarreta, J. R. (2021). On the implied weights of linear regression for causal inference. ArXiv:2104.06581 [Stat]. \url{https://arxiv.org/abs/2104.06581}

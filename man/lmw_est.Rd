@@ -45,7 +45,7 @@ other arguments passed to \code{\link[sandwich]{vcovHC}} or \code{\link[sandwich
 
 For \code{lmw} objects, the model fit is that supplied to the \code{formula} input to \code{lmw()} except that it is fit in a dataset appropriately centered to ensure the estimand corresponds with the one requested. When \code{method = "MRI"} in the call to \code{lmw()}, the model is fit as an interaction between the treatment and all the (centered) terms in the model formula. The results will be similar to those from using \code{\link{lm}} on this model and supplied data except that the covariates are centered beforehand. The product of the sampling weights and base weights supplied to \code{lmw()}, if any, will be supplied to \code{lm.wfit()} to fit the model using weighted least squares.
 
-For \code{lmw_aipw} objects, the model is fit as above excpt that base weights are not included in the model fitting and are instead used to compute additional augmentation terms that are added to the estimated potential outcome means from the outcome regression. The variance-covariance matrix is computed using M-estimation; this corresponds to the HC0 robust covariance matrix for the model parameters with the base weights treated as fixed, which yields conservative standard errors for the ATE. Inference is only approximate for the ATT and ATC.
+For \code{lmw_aipw} objects, the model is fit as above except that base weights are not included in the model fitting and are instead used to compute additional augmentation terms that are added to the estimated potential outcome means from the outcome regression. The variance-covariance matrix is computed using M-estimation; this corresponds to the HC0 robust covariance matrix for the model parameters with the base weights treated as fixed, which yields conservative standard errors for the ATE. Inference is only approximate for the ATT and ATC.
 
 For \code{lmw_iv} objects, the first stage model is constructed by removing the treatment from the supplied model formula, adding the instrumental variable as a main effect, and using the treatment variable as the outcome. For the second stage (reduced form) model, the fitted values of the treatment from the first stage model are used in place of the treatment in the outcome model. The results are similar to those from using \code{ivreg::ivreg()}, and the coefficients estimates will be the same except for the intercept due to the centering of covariates.
 
@@ -56,8 +56,14 @@ An \code{lmw_est} object with the following components:
 \item{coefficients, residuals, fitted.values, effects, weights, rank, df.residual, qr}{for \code{lmw} objects, the output of the \code{\link{lm.fit}} or \code{\link{lm.wfit}} call used to fit the outcome model. For \code{lmw_iv} objects, the output of the \code{\link{lm.fit}} or \code{\link{lm.wfit}} call used to fit the the second stage model, with \code{residuals} corresponding to the residuals computed when substituting the true treatment variable in place of the fitted treatment values in the model.}
 \item{model.matrix}{the model matrix (supplied to the \code{x} argument of \code{lm.fit}).}
 \item{vcov}{the estimated covariance matrix of the parameter estimates as produced by \code{\link[sandwich]{vcovHC}} or \code{\link[sandwich]{vcovCL}}.}
+\item{lmw.weights}{the implied regression weights ocmputed by \code{lmw_est()}.}
 \item{call}{the call to \code{lmw_est()}.}
 \item{estimand}{the requested estimand.}
+\item{focal}{the focal treatment level when \code{estimand} is \code{"ATT"} or \code{"ATC"}.}
+\item{method}{the method used to estimate the weights (\code{"URI"} or \code{"MRI"}).}
+\item{robust}{the type standard error used.}
+\item{outcome}{the name of the outcome variable.}
+\item{treat_levels}{the levels of the treatment.}
 
 When AIPW is used, the object will be of class \code{lmw_est_aipw}, which inherits from \code{lmw_est}, and contains the additional components:
 \item{coef_aipw}{the model-predicted potential outcome means (\code{mu}) and the augmentation terms (\code{aug}).}

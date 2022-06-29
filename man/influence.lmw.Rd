@@ -10,11 +10,13 @@ Regression Diagnostics for \code{lmw} and \code{lmw_est} objects
 }
 \usage{
 \method{influence}{lmw}(model, outcome, data = NULL, ...)
+
+\method{influence}{lmw_est}(model, ...)
 }
 
 \arguments{
   \item{model}{
-an \code{lmw} object; the output of a call to \code{\link{lmw}}.
+an \code{lmw} or \code{lmw_est} object; the output of a call to \code{\link{lmw}} or \code{\link{lmw_est}}.
 }
   \item{outcome}{
 the name of the outcome variable. Can be supplied as a string containing the name of the outcome variable or as the outcome variable itself. If not supplied, the outcome variable in the \code{formula} supplied to \code{lmw()}, if any, will be used.
@@ -60,4 +62,9 @@ lmw.out1 <- lmw(~ treat + age + educ + race + married +
 #Influence for re78 outcome
 infl <- influence(lmw.out1, outcome = "re78")
 str(infl)
+
+#Can also be used after lmw_est():
+lmw.est1 <- lmw_est(lmw.out1, outcome = "re78")
+all.equal(infl,
+          influence(lmw.est1))
 }
