@@ -399,7 +399,7 @@ get_data <- function(data, x) {
 # containing the outcome
 # Uses NSE, so must be called with this idiom when used inside functions:
 #    do.call("get_outcome", list(substitute(outcome_arg), data_arg, formula_arg))
-get_outcome <- function(outcome, data = NULL, formula) {
+get_outcome <- function(outcome, data = NULL, formula, X) {
 
   tt <- terms(formula, data = data)
 
@@ -453,7 +453,7 @@ get_outcome <- function(outcome, data = NULL, formula) {
   if (!is.numeric(outcome) && !is.logical(outcome)) {
     stop("The outcome variable must be numeric.", call. = FALSE)
   }
-  if (length(outcome) != nrow(data)) {
+  if (length(outcome) != nrow(X)) {
     stop("The outcome variable must have length equal to the number of units in the dataset.", call. = FALSE)
   }
 
