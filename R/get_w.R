@@ -53,6 +53,8 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
     for (i in levels(treat)) {
       ipw.weights[treat == i] <- ipw.weights[treat == i]/sum(ipw.weights[treat == i])
     }
+    ipw.weights_rw <- ipw.weights/rw
+    ipw.weights_rw[rw == 0] <- 0
 
     if (method == "URI") {
       #For multicategory treatments, set base.weights of groups not
@@ -61,11 +63,12 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
 
       #Funky formula for augmentation weights, but it works
       ipw.weights[t == 0] <- -ipw.weights[t == 0]
-      aug.weights <- rw*.lm.fit(rw*X, ipw.weights/rw)$residuals
+      aug.weights <- rw*.lm.fit(rw*X, ipw.weights_rw)$residuals
       aug.weights[t == 0] <- -aug.weights[t == 0]
     }
     else { #MRI
-      aug.weights <- rw*.lm.fit(rw*X, ipw.weights/rw)$residuals
+
+      aug.weights <- rw*.lm.fit(rw*X, ipw.weights_rw)$residuals
     }
 
     weights <- weights + aug.weights
