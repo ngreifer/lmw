@@ -7,7 +7,7 @@ Plot Diagnnostics for an \code{lmw_est} Object
 Produces plots to diagnose the regression model fit to estimate the treatment effect. These include an influence plot based on the sample influence curve (SIC) and the regression diagnostics plots available for \code{lm} objects in \code{\link{plot.lm}}.
 }
 \usage{
-\methd{plot}{lmw_est}(x, type = "influence", ...)
+\method{plot}{lmw_est}(x, type = "influence", ...)
 }
 
 \arguments{
