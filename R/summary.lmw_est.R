@@ -304,3 +304,6 @@ weights.lmw_est <- function(object, ...) {
   }
   wts
 }
+predict.lmw_est <- function(object, ...) {
+  object$fitted.values
+}

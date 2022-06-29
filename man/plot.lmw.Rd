@@ -37,6 +37,7 @@ When \code{type = "influence"}, the following are accepted:
 \describe{
   \item{\code{outcome}}{the name of the outcome variable. Can be supplied as a string containing the name of the outcome variable or as the outcome variable itself. If not supplied, the outcome variable in the \code{formula} supplied to \code{lmw()}, if any, will be used.}
   \item{\code{data}}{an optional data frame containing the outcome variable named in \code{outcome}.}
+  \item{\code{id.n}}{the number of points to be labelled in the plot, starting with the most extreme.}
 }
 }
 }
