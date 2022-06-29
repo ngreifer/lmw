@@ -4,11 +4,6 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
 
   data <- get_data(data, x)
 
-  outcome <- do.call("get_outcome", list(substitute(outcome), data, x$formula))
-  outcome_name <- attr(outcome, "outcome_name")
-
-  attributes(outcome) <- NULL
-
   obj1 <- get_1st_stage_X_from_formula_iv(x$formula, data = data, treat = x$treat,
                                           iv = x$iv, method = x$method, estimand = x$estimand, target = x$target,
                                           s.weights = x$s.weights, target.weights = attr(x$target, "target.weights"),
@@ -16,6 +11,12 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
 
   X <- obj1$X
   t <- as.numeric(x$treat == levels(x$treat)[2])
+
+  outcome <- do.call("get_outcome", list(substitute(outcome), data, x$formula,
+                                         obj1$X))
+  outcome_name <- attr(outcome, "outcome_name")
+
+  attributes(outcome) <- NULL
 
   ## model dimensions
   p <- ncol(obj1$X)
@@ -35,24 +36,19 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
 
   if (!is.null(x$fixef)) {
     for (i in seq_len(ncol(obj1$X))[-1]) {
-      obj1$X[pos_w,i] <- demean(obj1$X[pos_w,i], x$fixef[pos_w], w[pos_w])
+      obj1$X[,i] <- demean(obj1$X[,i], x$fixef, w)
     }
     for (i in seq_len(ncol(obj1$A))) {
-      obj1$A[pos_w,i] <- demean(obj1$A[pos_w,i], x$fixef[pos_w], w[pos_w])
+      obj1$A[,i] <- demean(obj1$A[,i], x$fixef, w)
     }
   }
 
-  if (weighted) {
-    auxreg <- lm.wfit(x = obj1$X[pos_w,, drop = FALSE],
-                      y = obj1$A[pos_w,, drop=FALSE],
-                      w = w[pos_w])
-  }
-  else {
-    auxreg <- lm.fit(x = obj1$X, y = obj1$A)
-  }
+  auxreg <- lm.wfit(x = obj1$X,
+                    y = obj1$A,
+                    w = w)
 
   t_fitted <- array(0, dim = dim(obj1$A), dimnames = dimnames(obj1$A))
-  t_fitted[pos_w,] <- auxreg$fitted.values
+  t_fitted[] <- auxreg$fitted.values
 
   obj2 <- get_2nd_stage_X_from_formula_iv(x$formula, data = data, treat = x$treat, treat_fitted = t_fitted,
                              method = x$method, estimand = x$estimand, target = x$target,
@@ -63,29 +59,24 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
 
   if (!is.null(x$fixef)) {
     for (i in seq_len(ncol(XZ))[-1]) {
-      XZ[pos_w,i] <- demean(XZ[pos_w,i], x$fixef[pos_w], w[pos_w])
+      XZ[,i] <- demean(XZ[,i], x$fixef, w)
     }
-    outcome[pos_w] <- demean(outcome[pos_w], x$fixef[pos_w], w[pos_w])
+    outcome <- demean(outcome, x$fixef, w)
   }
 
   ## main regression
-  if (weighted) {
-    fit <- lm.wfit(x = XZ[pos_w,, drop = FALSE], y = outcome[pos_w], w = w[pos_w])
-  }
-  else {
-    fit <- lm.fit(x = XZ, y = outcome)
-  }
+  fit <- lm.wfit(x = XZ, y = outcome, w = w)
 
   class(fit) <- c("lmw_est_iv", "lmw_est")
 
-  fit$model.matrix <- XZ[pos_w,, drop = FALSE]
+  fit$model.matrix <- XZ
 
   ok <- which(!is.na(fit$coefficients))
 
   #Replace t_fitted with A to compute residuals
   XZ[,colnames(obj1$A)] <- obj1$A
-  fit$fitted.values <- drop(XZ[pos_w, ok, drop = FALSE] %*% fit$coefficients[ok])
-  res <- outcome[pos_w] - fit$fitted.values
+  fit$fitted.values <- drop(XZ[, ok, drop = FALSE] %*% fit$coefficients[ok])
+  res <- outcome - fit$fitted.values
   fit$residuals <- res
 
   if (!is.null(x$fixef)) {
@@ -93,8 +84,12 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
     fit$fixef <- x$fixef
   }
 
-  rss <- if (weighted) sum(fit$weights * res^2) else sum(res^2)
+  rss <- sum(fit$weights * res^2)
   fit$sigma <- sqrt(rss/fit$df.residual)
+
+  #Subset model outputs to those with positive weights
+  #for compatibility with vcovHC
+  fit_sub <- subset_fit(fit)
 
   if (isTRUE(robust)) {
     if (is.null(cluster)) robust <- "HC3"
@@ -144,6 +139,7 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
     fit$vcov <- fit$vcov * (n - ncol(fit$model.matrix))/fit$df.residual
   }
 
+  fit$lmw.weights <- x$weights
   fit$call <- call
   fit$estimand <- x$estimand
   fit$focal <- x$focal

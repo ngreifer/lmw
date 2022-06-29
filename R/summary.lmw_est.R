@@ -28,11 +28,13 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
 
   if (!is.null(object$focal)) {
     treat_levels <- c(object$focal, setdiff(object$treat_levels, object$focal))
+    contrasts <- combn(treat_levels, 2, simplify = FALSE)
+  }
+  else {
+    contrasts <- combn(object$treat_levels, 2, simplify = FALSE)
   }
 
-  contrasts <- combn(treat_levels, 2, simplify = FALSE)
-
-  a0 <- setNames(rep(0, length(treat_levels)), treat_levels)
+  a0 <- setNames(rep(0, length(object$treat_levels)), object$treat_levels)
   a <- do.call("rbind", lapply(contrasts, function(i) {
     a0[i] <- switch(object$estimand, "ATT" = c(1, -1), c(-1, 1))
     a0
@@ -231,12 +233,23 @@ print.summary.lmw_est <- function(x, digits = max(3, getOption("digits") - 3),
 }
 
 model.matrix.lmw_est <- function(object, ...) {
-  object$model.matrix
+  mm <- object$model.matrix
+  if (called_from("meatHC", "meatCL")) {
+    mm <- mm[object$weights > 0, , drop = FALSE]
+  }
+  mm
 }
 hatvalues.lmw_est <- function(model, ...) {
-  hat_fast(model$model.matrix, model$weights, model$fixef)
+  h <- hat_fast(model$model.matrix, model$weights, model$fixef)
+  if (called_from("meatHC", "meatCL")) {
+    h <- h[model$weights > 0]
+  }
+  h
 }
 estfun.lmw_est <- function (x, ...) {
+
+  x <- subset_fit(x)
+
   xmat <- model.matrix(x)
   xmat <- naresid(x$na.action, xmat)
   if (any(alias <- is.na(coef(x))))
@@ -271,7 +284,6 @@ vcov.lmw_est <- function(object, complete = TRUE, ...) {
   #               complete)
 }
 bread.lmw_est <- function(x) {
-
   p <- x$rank
   p1 <- seq_len(p)
   Qr <- x$qr
@@ -281,7 +293,14 @@ bread.lmw_est <- function(x) {
   # df <- c(p, x$df.residual)
   # b <- cov.unscaled * as.vector(sum(df))
 
-  b <- cov.unscaled * length(x$residuals)
+  b <- cov.unscaled * sum(x$weights > 0)
   dimnames(b) <- list(names(x$coefficients[p1]), names(x$coefficients[p1]))
   return(b)
+}
+weights.lmw_est <- function(object, ...) {
+  wts <- object$weights
+  if (called_from("meatHC", "meatCL")) {
+    wts <- wts[wts > 0]
+  }
+  wts
 }

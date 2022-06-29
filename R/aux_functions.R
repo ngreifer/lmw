@@ -264,10 +264,10 @@ covs_df_to_matrix <- function(covs) {
   return(X)
 }
 
-#Quickly compute diagnoal of hat matrix without having to compute
-#full project matrix. Usues a specifal formula with a fixed effects (f)
+#Quickly compute diagonal of hat matrix without having to compute
+#full project matrix. Uses a special formula with a fixed effects (f)
 #is present to simplify calculation. Assumes X first column is an
-#intercept..
+#intercept.
 hat_fast <- function(X, w = NULL, f = NULL) {
   if (is.null(f)) {
     if (is.null(w)) QR <- qr.default(X)
@@ -324,4 +324,10 @@ demean <- function(x, f, w = NULL) {
     }
   }
   x
+}
+
+#Check whether function is being called within another specific function
+called_from <- function(...) {
+  calls <- sys.calls()
+  any(unlist(list(...)) %in% unlist(lapply(calls, function(x) deparse1(x[[1]]))))
 }

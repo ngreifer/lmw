@@ -15,16 +15,17 @@ lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = N
 
   data <- get_data(data, x)
 
-  outcome <- do.call("get_outcome", list(substitute(outcome), data, x$formula))
-  outcome_name <- attr(outcome, "outcome_name")
-
-  attributes(outcome) <- NULL
-
   #Get model matrix
   obj <- get_X_from_formula(x$formula, data = data, treat = x$treat,
                             method = x$method, estimand = x$estimand, target = x$target,
                             s.weights = x$s.weights, target.weights = attr(x$target, "target.weights"),
                             focal = x$focal)
+
+  outcome <- do.call("get_outcome", list(substitute(outcome), data, x$formula,
+                                         obj$X))
+  outcome_name <- attr(outcome, "outcome_name")
+
+  attributes(outcome) <- NULL
 
   #Fit regression model; note use lm.[w]fit() instead of lm() because
   #we already have the model matrix (obj$X)
@@ -46,23 +47,23 @@ lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = N
 
     if (!is.null(x$fixef)) {
       for (i in seq_len(ncol(obj$X))[-1]) {
-        obj$X[pos_w,i] <- demean(obj$X[pos_w,i], x$fixef[pos_w], reg_w[pos_w])
+        obj$X[,i] <- demean(obj$X[,i], x$fixef, reg_w)
       }
-      outcome[pos_w] <- demean(outcome[pos_w], x$fixef[pos_w], reg_w[pos_w])
+      outcome <- demean(outcome, x$fixef, reg_w)
     }
 
-    fit <- lm.wfit(x = obj$X[pos_w,,drop = FALSE], y = outcome[pos_w], w = reg_w[pos_w])
+    fit <- lm.wfit(x = obj$X, y = outcome, w = reg_w)
 
     # non_pos_w <- which(reg_w <= 0)
     # fit$na.action <- setNames(non_pos_w, rn[non_pos_w])
     # class(fit$na.action) <- "omit"
   }
 
-  fit$model.matrix <- obj$X[pos_w,,drop = FALSE]
+  fit$model.matrix <- obj$X
 
   if (!is.null(x$fixef)) {
     fit$df.residual <- fit$df.residual - length(unique(x$fixef[pos_w])) + 1
-    fit$fixef <- droplevels(x$fixef[pos_w])
+    fit$fixef <- x$fixef
   }
 
   #Get augmentation terms
@@ -92,7 +93,7 @@ lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = N
 
     ipw[i] <- mean_w(outcome[pos_w], aipw_w[pos_w], x$treat[pos_w] == levels(x$treat)[i])
 
-    aug[i] <- mean_w(fit$fitted.values, aipw_w[pos_w], x$treat[pos_w] == levels(x$treat)[i])
+    aug[i] <- mean_w(fit$fitted.values[pos_w], aipw_w[pos_w], x$treat[pos_w] == levels(x$treat)[i])
   }
 
   #Get covariance of coefs and augmentation terms
@@ -101,9 +102,9 @@ lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = N
 
   # theta <- tcrossprod(c(fit$coefficients, mu1, mu0, ipw1 - aug1, ipw0 - aug0))
   psi <- do.call("rbind", c(
-    list(t(reg_w[pos_w] * fit$residuals * obj$X[pos_w,, drop = FALSE])),
+    list(t(reg_w[pos_w] * fit$residuals[pos_w] * obj$X[pos_w,, drop = FALSE])),
     lapply(1:nA, function(i) (reg_w*ew)[pos_w]*(yA[[i]] - mu[i])), #replace ew with PS to get "correct" SEs for AIPW that agree with PSweight
-    lapply(1:nA, function(i) (x$treat[pos_w] == levels(x$treat)[i]) * aipw_w[pos_w] * (fit$residuals - (ipw[i] - aug[i])))
+    lapply(1:nA, function(i) (x$treat[pos_w] == levels(x$treat)[i]) * aipw_w[pos_w] * (fit$residuals[pos_w] - (ipw[i] - aug[i])))
   ))
 
   #rowMeans(psi) should be all 0s
@@ -143,6 +144,7 @@ lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = N
   coef_aipw <- setNames(unname(c(mu, ipw - aug)), coef_aipw_names)
 
   fit$vcov <- vcov
+  fit$lmw.weights <- x$weights
   fit$call <- call
   fit$estimand <- x$estimand
   fit$focal <- x$focal

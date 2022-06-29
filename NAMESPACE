@@ -19,12 +19,14 @@ S3method("plot", "summary.lmw")
 
 S3method("print", "lmw_est")
 S3method("summary", "lmw_est")
+S3method("influence", "lmw_est")
 
 S3method("bread", "lmw_est")
 S3method("vcov", "lmw_est")
 S3method("model.matrix", "lmw_est")
 S3method("hatvalues", "lmw_est")
 S3method("estfun", "lmw_est")
+S3method("weights", "lmw_est")
 
 S3method("print", "summary.lmw_est")
 

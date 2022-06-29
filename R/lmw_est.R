@@ -12,58 +12,46 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
 
   data <- get_data(data, x)
 
-  outcome <- do.call("get_outcome", list(substitute(outcome), data, x$formula))
-  outcome_name <- attr(outcome, "outcome_name")
-
-  attributes(outcome) <- NULL
-
   #Get model matrix
   obj <- get_X_from_formula(x$formula, data = data, treat = x$treat,
                             method = x$method, estimand = x$estimand, target = x$target,
                             s.weights = x$s.weights, target.weights = attr(x$target, "target.weights"),
                             focal = x$focal)
 
+  outcome <- do.call("get_outcome", list(substitute(outcome), data, x$formula,
+                                         obj$X))
+  outcome_name <- attr(outcome, "outcome_name")
+
+  attributes(outcome) <- NULL
+
   #Fit regression model; note use lm.[w]fit() instead of lm() because
   #we already have the model matrix (obj$X)
-  w <- NULL
 
-  if (is.null(x$s.weights) && is.null(x$base.weights)) {
-    if (!is.null(x$fixef)) {
-      for (i in seq_len(ncol(obj$X))[-1]) {
-        obj$X[,i] <- demean(obj$X[,i], x$fixef)
-      }
-      outcome <- demean(outcome, x$fixef)
+  if (is.null(x$s.weights)) x$s.weights <- rep(1, length(outcome))
+  if (is.null(x$base.weights)) x$base.weights <- rep(1, length(outcome))
+  w <- x$s.weights * x$base.weights
+  pos_w <- which(w > 0)
+
+  if (!is.null(x$fixef)) {
+    for (i in seq_len(ncol(obj$X))[-1]) {
+      obj$X[,i] <- demean(obj$X[,i], x$fixef, w)
     }
-    fit <- lm.fit(x = obj$X, y = outcome)
-    pos_w <- seq_along(outcome)
+    outcome <- demean(outcome, x$fixef, w)
   }
-  else {
-    if (is.null(x$s.weights)) x$s.weights <- rep(1, length(outcome))
-    if (is.null(x$base.weights)) x$base.weights <- rep(1, length(outcome))
-    w <- x$s.weights * x$base.weights
-    pos_w <- which(w > 0)
 
-    if (!is.null(x$fixef)) {
-      for (i in seq_len(ncol(obj$X))[-1]) {
-        obj$X[pos_w,i] <- demean(obj$X[pos_w,i], x$fixef[pos_w], w[pos_w])
-      }
-      outcome[pos_w] <- demean(outcome[pos_w], x$fixef[pos_w], w[pos_w])
-    }
+  fit <- lm.wfit(x = obj$X, y = outcome, w = w)
 
-    fit <- lm.wfit(x = obj$X[pos_w,,drop = FALSE], y = outcome[pos_w], w = w[pos_w])
-
-    # non_pos_w <- which(w <= 0)
-    # fit$na.action <- setNames(non_pos_w, rn[non_pos_w])
-    # class(fit$na.action) <- "omit"
-  }
+  # non_pos_w <- which(w <= 0)
+  # fit$na.action <- setNames(non_pos_w, rownames(obj$X[non_pos_w]))
+  # class(fit$na.action) <- "omit"
 
   class(fit) <- c("lmw_est")
 
-  fit$model.matrix <- obj$X[pos_w,,drop = FALSE]
+  fit$model.matrix <- obj$X
 
   if (!is.null(x$fixef)) {
     fit$df.residual <- fit$df.residual - length(unique(x$fixef[pos_w])) + 1
-    fit$fixef <- droplevels(x$fixef[pos_w])
+    fit$fixef <- droplevels(x$fixef)
   }
 
   if (isTRUE(robust)) {
@@ -82,14 +70,18 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
     stop("'robust' must be TRUE, FALSE, or one of the allowable inputs to the 'type' argument of sandwich::vcovHC().", call. = FALSE)
   }
 
+  #Subset model outputs to those with positive weights
+  #for compatibility with vcovHC
+  fit_sub <- subset_fit(fit)
+
   if (robust == "const") { #Regular OLS vcov; faster than sandwich
     fit$vcov <- {
-      if (is.null(w)) bread(fit)/length(residuals(fit)) * sum(residuals(fit)^2)/fit$df.residual
-      else            bread(fit)/length(residuals(fit)) * sum(fit$weights * residuals(fit)^2)/fit$df.residual
+      if (is.null(w)) bread(fit_sub)/length(residuals(fit_sub)) * sum(residuals(fit_sub)^2)/fit_sub$df.residual
+      else            bread(fit_sub)/length(residuals(fit_sub)) * sum(fit_sub$weights * residuals(fit_sub)^2)/fit_sub$df.residual
     }
   }
   else if (is.null(cluster)) {
-    fit$vcov <- sandwich::vcovHC(fit, type = robust, ...)
+    fit$vcov <- sandwich::vcovHC(fit_sub, type = robust, ...)
   }
   else {
     if (inherits(cluster, "formula")) {
@@ -107,7 +99,7 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
     }
 
     withCallingHandlers({
-      fit$vcov <- sandwich::vcovCL(fit, type = robust, cluster = cluster, ...)
+      fit$vcov <- sandwich::vcovCL(fit_sub, type = robust, cluster = cluster, ...)
     },
     warning = function(w) {
       if (conditionMessage(w) != "clustered HC2/HC3 are only applicable to (generalized) linear regression models") warning(w)
@@ -121,6 +113,7 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
     fit$vcov <- fit$vcov * (n - ncol(fit$model.matrix))/fit$df.residual
   }
 
+  fit$lmw.weights <- x$weights
   fit$call <- call
   fit$estimand <- x$estimand
   fit$focal <- x$focal
@@ -143,6 +136,18 @@ print.lmw_est <- function(x, ...) {
   cat("\n")
   cat("Use summary() to examine estimates, standard errors, p-values, and confidence intervals.", "\n")
   invisible(x)
+}
+
+subset_fit <- function(fit) {
+  if (is.null(fit$weights)) return(fit)
+  pos_w <- fit$weights > 0
+  fit$residuals <- fit$residuals[pos_w]
+  fit$fitted.values <- fit$fitted.values[pos_w]
+  fit$weights <- fit$weights[pos_w]
+  fit$model.matrix <- fit$model.matrix[pos_w,,drop = FALSE]
+  if (!is.null(fit$fixef)) fit$fixef <- fit$fixef[pos_w]
+
+  fit
 }
 
 #####
