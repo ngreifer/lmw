@@ -285,11 +285,6 @@ influence_plot <- function(x, outcome, data = NULL, id.n = 3, ...) {
 
   labels.id <- seq_along(SIC)
 
-  show.r <- order(SIC_std, decreasing = TRUE)[1:id.n]
-  y.id <- show.r
-  y.id[y.id < 0] <- y.id[y.id < 0] - strheight(" ")/3
-  labpos <- c(4, 2)[(y.id > mean(par("usr")[1:2])) + 1L]
-
   N <- length(SIC_std)
   indices <- c(1, pretty(seq_len(N))[-1])
   # indices <- indices[-length(indices)]
@@ -307,6 +302,11 @@ influence_plot <- function(x, outcome, data = NULL, id.n = 3, ...) {
        col = grey(0),
        xaxt = "n",
        yaxt = "n")
+
+  show.r <- order(SIC_std, decreasing = TRUE)[1:id.n]
+  y.id <- show.r
+  y.id[y.id < 0] <- y.id[y.id < 0] - strheight(" ")/3
+  labpos <- c(4, 2)[(y.id > mean(par("usr")[1:2])) + 1L]
 
   text(y.id, SIC_std[show.r], labels.id[show.r], cex = 0.75, xpd = TRUE,
        pos = labpos, offset = 0.25)
