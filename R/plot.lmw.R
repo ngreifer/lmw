@@ -29,6 +29,7 @@ weights_plot <- function(x, rug = TRUE, mean = TRUE, ess = TRUE, ...) {
   par(mar = c(2.75, 3, 1.75, 1),
       mgp = c(1.5, 0.5, 0))
 
+  dev.hold()
   for (i in tlevs) {
     if (length(tlevs) == 2 && i != tlevs[1] && x$method == "URI") {
       in_i <- which(t != tlevs[1])
@@ -107,6 +108,7 @@ weights_plot <- function(x, rug = TRUE, mean = TRUE, ess = TRUE, ...) {
              cex = 0.8)
     }
   }
+  dev.flush()
 }
 
 extrapolation_plot <- function(x, var, data = NULL, ...) {
@@ -192,6 +194,7 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
     col[t == i & w < 0] <- adjustcolor("red", alpha.f = alpha[i])
   }
 
+  dev.hold()
   for (j in names(v)) {
     vj <- v[[j]]
 
@@ -260,6 +263,7 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
          },
          tick = FALSE, cex.axis = cex.text)
   }
+  dev.flush()
 
 }
 
@@ -269,8 +273,8 @@ influence_plot <- function(x, outcome, data = NULL, id.n = 3, ...) {
   .pardefault <- par(no.readonly = TRUE)
   on.exit(par(.pardefault))
 
-  par(mar = c(5.1, 4.1, 1.75, 1),
-      mgp = c(3, 1, 0))
+  # par(mar = c(5.1, 4.1, 1.75, 1),
+  #     mgp = c(3, 1, 0))
 
   inf <- do.call("influence", list(x, substitute(outcome), data))
 
@@ -279,35 +283,40 @@ influence_plot <- function(x, outcome, data = NULL, id.n = 3, ...) {
   ## Scaled SIC
   SIC_std <- SIC/max(SIC)
 
-  plot(SIC_std,
-       type = c("h"),
-       lty = c("solid"),
-       xlab = "Index",
-       ylab = "Scaled SIC",
-       cex.lab = 0.8,
-       cex.axis = 0.8,
-       col = grey(0),
-       axes = FALSE)
-
   labels.id <- seq_along(SIC)
 
   show.r <- order(SIC_std, decreasing = TRUE)[1:id.n]
   y.id <- show.r
   y.id[y.id < 0] <- y.id[y.id < 0] - strheight(" ")/3
   labpos <- c(4, 2)[(y.id > mean(par("usr")[1:2])) + 1L]
-  text(y.id, SIC_std[show.r], labels.id[show.r], cex = 0.75, xpd = TRUE,
-       pos = labpos, offset = 0.25)
 
   N <- length(SIC_std)
   indices <- c(1, pretty(seq_len(N))[-1])
-  indices <- indices[-length(indices)]
-  indices[length(indices)] <- N
+  # indices <- indices[-length(indices)]
+  # indices[length(indices)] <- N
+
+  dev.hold()
+  plot(SIC_std,
+       type = "h",
+       lty = "solid",
+       xlab = "Obs. number",
+       ylab = "Scaled SIC",
+       ylim = c(0, 1.075),
+       # cex.lab = 0.8,
+       # cex.axis = 0.8,
+       col = grey(0),
+       xaxt = "n",
+       yaxt = "n")
+
+  text(y.id, SIC_std[show.r], labels.id[show.r], cex = 0.75, xpd = TRUE,
+       pos = labpos, offset = 0.25)
+
   axis(side = 1,
-       at = indices,
-       cex.axis = .8)
+       at = indices)
   axis(side = 2,
-       at = seq(0, 1, 0.2),
-       cex.axis = .8)
+       at = seq(0, 1, 0.25))
+  mtext(as.graphicsAnnot("Sample Influence Curve"), 3, 0.25, cex = 1)
+  dev.flush()
 }
 
 plot.lmw_est <- function(x, type = "influence", ...) {
