@@ -318,8 +318,10 @@ plot.lmw_est <- function(x, type = "influence", ...) {
   }
   else if (type == "lm") {
     class(x) <- c(class(x), "lm")
-    utils::getS3method("plot", "lm")(x, ...)
+    plot.lm(x, ...)
   }
 
   invisible(x)
 }
+
+plot.lm <- utils::getS3method("plot", "lm")
