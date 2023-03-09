@@ -5,7 +5,7 @@
 \alias{lmw_est.lmw_aipw}
 
 \title{
-Fit an outcome regression model to estimate a treatment effect
+Estimate a treatment effect from a linear model
 }
 \description{
 \code{lmw_est()} fits the outcome regression corresponding to the model used to compute the weights in the supplied \code{lmw} object and returns the model coefficients and their covariance matrix. Use \code{\link{summary.lmw_est}} to compute and view the treatment effect and potential outcome mean estimates and their standard errors.

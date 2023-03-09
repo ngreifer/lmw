@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# lmw: Diagnostics for the Implied Weights of Linear Regression
+# lmw: Linear Model Weights
 
 <!-- <img src="man/figures/logo.png" align="right" width="150"/> -->
 
@@ -12,7 +12,7 @@
 `lmw` computes weights implied by a linear regression model used to
 estimate an average treatment effect and provides diagnostics that
 incorporate these weights as described in [Chattopadhyay & Zubizarreta
-(2021)](https://arxiv.org/abs/2104.06581). The treatment effect
+(2022)](https://doi.org/10.1093/biomet/asac058). The treatment effect
 resulting from this model can be represented as a difference between the
 weighted outcome means in the treatment groups, similar to inverse
 probability weighting.
@@ -152,9 +152,9 @@ plot(lmw.out, type = "extrapolation", var = ~married + re75)
 
 <img src="man/figures/README-unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
 
-The × indicates the mean of the covariate in the target population (the
-treated group), and the vertical line indicates the mean of the
-covariate weighted by the implied regression weights. For these
+The $\times$ indicates the mean of the covariate in the target
+population (the treated group), and the vertical line indicates the mean
+of the covariate weighted by the implied regression weights. For these
 covariates, the implied regression weights yield a sample fairly
 representative of the target population.
 

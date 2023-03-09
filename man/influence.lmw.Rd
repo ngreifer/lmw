@@ -53,17 +53,17 @@ When using \code{influence.lmw()} inside \code{\link{lapply}} or \code{purrr::ma
 \examples{
 data("lalonde")
 
-#URI regression for ATT
+# URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                      nodegree + re74 + re75,
                 data = lalonde, estimand = "ATT",
                 method = "URI", treat = "treat")
 
-#Influence for re78 outcome
+# Influence for re78 outcome
 infl <- influence(lmw.out1, outcome = "re78")
 str(infl)
 
-#Can also be used after lmw_est():
+# Can also be used after lmw_est():
 lmw.est1 <- lmw_est(lmw.out1, outcome = "re78")
 all.equal(infl,
           influence(lmw.est1))

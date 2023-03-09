@@ -47,7 +47,7 @@ A plot is displayed, and \code{x} is invisibly returned.
 \examples{
 data("lalonde")
 
-#URI regression for ATT
+# URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
                 estimand = "ATT", method = "URI",

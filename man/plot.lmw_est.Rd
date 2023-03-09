@@ -1,7 +1,7 @@
 \name{plot.lmw_est}
 \alias{plot.lmw_est}
 \title{
-Plot Diagnnostics for an \code{lmw_est} Object
+Plot diagnostics for an \code{lmw_est} object
 }
 \description{
 Produces plots to diagnose the regression model fit to estimate the treatment effect. These include an influence plot based on the sample influence curve (SIC) and the regression diagnostics plots available for \code{lm} objects in \code{\link{plot.lm}}.
@@ -41,7 +41,7 @@ A plot is displayed, and \code{x} is invisibly returned.
 \examples{
 data("lalonde")
 
-#URI regression for ATT
+# URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                    nodegree + re74 + re75, data = lalonde,
                 estimand = "ATT", method = "URI",
@@ -50,9 +50,9 @@ lmw.out1 <- lmw(~ treat + age + educ + race + married +
 lmw.fit1 <- lmw_est(lmw.out1, outcome = "re78")
 lmw.fit1
 
-#Influence using SIC
+# Influence using SIC
 plot(lmw.fit1, type = "influence")
 
-#Usual regression diagnostics
+# Usual regression diagnostics
 plot(lmw.fit1, type = "lm", which = 1)
 }

@@ -2,7 +2,7 @@
 \alias{plot.lmw}
 
 \title{
-Plots diagnosing the weights
+Plots diagnosing regression-implied weights
 }
 \description{
 Produces plots to diagnose properties of the weights, including their distribution, to what degree the distribution of covariates involves extrapolation in the weighted sample, and how much influence each unit has on the effect estimate.

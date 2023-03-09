@@ -4,7 +4,7 @@
 \alias{print.summary.lmw}
 
 \title{
-Assess balance on an \code{lmw} object
+Assess balance for an \code{lmw} object
 }
 \description{
 Computes balance statistics for an \code{lmw} object created by \code{\link{lmw}}. Balance involves not only the similarity between the treatment groups but also the similarity between each treatment group and the target population.
@@ -101,7 +101,7 @@ With multi-category treatments and \code{method = "MRI"}, the object will also i
 \examples{
 data("lalonde")
 
-#URI regression for ATT
+# URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
                   estimand = "ATT", method = "URI",
@@ -109,11 +109,11 @@ lmw.out1 <- lmw(~ treat + age + educ + race + married +
 lmw.out1
 summary(lmw.out1)
 
-#Adding additional vairbales to summary, removing unweighted
+# Adding additional vairbales to summary, removing unweighted
 summary(lmw.out1, un = FALSE,
         addlvariables = ~I(age^2) + I(nodegree*re74))
 
-#MRI regression for ATT after PS matching
+# MRI regression for ATT after PS matching
 m.out <- MatchIt::matchit(treat ~ age + educ + race + married +
                             nodegree + re74 + re75,
                           data = lalonde, method = "nearest",

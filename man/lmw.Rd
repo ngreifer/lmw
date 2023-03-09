@@ -2,10 +2,10 @@
 \alias{lmw}
 
 \title{
-Compute regression-implied weights
+Compute linear regression-implied weights
 }
 \description{
-Computes the weights implied by an outcome regression model that would estimate a weighted difference in outcome means equal to the covariate-adjusted treatment effect resulting from the supplied regression model.
+Computes the weights implied by a linear outcome regression model that would estimate a weighted difference in outcome means equal to the covariate-adjusted treatment effect resulting from the supplied regression model.
 }
 \usage{
 lmw(formula, data, estimand = "ATE", method = "URI",
@@ -112,7 +112,7 @@ An \code{lmw} object, which contains the following components:
 \item{focal}{the focal treatment level when \code{estimand} is \code{"ATT"} or \code{"ATC"}.}
 }
 \references{
-Chattopadhyay, A., & Zubizarreta, J. R. (2021). On the implied weights of linear regression for causal inference. ArXiv:2104.06581 [Stat]. \url{https://arxiv.org/abs/2104.06581}
+Chattopadhyay, A., & Zubizarreta, J. R. (2022). On the implied weights of linear regression for causal inference. Biometrika, asac058. \doi{10.1093/biomet/asac058}
 }
 
 \seealso{
@@ -121,7 +121,7 @@ Chattopadhyay, A., & Zubizarreta, J. R. (2021). On the implied weights of linear
 \examples{
 data("lalonde")
 
-#URI regression for ATT
+# URI regression for ATT
 lmw.out1 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
                 estimand = "ATT", method = "URI",
@@ -129,7 +129,7 @@ lmw.out1 <- lmw(~ treat + age + educ + race + married +
 lmw.out1
 summary(lmw.out1)
 
-#MRI regression for ATT
+# MRI regression for ATT
 lmw.out2 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
                 estimand = "ATT", method = "MRI",
@@ -137,7 +137,7 @@ lmw.out2 <- lmw(~ treat + age + educ + race + married +
 lmw.out2
 summary(lmw.out2)
 
-#MRI regression for ATT after propensity score matching
+# MRI regression for ATT after propensity score matching
 m.out <- MatchIt::matchit(treat ~ age + educ + race +
                             married + nodegree + re74 + re75,
                           data = lalonde, method = "nearest",
@@ -148,7 +148,7 @@ lmw.out3 <- lmw(~ treat + age + educ + race + married +
 lmw.out3
 summary(lmw.out3)
 
-#MRI regression for CATE with given target profile
+# MRI regression for CATE with given target profile
 target.prof <- list(age = 25, educ = 11, race = "black",
                     married = 0, nodegree = 1, re74 = 0,
                     re75 = 0)
@@ -159,8 +159,8 @@ lmw.out4 <- lmw(~ treat + age + educ + race + married +
 lmw.out4
 summary(lmw.out4)
 
-#MRI regression for CATE with given target dataset (in
-#this case, will give the same as with estimand = "ATT")
+# MRI regression for CATE with given target dataset (in
+# this case, will give the same as with estimand = "ATT")
 target.data <- subset(lalonde, treat == 1)
 lmw.out4 <- lmw(~ treat + age + educ + race + married +
                   nodegree + re74 + re75, data = lalonde,
@@ -169,13 +169,13 @@ lmw.out4 <- lmw(~ treat + age + educ + race + married +
 lmw.out4
 summary(lmw.out4)
 
-#URI regression with fixed effects for 'race'
+# URI regression with fixed effects for 'race'
 lmw.out5 <- lmw(~ treat + age + educ + married +
                   nodegree + re74 + re75, data = lalonde,
                 method = "URI", treat = "treat",
                 fixef = ~race)
 lmw.out5
 
-#Produces the same weights as when included as a covariate
+# Produces the same weights as when included as a covariate
 all.equal(lmw.out1$weights, lmw.out5$weights)
 }

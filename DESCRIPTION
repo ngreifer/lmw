@@ -11,13 +11,15 @@ Authors@R: c(
   person("Jose", "Zubizarreta", email = "zubizarreta@hcp.med.harvard.edu", role = c("aut"),
          comment = c(ORCID = "0000-0002-0322-147X"))
   )
-Description: Computes the implied weights of linear regression models for estimating causal effects and provides diagnostics based
-             on these weights. These diagnostics rely on the findings presented in Chattopadhyay and Zubizarreta (2021) <http://arxiv.org/abs/2104.06581> that 
-             using outcome regression to estimate causal effects is equivalent to computing a difference in weighted outcome means, where
-             the weights have a particular formulation and properties that make them comparable to inverse probability weights 
-             in form and function, but with lower variance in exchange for increased potential for extrapolation. 'lmw' provides tools
-             to diagnose representativeness, balance, extrapolation, and influence for these models, clarifying the target population
-             of inference. Tools are also available to simplify estimating treatment effects for specific target populations of interest.
+Description: Computes the implied weights of linear regression models for estimating
+     average causal effects and provides diagnostics based on these weights. These
+     diagnostics rely on the analyses in Chattopadhyay and Zubizarreta (2022)
+     <doi:10.1093/biomet/asac058> where
+     several regression estimators are represented as weighting estimators, in connection
+     to inverse probability weighting. 'lmw' provides tools to diagnose
+     representativeness, balance, extrapolation, and influence for these models,
+     clarifying the target population of inference. Tools are also available to
+     simplify estimating treatment effects for specific target populations of interest.
 License: GPL (>= 2)
 Encoding: UTF-8
 URL: https://github.com/ngreifer/lmw

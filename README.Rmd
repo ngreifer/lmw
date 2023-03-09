@@ -16,14 +16,14 @@ knitr::opts_chunk$set(
   R.options = list(width = 200)
 )
 ```
-# lmw: Diagnostics for the Implied Weights of Linear Regression 
+# lmw: Linear Model Weights 
 <!-- <img src="man/figures/logo.png" align="right" width="150"/> -->
 
 <!-- [![CRAN_Status_Badge](https://img.shields.io/cran/v/MatchIt?color=952100)](https://cran.r-project.org/package=lmw) [![CRAN_Downloads_Badge](https://cranlogs.r-pkg.org/badges/MatchIt?color=952100)](https://cran.r-project.org/package=lmw) -->
 ------
 ### Overview
 
-`lmw` computes weights implied by a linear regression model used to estimate an average treatment effect and provides diagnostics that incorporate these weights as described in [Chattopadhyay & Zubizarreta (2021)](https://arxiv.org/abs/2104.06581). The treatment effect resulting from this model can be represented as a difference between the weighted outcome means in the treatment groups, similar to inverse probability weighting.
+`lmw` computes weights implied by a linear regression model used to estimate an average treatment effect and provides diagnostics that incorporate these weights as described in [Chattopadhyay & Zubizarreta (2022)](https://doi.org/10.1093/biomet/asac058). The treatment effect resulting from this model can be represented as a difference between the weighted outcome means in the treatment groups, similar to inverse probability weighting.
 
 The weights implied by the regression model have several interesting characteristics: they yield exact mean balance between the treatment groups for every covariate included in the model, they have minimum variance among all weights that do so, and they may be negative. Despite yielding exact mean balance between treatment groups, they may not yield balance between the treatment groups and the target population corresponding to the desired estimand; in addition, the negative weights they produce indicate extrapolation beyond the support of the covariate. `lmw` provides tools to compute the implied weights and perform diagnostics to assess balance, extrapolation, influence, and distributional properties of the weights. In addition, `lmw` provides tools to estimate average treatment effects from the specified models that correspond to selected target populations.
 

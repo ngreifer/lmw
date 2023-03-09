@@ -108,7 +108,7 @@ An \code{lmw_iv} object, which inherits from \code{lmw} objects and contains the
 All functions that lack a specific \code{lmw_iv} method work with \code{lmw_iv} objects as they do for \code{lmw} objects, such as \code{\link{summary.lmw}}, \code{\link{plot.lmw}}, etc.
 }
 \references{
-Chattopadhyay, A., & Zubizarreta, J. R. (2021). On the implied weights of linear regression for causal inference. ArXiv:2104.06581 [Stat]. \url{https://arxiv.org/abs/2104.06581}
+Chattopadhyay, A., & Zubizarreta, J. R. (2022). On the implied weights of linear regression for causal inference. Biometrika, asac058. \doi{10.1093/biomet/asac058}
 }
 
 \seealso{
