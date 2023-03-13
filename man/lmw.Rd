@@ -121,7 +121,8 @@ original call to \code{lmw()}.}
 \item{fixef}{the fixed effects variable if
 supplied to \code{fixef}.}
 \item{formula}{the model formula.}
-\item{target}{the supplied target profile or dataset when \code{estimand = "CATE"}, after some initial processing. The \code{"target.weights"}
+\item{target}{the supplied target profile or dataset when \code{estimand = "CATE"},
+after some initial processing. The \code{"target.weights"}
 attribute contains the \code{target.weights} if supplied.}
 \item{contrast}{the contrasted treatment groups.}
 \item{focal}{the focal
@@ -227,6 +228,7 @@ with \code{include.s.weights = FALSE} or weights resulting from
 }
 
 \subsection{Regression after using \pkg{MatchIt} or \pkg{WeightIt}}{
+
 Regression weights can be computed in a matched or weighted sample by
 supplying a \code{matchit} or \code{weightit} object (from \pkg{MatchIt} or
 \pkg{WeightIt}, respectively) to the \code{obj} argument of \code{lmw()}.
@@ -241,6 +243,7 @@ components in the \code{obj} object.
 }
 
 \subsection{Multi-category treatments}{
+
 There are a few differences when the
 treatment has multiple (i.e., more than 2) categories. If \code{estimand} is
 \code{"ATT"} or \code{"ATC"}, an argument should be supplied to \code{focal}
@@ -268,6 +271,7 @@ treatments. Given these complications, it is generally best to use
 }
 
 \subsection{Fixed effects}{
+
 A fixed effects variable can be supplied to the
 \code{fixef} argument. This is equivalent to adding the fixed effects
 variable as a predictor that does not interact with the treatment or any

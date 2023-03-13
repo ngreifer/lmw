@@ -100,6 +100,7 @@
 #' }
 #'
 #' \subsection{Regression after using \pkg{MatchIt} or \pkg{WeightIt}}{
+#'
 #' Regression weights can be computed in a matched or weighted sample by
 #' supplying a `matchit` or `weightit` object (from \pkg{MatchIt} or
 #' \pkg{WeightIt}, respectively) to the `obj` argument of `lmw()`.
@@ -114,6 +115,7 @@
 #' }
 #'
 #' \subsection{Multi-category treatments}{
+#'
 #' There are a few differences when the
 #' treatment has multiple (i.e., more than 2) categories. If `estimand` is
 #' `"ATT"` or `"ATC"`, an argument should be supplied to `focal`
@@ -141,6 +143,7 @@
 #' }
 #'
 #' \subsection{Fixed effects}{
+#'
 #' A fixed effects variable can be supplied to the
 #' `fixef` argument. This is equivalent to adding the fixed effects
 #' variable as a predictor that does not interact with the treatment or any
@@ -246,8 +249,8 @@
 #' \item{fixef}{the fixed effects variable if
 #' supplied to `fixef`.}
 #' \item{formula}{the model formula.}
-#' \item{target}{the supplied target profile or dataset when `estimand =
-#' "CATE"`, after some initial processing. The `"target.weights"`
+#' \item{target}{the supplied target profile or dataset when `estimand = "CATE"`,
+#' after some initial processing. The `"target.weights"`
 #' attribute contains the `target.weights` if supplied.}
 #' \item{contrast}{the contrasted treatment groups.}
 #' \item{focal}{the focal

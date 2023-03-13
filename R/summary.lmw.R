@@ -31,7 +31,7 @@
 #'
 #'   When `stat = "distribution"` the mean and standard deviation of each
 #'   covariate is compute before and after adjustment and for the target sample.
-#'   (Stanard deviations are printed in parentheses for visual clarity.)
+#'   (Standard deviations are printed in parentheses for visual clarity.)
 #'
 #'   After weighting with the regression weights, the mean difference between
 #'   the treated and control groups of each covariate included in the original
@@ -54,8 +54,8 @@
 #'   `estimand = "ATC"`, the standardization factor is the standard deviation in
 #'   the control group; when `estimand = "ATE"` or when `estimand = "CATE"` and
 #'   a target profile is supplied, the standardization factor is the square root
-#'   of the average of the variances of both treatment groups; when `estimand =
-#'   "CATE"` and a target dataset is supplied, the standardization factor is the
+#'   of the average of the variances of both treatment groups; when `estimand = "CATE"`
+#'   and a target dataset is supplied, the standardization factor is the
 #'   standard deviation in the target dataset. When `s.weights` is supplied, the
 #'   standardization factor is computed including the sampling weights;
 #'   otherwise it is computed in the unweighted sample.
@@ -67,8 +67,8 @@
 #'   supplied to `addlvariables` that were not given a target value will not
 #'   have any target statistics computed (e.g., TSMD, TKS, target means, etc.).
 #'
-#'   The effective sample size (ESS) is computed within each group as \eqn{(\sum
-#'   w)^2/\sum w^2}. With uniform weights, this is equal to the sample size.
+#'   The effective sample size (ESS) is computed within each group as \eqn{(\sum w)^2/\sum w^2}.
+#'   With uniform weights, this is equal to the sample size.
 #'
 #' @param object an `lmw` object; the output of a call to [lmw()].
 #' @param un `logical`; whether to display balance statistics for the sample
@@ -119,8 +119,7 @@
 #' regression weights applied.}
 #' \item{method}{The method used to estimate the weights (i.e., URI or MRI)}
 #' \item{base.weights.origin}{If base weights were supplied through the
-#'   `obj` argument to `lmw()`, their origin (i.e, \pkg{MatchIt} or
-#'   \pkg{WeightIt})}
+#'   `obj` argument to `lmw()`, their origin (i.e, \pkg{MatchIt} or \pkg{WeightIt})}
 #'
 #' With multi-category treatments and `method = "MRI"`, the object will also
 #' inherit from class `summary.lmw_multi`.
@@ -138,8 +137,11 @@
 #'                   nodegree + re74 + re75, data = lalonde,
 #'                   estimand = "ATT", method = "URI",
 #'                   treat = "treat")
+#'
 #' lmw.out1
+#'
 #' summary(lmw.out1)
+#'
 #' summary(lmw.out1, stat = "distribution")
 #'
 #' # Adding additional variables to summary, removing unweighted
@@ -147,15 +149,19 @@
 #'         addlvariables = ~I(age^2) + I(nodegree*re74))
 #'
 #' @examplesIf requireNamespace("MatchIt")
-#' # MRI regression for ATT after PS
-#' matching m.out <- MatchIt::matchit(treat ~ age + education + race + married +
-#'                                      nodegree + re74 + re75,
-#'                                    data = lalonde, method = "nearest",
-#'                                     estimand = "ATT")
+#' # MRI regression for ATT after PS matching
+#' m.out <- MatchIt::matchit(treat ~ age + education + race + married +
+#'                             nodegree + re74 + re75,
+#'                           data = lalonde, method = "nearest",
+#'                           estimand = "ATT")
+#'
 #' lmw.out2 <- lmw(~ treat + age + education + race + married +
 #'                   nodegree + re74 + re75, data = lalonde,
 #'                 method = "MRI", treat = "treat", obj = m.out)
-#' lmw.out2 summary(lmw.out2)
+#'
+#' lmw.out2
+#'
+#' summary(lmw.out2)
 #'
 #' @examples
 #' # MRI for a multi-category treatment ATE
@@ -163,8 +169,11 @@
 #'                   nodegree + re74 + re75, data = lalonde,
 #'                 estimand = "ATE", method = "MRI",
 #'                 treat = "treat_multi")
+#'
 #' lmw.out3
+#'
 #' summary(lmw.out3)
+#'
 #' summary(lmw.out3, contrast = c("2", "1"))
 #'
 

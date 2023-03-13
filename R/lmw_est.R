@@ -91,7 +91,7 @@
 #' the parameter estimates as produced by [sandwich::vcovHC()] or
 #' [sandwich::vcovCL()].}
 #' \item{lmw.weights}{the implied regression
-#' weights ocmputed by `lmw_est()`.}
+#' weights computed by `lmw_est()`.}
 #' \item{call}{the call to
 #' `lmw_est()`.}
 #' \item{estimand}{the requested estimand.}

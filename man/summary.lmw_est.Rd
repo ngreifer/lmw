@@ -22,7 +22,7 @@ output.}
 
 \item{alpha}{when \code{ci = TRUE}, the alpha value used to compute the
 critical test statistic for the confidence interval; equivalently, 1 minus
-the confidence level (e.g., for a 99\\% confidence interval, \code{alpha = .01} should be specified). Default is .05 for a 95\\% confidence interval.}
+the confidence level (e.g., for a 99\% confidence interval, \code{alpha = .01} should be specified). Default is .05 for a 95\% confidence interval.}
 
 \item{\dots}{ignored.}
 }
@@ -30,21 +30,20 @@ the confidence level (e.g., for a 99\\% confidence interval, \code{alpha = .01} 
 A \code{summary.lmw_est} object with the following components:
 \item{call}{the original call to \code{lmw_est()}}
 \item{means}{a matrix
-containting the estimated potential outcome means, their standard errors,
+containing the estimated potential outcome means, their standard errors,
 confidence interval limits (if requested with \code{ci = TRUE}),
 t-statistics, and p-values. Omitted when \code{method = "URI"} or
 \code{fixef} is not \code{NULL} and for \code{lmw_iv} objects.}
 \item{coefficients}{a matrix containing the treatment effect estimates and
 their standard errors, t-statistics, and p-values.When \code{ci = TRUE}, the
-confidence limits \verb{"95\\\%" CI L} (lower) and \verb{"95\\\%" CI U} (upper)
+confidence limits \verb{"95\%" CI L} (lower) and \verb{"95\%" CI U} (upper)
 will be included between the standard error and t-statistic columns. When
 AIPW is used, z-statistics and z-tests are reported instead.}
 \item{model.coefficients}{when \code{model = TRUE}, the coefficient table of
 the model coefficients, which has the same columns as \code{coefficients.}}
 \item{aliased}{when \code{model = TRUE}, a named logical vector showing if
 the original coefficients are aliased (i.e., \code{NA}).}
-\item{sigma, df,
-r.squared, adj.r.squared}{the residual standard deviation, degrees of
+\item{sigma, df, r.squared, adj.r.squared}{the residual standard deviation, degrees of
 freedom components, R-squared, and adjusted R-squared. See
 \code{\link[=summary.lm]{summary.lm()}}. When AIPW is used, \code{sigma} and \code{df} are
 omitted.}

@@ -63,7 +63,7 @@ argument of \code{lm.fit}).}
 the parameter estimates as produced by \code{\link[sandwich:vcovHC]{sandwich::vcovHC()}} or
 \code{\link[sandwich:vcovCL]{sandwich::vcovCL()}}.}
 \item{lmw.weights}{the implied regression
-weights ocmputed by \code{lmw_est()}.}
+weights computed by \code{lmw_est()}.}
 \item{call}{the call to
 \code{lmw_est()}.}
 \item{estimand}{the requested estimand.}
