@@ -28,9 +28,9 @@ Depends:
     R (>= 3.5.0)
 Imports:
     sandwich (>= 3.0-1),
-    backports (>= 1.4.1),
-    knitr,
-    rmarkdown
+    backports (>= 1.4.1)
 Suggests: 
     MatchIt (>= 4.3.2)
-VignetteBuilder: knitr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+LazyData: true
