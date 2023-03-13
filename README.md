@@ -36,8 +36,8 @@ regression weights for estimating the average treatment effect on the
 treated (ATT) of a job training program on earnings using the Lalonde
 dataset (see `help("lalonde", package = "lmw")` for details). Here, the
 treatment variable is `treat`, the outcome is `re78` (1978 earnings) and
-`age`, `educ`, `race`, `married`, `nodegree`, `re74`, and `re75` are
-pretreatment covariates.
+`age`, `education`, `race`, `married`, `nodegree`, `re74`, and `re75`
+are pretreatment covariates.
 
 ``` r
 #Load lmw and the data
@@ -45,8 +45,10 @@ library("lmw")
 data("lalonde")
 
 #Estimate the weights
-lmw.out <- lmw(~ treat + age + educ + race + married + nodegree + re74 + re75,
-               data = lalonde, treat = "treat", estimand = "ATT", method = "URI")
+lmw.out <- lmw(~ treat + age + education + race + married +
+                 nodegree + re74 + re75,
+               data = lalonde, treat = "treat",
+               estimand = "ATT", method = "URI")
 ```
 
 `lmw.out` contains the implied regression weights. We can see that the
@@ -62,17 +64,18 @@ with(lalonde,
        weighted.mean(re78[treat == 0], w[treat == 0]))
 ```
 
-    #> [1] 1548.244
+    #> [1] 751.9464
 
 ``` r
 #The coefficient in the corresponding outcome model
-fit <- lm(re78 ~ treat + age + educ + race + married + nodegree + re74 + re75,
-               data = lalonde)
+fit <- lm(re78 ~ treat + age + education + race + married +
+            nodegree + re74 + re75,
+          data = lalonde)
 coef(fit)["treat"]
 ```
 
     #>    treat 
-    #> 1548.244
+    #> 751.9464
 
 How well do the weights do at balancing the treatment groups to the
 target population (in the case, the treated sample)?
@@ -83,38 +86,38 @@ target population (in the case, the treated sample)?
 
     #> 
     #> Call:
-    #> lmw(formula = ~treat + age + educ + race + married + nodegree + 
+    #> lmw(formula = ~treat + age + education + race + married + nodegree + 
     #>     re74 + re75, data = lalonde, estimand = "ATT", method = "URI", 
     #>     treat = "treat")
     #> 
     #> Summary of Balance for Unweighted Data:
-    #>               SMD TSMD Control TSMD Treated    KS TKS Control TKS Treated
-    #> age        -0.309        0.309            0 0.158       0.158           0
-    #> educ        0.055       -0.055            0 0.111       0.111           0
-    #> raceblack   1.762       -1.762            0 0.640       0.640           0
-    #> racehispan -0.350        0.350            0 0.083       0.083           0
-    #> racewhite  -1.882        1.882            0 0.558       0.558           0
-    #> married    -0.826        0.826            0 0.324       0.324           0
-    #> nodegree    0.245       -0.245            0 0.111       0.111           0
-    #> re74       -0.721        0.721            0 0.447       0.447           0
-    #> re75       -0.290        0.290            0 0.288       0.288           0
+    #>                 SMD TSMD Control TSMD Treated    KS TKS Control TKS Treated
+    #> age          -1.263        1.263            0 0.377       0.377           0
+    #> education    -0.881        0.881            0 0.403       0.403           0
+    #> raceblack     1.630       -1.630            0 0.593       0.593           0
+    #> racehispanic  0.114       -0.114            0 0.027       0.027           0
+    #> racewhite    -2.091        2.091            0 0.620       0.620           0
+    #> married      -1.729        1.729            0 0.677       0.677           0
+    #> nodegree      0.886       -0.886            0 0.403       0.403           0
+    #> re74         -3.547        3.547            0 0.729       0.729           0
+    #> re75         -5.446        5.446            0 0.774       0.774           0
     #> 
     #> Summary of Balance for Weighted Data:
-    #>            SMD TSMD Control TSMD Treated    KS TKS Control TKS Treated
-    #> age          0       -0.026       -0.026 0.263       0.255       0.030
-    #> educ         0        0.005        0.005 0.045       0.047       0.039
-    #> raceblack    0       -0.428       -0.428 0.000       0.156       0.156
-    #> racehispan   0        0.223        0.223 0.000       0.053       0.053
-    #> racewhite    0        0.347        0.347 0.000       0.103       0.103
-    #> married      0        0.083        0.083 0.000       0.033       0.033
-    #> nodegree     0       -0.087       -0.087 0.000       0.039       0.039
-    #> re74         0        0.061        0.061 0.257       0.282       0.036
-    #> re75         0        0.044        0.044 0.135       0.166       0.031
+    #>              SMD TSMD Control TSMD Treated    KS TKS Control TKS Treated
+    #> age            0        0.060        0.060 0.127       0.147       0.026
+    #> education      0        0.024        0.024 0.081       0.083       0.023
+    #> raceblack      0       -0.045       -0.045 0.000       0.017       0.017
+    #> racehispanic   0        0.008        0.008 0.000       0.002       0.002
+    #> racewhite      0        0.049        0.049 0.000       0.015       0.015
+    #> married        0        0.135        0.135 0.000       0.053       0.053
+    #> nodegree       0       -0.051       -0.051 0.000       0.023       0.023
+    #> re74           0        0.044        0.044 0.578       0.590       0.015
+    #> re75           0        0.049        0.049 0.566       0.577       0.015
     #> 
     #> Effective Sample Sizes:
     #>          Control Treated
-    #> All       429.    185.  
-    #> Weighted  162.61  153.97
+    #> All       2490.    185. 
+    #> Weighted   367.3   180.6
 
 The `SMD` column contains the standardized mean differences for each
 covariate between the treatment groups; after weighting, the values are
@@ -169,7 +172,7 @@ plot(lmw.out, type = "influence", outcome = re78)
 <img src="man/figures/README-unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
 
 Finally, we can fit the outcome model and extract the average treatment
-effecy estimates:
+effect estimates:
 
 ``` r
 lmw.fit <- lmw_est(lmw.out, outcome = re78)
@@ -179,12 +182,10 @@ summary(lmw.fit)
 
     #> 
     #> Effect estimates:
-    #>              Estimate Std. Error 95% CI L 95% CI U t value Pr(>|t|)  
-    #> E[Y₁-Y₀|A=1]  1548.24     749.99    75.35  3021.14   2.064   0.0394 *
-    #> ---
-    #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    #>              Estimate Std. Error 95% CI L 95% CI U t value Pr(>|t|)
+    #> E[Y₁-Y₀|A=1]    751.9      788.9   -795.0   2298.9   0.953    0.341
     #> 
-    #> Residual standard error: 6948 on 604 degrees of freedom
+    #> Residual standard error: 10070 on 2665 degrees of freedom
 
 In addition, `lmw` can be used with multi-category treatments, two-stage
 least squares estimation of instrumental variable models, and

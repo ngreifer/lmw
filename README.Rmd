@@ -27,7 +27,7 @@ knitr::opts_chunk$set(
 
 The weights implied by the regression model have several interesting characteristics: they yield exact mean balance between the treatment groups for every covariate included in the model, they have minimum variance among all weights that do so, and they may be negative. Despite yielding exact mean balance between treatment groups, they may not yield balance between the treatment groups and the target population corresponding to the desired estimand; in addition, the negative weights they produce indicate extrapolation beyond the support of the covariate. `lmw` provides tools to compute the implied weights and perform diagnostics to assess balance, extrapolation, influence, and distributional properties of the weights. In addition, `lmw` provides tools to estimate average treatment effects from the specified models that correspond to selected target populations.
 
-Below is an example of the use of `lmw` to obtain and evaluate regression weights for estimating the average treatment effect on the treated (ATT) of a job training program on earnings using the Lalonde dataset (see `help("lalonde", package = "lmw")` for details). Here, the treatment variable is `treat`, the outcome is `re78` (1978 earnings) and `age`, `educ`, `race`, `married`, `nodegree`, `re74`, and `re75` are pretreatment covariates.
+Below is an example of the use of `lmw` to obtain and evaluate regression weights for estimating the average treatment effect on the treated (ATT) of a job training program on earnings using the Lalonde dataset (see `help("lalonde", package = "lmw")` for details). Here, the treatment variable is `treat`, the outcome is `re78` (1978 earnings) and `age`, `education`, `race`, `married`, `nodegree`, `re74`, and `re75` are pretreatment covariates.
 
 ```{r}
 #Load lmw and the data
@@ -35,8 +35,10 @@ library("lmw")
 data("lalonde")
 
 #Estimate the weights
-lmw.out <- lmw(~ treat + age + educ + race + married + nodegree + re74 + re75,
-               data = lalonde, treat = "treat", estimand = "ATT", method = "URI")
+lmw.out <- lmw(~ treat + age + education + race + married +
+                 nodegree + re74 + re75,
+               data = lalonde, treat = "treat",
+               estimand = "ATT", method = "URI")
 ```
 
 `lmw.out` contains the implied regression weights. We can see that the weighted outcome mean difference between the treatment groups is equal to the coefficient on the treatment in the corresponding outcome regression model:
@@ -49,8 +51,9 @@ with(lalonde,
        weighted.mean(re78[treat == 0], w[treat == 0]))
 
 #The coefficient in the corresponding outcome model
-fit <- lm(re78 ~ treat + age + educ + race + married + nodegree + re74 + re75,
-               data = lalonde)
+fit <- lm(re78 ~ treat + age + education + race + married +
+            nodegree + re74 + re75,
+          data = lalonde)
 coef(fit)["treat"]
 ```
 
@@ -90,7 +93,7 @@ We can examine how influential individual points are using their sample influenc
 plot(lmw.out, type = "influence", outcome = re78)
 ```
 
-Finally, we can fit the outcome model and extract the average treatment effecy estimates:
+Finally, we can fit the outcome model and extract the average treatment effect estimates:
 
 ```{r}
 lmw.fit <- lmw_est(lmw.out, outcome = re78)
