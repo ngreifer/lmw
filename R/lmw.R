@@ -7,60 +7,60 @@
 #' model.
 #'
 #' @details
-#' \code{formula} is interpreted differently depending on whether \code{method}
-#' is \code{"URI"} or \code{"MRI"}. When \code{method = "URI"}, the formula is
+#' `formula` is interpreted differently depending on whether `method`
+#' is `"URI"` or `"MRI"`. When `method = "URI"`, the formula is
 #' taken literally as the right-hand side of the outcome model formula. The
 #' only difference is that the covariates will be centered based on the
-#' argument to \code{estimand} (see below). When \code{method = "MRI"}, all
+#' argument to `estimand` (see below). When `method = "MRI"`, all
 #' references to the treatment are removed (i.e., covariate interactions with
 #' treatment become covariate main effects if not already present), and the new
 #' formula is taken as the right-hand side of the model formula fit within each
 #' treatment group. This is equivalent to allowing all covariates to have both
 #' main effects and interactions with treatment after centering the covariates
-#' based on the argument to \code{estimand}. Allowing the treatment to interact
-#' with all covariates with \code{method = "URI"} is equivalent to specifying
-#' \code{method = "MRI"}, and, for binary treatments, the returned weights will
-#' be the same when \code{fixef = NULL}.
+#' based on the argument to `estimand`. Allowing the treatment to interact
+#' with all covariates with `method = "URI"` is equivalent to specifying
+#' `method = "MRI"`, and, for binary treatments, the returned weights will
+#' be the same when `fixef = NULL`.
 #'
-#' When any treatment-by-covariate interactions are present in \code{formula}
-#' or when \code{method = "MRI"}, covariates are centered at specific values to
+#' When any treatment-by-covariate interactions are present in `formula`
+#' or when `method = "MRI"`, covariates are centered at specific values to
 #' ensure the resulting weights correspond to the desired estimand as supplied
-#' to the \code{estimand} argument. For the ATE, the covariates are centered at
+#' to the `estimand` argument. For the ATE, the covariates are centered at
 #' their means in the full sample. For the ATT and ATC, the covariates are
 #' centered at their means in the treatment or control group (i.e., the
-#' \code{focal} group), respectively. For the CATE, the covariates are centered
-#' according to the argument supplied to \code{target} (see below). Note that
+#' `focal` group), respectively. For the CATE, the covariates are centered
+#' according to the argument supplied to `target` (see below). Note that
 #' when covariate-by-covariate interactions are present, they will be centered
 #' after computing the interaction rather than the interaction being computed
-#' on the centered covariates unless \code{estimand = "CATE"}, in which case
-#' the covariates will be centered at the values specified in \code{target}
+#' on the centered covariates unless `estimand = "CATE"`, in which case
+#' the covariates will be centered at the values specified in `target`
 #' prior to involvement in interactions.
 #'
 #' \subsection{Estimating a CATE}{
 #'
-#' When \code{estimand = "CATE"}, \code{target} can be supplied either as a
+#' When `estimand = "CATE"`, `target` can be supplied either as a
 #' single target profile (i.e., a list or a data frame with one row) or as a
 #' target dataset, potentially with its own sampling weights, which are
-#' supplied to \code{target.weights}. The variables included in \code{target}
-#' must correspond to all the named \emph{covariates} in \code{formula}; for
-#' example, if \code{formula = ~ X1 + log(X1) + X2 + X1:X2}, values in
-#' \code{target} must be given for \code{X1} and \code{X2}, but not
-#' \code{log(X1)} or \code{X1:X2}. To choose a target profile value for a
+#' supplied to `target.weights`. The variables included in `target`
+#' must correspond to all the named *covariates* in `formula`; for
+#' example, if `formula = ~ X1 + log(X1) + X2 + X1:X2`, values in
+#' `target` must be given for `X1` and `X2`, but not
+#' `log(X1)` or `X1:X2`. To choose a target profile value for a
 #' factor corresponding to a proportion (e.g., a target value of .5 for a
-#' variable like \code{sex} indicating a target population with a 50-50 sex
+#' variable like `sex` indicating a target population with a 50-50 sex
 #' split), the factor variable must be split into a numeric variable
-#' beforehand, e.g., using \code{\link{model.matrix}} or
-#' \code{cobalt::splitfactor()}. \code{target} values cannot be given to
-#' variables specified using \code{$}, \code{[[]]}, or \code{[]} (e.g.,
-#' \code{data$X1}), so an error will be thrown if they are used in
-#' \code{formula}. When a target dataset is supplied, covariates will be
-#' centered at their means in the (\code{target.weights}-weighted) target
+#' beforehand, e.g., using [model.matrix()] or
+#' `cobalt::splitfactor()`. `target` values cannot be given to
+#' variables specified using `$`, `[[]]`, or `[]` (e.g.,
+#' `data$X1`), so an error will be thrown if they are used in
+#' `formula`. When a target dataset is supplied, covariates will be
+#' centered at their means in the (`target.weights`-weighted) target
 #' dataset.
 #' }
 #'
 #' \subsection{Base weights and sampling weights}{
 #'
-#' Base weights (\code{base.weights}) and sampling weights (\code{s.weights})
+#' Base weights (`base.weights`) and sampling weights (`s.weights`)
 #' are similar in that they both involve combining weights with an outcome
 #' regression model. However, they differ in a few ways. Sampling weights are
 #' primarily used to adjust the target population; when the outcome model is
@@ -81,79 +81,79 @@
 #' where the target population is defined by the matching (e.g., matching with
 #' a caliper, cardinality matching, or coarsened exact matching). Because these
 #' weights change the target population, they should be supplied to
-#' \code{s.weights} to ensure covariates are appropriately centered. When there
-#' are no treatment-by-covariate interactions and \code{method = "URI"},
-#' whether weights are supplied to \code{base.weights} or \code{s.weights} will
+#' `s.weights` to ensure covariates are appropriately centered. When there
+#' are no treatment-by-covariate interactions and `method = "URI"`,
+#' whether weights are supplied to `base.weights` or `s.weights` will
 #' not matter for the estimation of the weights but will affect the target
-#' population in \link[=summary.lmw]{balance assessment}.
+#' population in [balance assessment][summary.lmw].
 #'
-#' When both \code{base.weights} and \code{s.weights} are supplied, e.g., when
+#' When both `base.weights` and `s.weights` are supplied, e.g., when
 #' the base weights are the result of a propensity score model fit with
 #' sampling weights, it is assumed the base weights do not incorporate the
 #' sampling weights; that is, it is assumed that to estimate a treatment effect
-#' \emph{without} regression adjustment, the base weights and the sampling
+#' *without* regression adjustment, the base weights and the sampling
 #' weights would have to be multiplied together. This is true, for example, for
-#' the weights in a \code{matchit} or \code{weightit} object (see below) but
-#' not for weights in the output of \code{MatchIt::match.data()} unless called
-#' with \code{include.s.weights = FALSE} or weights resulting from
-#' \code{CBPS::CBPS()}.
+#' the weights in a `matchit` or `weightit` object (see below) but
+#' not for weights in the output of `MatchIt::match.data()` unless called
+#' with `include.s.weights = FALSE` or weights resulting from
+#' `CBPS::CBPS()`.
 #' }
 #'
 #' \subsection{Regression after using \pkg{MatchIt} or \pkg{WeightIt}}{
 #' Regression weights can be computed in a matched or weighted sample by
-#' supplying a \code{matchit} or \code{weightit} object (from \pkg{MatchIt} or
-#' \pkg{WeightIt}, respectively) to the \code{obj} argument of \code{lmw()}.
+#' supplying a `matchit` or `weightit` object (from \pkg{MatchIt} or
+#' \pkg{WeightIt}, respectively) to the `obj` argument of `lmw()`.
 #' The estimand, base weights, and sampling weights (if any) will be taken from
 #' the supplied object and used in the calculation of the implied regression
-#' weights, unless these have been supplied separately to \code{lmw()}. The
-#' \code{weights} component of the supplied object containing the matching or
-#' balancing weights will be passed to \code{base.weights} and the
-#' \code{s.weights} component will be passed to \code{s.weights}. Arguments
-#' supplied to \code{lmw()} will take precedence over the corresponding
-#' components in the \code{obj} object.
+#' weights, unless these have been supplied separately to `lmw()`. The
+#' `weights` component of the supplied object containing the matching or
+#' balancing weights will be passed to `base.weights` and the
+#' `s.weights` component will be passed to `s.weights`. Arguments
+#' supplied to `lmw()` will take precedence over the corresponding
+#' components in the `obj` object.
 #' }
 #'
 #' \subsection{Multi-category treatments}{
 #' There are a few differences when the
-#' treatment has multiple (i.e., more than 2) categories. If \code{estimand} is
-#' \code{"ATT"} or \code{"ATC"}, an argument should be supplied to \code{focal}
+#' treatment has multiple (i.e., more than 2) categories. If `estimand` is
+#' `"ATT"` or `"ATC"`, an argument should be supplied to `focal`
 #' identifying which group is the treated or control (i.e., "focal") group,
 #' respectively.
 #'
-#' The key difference, though, is when \code{method = "URI"}, because in this
+#' The key difference, though, is when `method = "URI"`, because in this
 #' case the contrast between each pair of treatment groups has its own weights
-#' and its own implied target population. Because \code{lmw()} only produces
-#' one set of weights, an argument must be supplied to \code{contrast}
+#' and its own implied target population. Because `lmw()` only produces
+#' one set of weights, an argument must be supplied to `contrast`
 #' identifying which groups are to be used as the contrast for computing the
 #' weights. In addition, to compute the treatment effect corresponding to the
 #' chosen contrast as a weighted difference in outcome means, the difference
 #' must be taken between the weighted mean of the non-reference group and the
-#' weighted mean of \emph{all other groups combined}, rather than simply the
+#' weighted mean of *all other groups combined*, rather than simply the
 #' weighted mean of the reference group.
 #'
 #' The implication of this is that contrast statistics computed in the weighted
 #' sample involve all units, even those not in the contrasted groups, whereas
 #' statistics computed in the unweighted sample only involve units in the
-#' contrasted groups. See \code{\link{summary.lmw}} for more information on
+#' contrasted groups. See [summary.lmw()] for more information on
 #' assessing balance using the regression weights for multi-category
 #' treatments. Given these complications, it is generally best to use
-#' \code{method = "MRI"} with multi-category treatments.
+#' `method = "MRI"` with multi-category treatments.
 #' }
 #'
 #' \subsection{Fixed effects}{
 #' A fixed effects variable can be supplied to the
-#' \code{fixef} argument. This is equivalent to adding the fixed effects
+#' `fixef` argument. This is equivalent to adding the fixed effects
 #' variable as a predictor that does not interact with the treatment or any
 #' other covariate. The difference is that computation is much faster when the
 #' fixed effect has many levels because demeaning is used rather than including
 #' the fixed effect variable as a collection of dummy variables. When using
 #' URI, the weights will be the same regardless of whether the fixed effect
-#' variable is included as a covariate or supplied to \code{fixef}; when using
+#' variable is included as a covariate or supplied to `fixef`; when using
 #' MRI, results will differ because the fixed effect variable does not interact
 #' with treatment. The fixed effects variable will not appear in the
-#' \code{\link{summary.lmw}} output (but can be added using `addlvariables`
-#' argument) or in the model output of \code{\link{lmw_est}} or
-#' \code{\link{summary.lmw_est}}. Because it does not interact with the
+#' [summary.lmw()] output (but can be added using `addlvariables`
+#' argument) or in the model output of [lmw_est()] or
+#' [summary.lmw_est()]. Because it does not interact with the
 #' treatment, the distribution of the fixed effect variable may not correspond
 #' to the target population, so caution should be used if it is expected the
 #' treatment effect varies across levels of this variable (in which case it
@@ -166,86 +166,98 @@
 #' outcome variable is not involved in computing the weights and does not need
 #' to be specified. See Details for how this formula is interpreted in light of
 #' other options.
-#' @param data a data frame containing the variables named in \code{formula}
-#' and \code{treat}.
+#' @param data a data frame containing the variables named in `formula`
+#' and `treat`.
 #' @param estimand the estimand of interest, which determines how covariates
-#' are centered. Should be one of \code{"ATE"} for the average treatment
-#' effect, \code{"ATT"} for the average treatment effect in the treated,
-#' \code{"ATC"} for the average treatment effect in the control, or
-#' \code{"CATE"} for the conditional average treatment effect. When
-#' \code{estimand = "CATE"}, an argument to \code{target} must be supplied.
-#' This argument also affects what \code{\link{summary.lmw}} considers to be
-#' the target population. Default is \code{"ATE"} unless \code{obj} is
+#' are centered. Should be one of `"ATE"` for the average treatment
+#' effect, `"ATT"` for the average treatment effect in the treated,
+#' `"ATC"` for the average treatment effect in the control, or
+#' `"CATE"` for the conditional average treatment effect. When
+#' `estimand = "CATE"`, an argument to `target` must be supplied.
+#' This argument also affects what [summary.lmw()] considers to be
+#' the target population. Default is `"ATE"` unless `obj` is
 #' specified, in which case it takes its value from the supplied object.
-#' @param method the method used to estimate the weights; either \code{"URI"}
+#' @param method the method used to estimate the weights; either `"URI"`
 #' (the default) for uni-regression imputation weights, where a single model is
-#' fit to the whole dataset, or \code{"MRI"} for multi-regression imputation,
+#' fit to the whole dataset, or `"MRI"` for multi-regression imputation,
 #' where the model is fit separately in the treatment groups. This affects the
-#' interpretation of \code{formula}. See Details.
-#' @param treat the name of the treatment variable in \code{data}. If
-#' unspecified, the first variable present in \code{formula} will be taken as
+#' interpretation of `formula`. See Details.
+#' @param treat the name of the treatment variable in `data`. If
+#' unspecified, the first variable present in `formula` will be taken as
 #' the treatment variable with a message. See Details.
 #' @param base.weights a vector of base weights. See Details. If omitted and
-#' \code{obj} is specified, the weights from the supplied object will be used.
+#' `obj` is specified, the weights from the supplied object will be used.
 #' Can be supplied as a numeric vector, a string containing the name of the
-#' variable in \code{data} containing the base weights, or the unquoted name of
-#' the variable in \code{data} containing the base weights.
+#' variable in `data` containing the base weights, or the unquoted name of
+#' the variable in `data` containing the base weights.
 #' @param s.weights a vector of sampling weights. See Details. If omitted and
-#' \code{obj} is specified, the sampling weights from the supplied object will
+#' `obj` is specified, the sampling weights from the supplied object will
 #' be used. Can be supplied as a numeric vector, a string containing the name
-#' of the variable in \code{data} containing the sampling weights, or the
-#' unquoted name of the variable in \code{data} containing the sampling
+#' of the variable in `data` containing the sampling weights, or the
+#' unquoted name of the variable in `data` containing the sampling
 #' weights.
-#' @param dr.method the method used to incorporate the \code{base.weights} into
-#' a doubly-robust estimator. Can be one of \code{"WLS"} for weighted least
-#' squares or \code{"AIPW"} for augmented inverse probability weighting.
-#' Ignored when \code{base.weights} is \code{NULL}.
-#' @param obj a \code{matchit} or \code{weightit} object corresponding to the
+#' @param dr.method the method used to incorporate the `base.weights` into
+#' a doubly-robust estimator. Can be one of `"WLS"` for weighted least
+#' squares or `"AIPW"` for augmented inverse probability weighting.
+#' Ignored when `base.weights` is `NULL`.
+#' @param obj a `matchit` or `weightit` object corresponding to the
 #' matched or weighted sample in which the implied outcome regression would
 #' take place. See Details.
 #' @param fixef optional; a string or one-sided formula containing the name of
-#' the fixed effects variable in \code{data}. See Details. Cannot be used with
-#' \code{dr.method = "AIPW"}.
+#' the fixed effects variable in `data`. See Details. Cannot be used with
+#' `dr.method = "AIPW"`.
 #' @param target a list or data frame containing the target values for each
-#' covariate included in \code{formula}. Ignored with a warning when
-#' \code{estimand} is not \code{"CATE"}. See Details.
+#' covariate included in `formula`. Ignored with a warning when
+#' `estimand` is not `"CATE"`. See Details.
 #' @param target.weights a vector of sampling weights to be applied to
-#' \code{target} when supplied as a data frame. Ignored with a warning when
-#' \code{estimand} is not \code{"CATE"}. See Details.
-#' @param contrast for multi-category treatments with \code{method = "URI"}, a
+#' `target` when supplied as a data frame. Ignored with a warning when
+#' `estimand` is not `"CATE"`. See Details.
+#' @param contrast for multi-category treatments with `method = "URI"`, a
 #' vector containing the names or indices of the two treatment levels to be
 #' contrasted (since in this case the weights depend on the specific contrast).
 #' See Details.
 #' @param focal the level of the treatment variable to be considered "focal"
-#' (i.e., the "treated" level when \code{estimand = "ATT"} or the control level
-#' when \code{estimand = "ATC"}). Ignored when \code{estimand} is \code{"ATE"}
-#' or \code{"CATE"}. Otherwise, if unspecified, the second value of
-#' \code{contrast} will be considered focal when \code{estimand = "ATT"} and
-#' the first value of \code{contrast} will be considered focal when
-#' \code{estimand = "ATC"}. For binary treatments, this generally does not need
+#' (i.e., the "treated" level when `estimand = "ATT"` or the control level
+#' when `estimand = "ATC"`). Ignored when `estimand` is `"ATE"`
+#' or `"CATE"`. Otherwise, if unspecified, the second value of
+#' `contrast` will be considered focal when `estimand = "ATT"` and
+#' the first value of `contrast` will be considered focal when
+#' `estimand = "ATC"`. For binary treatments, this generally does not need
 #' to be supplied. See Details.
 #'
-#' @return An \code{lmw} object, which contains the following components:
-#' \item{treat}{the treatment variable, given as a factor.} \item{weights}{the
-#' computed implied regression weights.} \item{covs}{a data frame containing
-#' the covariates included the model formula.} \item{estimand}{the requested
-#' estimand.} \item{method}{the method used to estimate the weights
-#' (\code{"URI"} or \code{"MRI"}).} \item{base.weights}{the weights supplied to
-#' \code{base.weights}.} \item{s.weights}{the weights supplied to
-#' \code{s.weights}.} \item{dr.method}{when \code{base.weights} are supplied,
-#' the method for computing the doubly-robust weights.} \item{call}{the
-#' original call to \code{lmw()}.} \item{fixef}{the fixed effects variable if
-#' supplied to \code{fixef}.} \item{formula}{the model formula.}
-#' \item{target}{the supplied target profile or dataset when \code{estimand =
-#' "CATE"}, after some initial processing. The \code{"target.weights"}
-#' attribute contains the \code{target.weights} if supplied.}
-#' \item{contrast}{the contrasted treatment groups.} \item{focal}{the focal
-#' treatment level when \code{estimand} is \code{"ATT"} or \code{"ATC"}.}
-#' @seealso \code{\link{summary.lmw}} for summarizing balance and
-#' representativeness; \code{\link{plot.lmw}} for plotting features of the
-#' weights; \code{\link{lmw_est}} for estimating treatment effects from
-#' \code{lmw} objects; \code{\link{influence.lmw}} for influence measures;
-#' \code{\link{lm}} for fitting standard regression models.
+#' @return An `lmw` object, which contains the following components:
+#' \item{treat}{the treatment variable, given as a factor.}
+#' \item{weights}{the
+#' computed implied regression weights.}
+#' \item{covs}{a data frame containing
+#' the covariates included the model formula.}
+#' \item{estimand}{the requested
+#' estimand.}
+#' \item{method}{the method used to estimate the weights
+#' (`"URI"` or `"MRI"`).}
+#' \item{base.weights}{the weights supplied to
+#' `base.weights`.}
+#' \item{s.weights}{the weights supplied to
+#' `s.weights`.}
+#' \item{dr.method}{when `base.weights` are supplied,
+#' the method for computing the doubly-robust weights.}
+#' \item{call}{the
+#' original call to `lmw()`.}
+#' \item{fixef}{the fixed effects variable if
+#' supplied to `fixef`.}
+#' \item{formula}{the model formula.}
+#' \item{target}{the supplied target profile or dataset when `estimand =
+#' "CATE"`, after some initial processing. The `"target.weights"`
+#' attribute contains the `target.weights` if supplied.}
+#' \item{contrast}{the contrasted treatment groups.}
+#' \item{focal}{the focal
+#' treatment level when `estimand` is `"ATT"` or `"ATC"`.}
+#'
+#' @seealso [summary.lmw()] for summarizing balance and
+#' representativeness; [plot.lmw()] for plotting features of the
+#' weights; [lmw_est()] for estimating treatment effects from
+#' `lmw` objects; [influence.lmw()] for influence measures;
+#' [lm()] for fitting standard regression models.
 #'
 #' @references Chattopadhyay, A., & Zubizarreta, J. R. (2022). On the implied
 #' weights of linear regression for causal inference. *Biometrika*, asac058. \doi{10.1093/biomet/asac058}

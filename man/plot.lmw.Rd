@@ -7,7 +7,7 @@
 \method{plot}{lmw}(x, type = "weights", ...)
 }
 \arguments{
-\item{x}{an \code{lmw} object; the output of a call to \code{\link{lmw}}.}
+\item{x}{an \code{lmw} object; the output of a call to \code{\link[=lmw]{lmw()}}.}
 
 \item{type}{the type of plot to display. Allowable options include
 \code{"weights"}, \code{"extrapolation"}, and \code{"influence"}. See
@@ -15,26 +15,39 @@ Details. Abbreviations allowed.}
 
 \item{\dots}{further arguments passed to specific types of plots.
 
-When \code{type = "weights"}, the following are accepted: \describe{
-\item{list("rug")}{\code{logical}; whether to display a rug plot of the
-weights. Default is \code{TRUE}.} \item{list("mean")}{whether to display a
+When \code{type = "weights"}, the following are accepted:
+\describe{
+\item{\code{rug}}{\code{logical}; whether to display a rug plot of the
+weights. Default is \code{TRUE}.}
+\item{\code{mean}}{whether to display a
 red line indicating the mean of the weights. Default is \code{TRUE}.}
-\item{list("ess")}{whether to display the original and weighted effective
-sample size in the top right corner. Default is \code{TRUE}.} } Other
-arguments are passed to \code{\link{density}}.
+\item{\code{ess}}{whether to display the original and weighted effective
+sample size in the top right corner. Default is \code{TRUE}.}
+}
+Other arguments are passed to \code{\link[=density]{density()}}.
 
-When \code{type = "extrapolation"}, the following are accepted: \describe{
-\item{list("var")}{required; a right-sided formula or character vector
+When \code{type = "extrapolation"}, the following are accepted:
+\describe{
+\item{\code{var}}{required; a right-sided formula or character vector
 containing the names of the covariates for which extrapolation is to be
-assessed.} \item{list("data")}{an optional data frame containing the
-variables named in \code{var}.} } When \code{type = "influence"}, the
-following are accepted: \describe{ \item{list("outcome")}{the name of the
+assessed.}
+\item{\code{data}}{an optional data frame containing the
+variables named in \code{var}.}
+}
+
+When \code{type = "influence"}, the
+following are accepted:
+\describe{
+\item{\code{outcome}}{the name of the
 outcome variable. Can be supplied as a string containing the name of the
 outcome variable or as the outcome variable itself. If not supplied, the
 outcome variable in the \code{formula} supplied to \code{lmw()}, if any,
-will be used.} \item{list("data")}{an optional data frame containing the
-outcome variable named in \code{outcome}.} \item{list("id.n")}{the number of
-points to be labelled in the plot, starting with the most extreme.} }}
+will be used.}
+\item{\code{data}}{an optional data frame containing the
+outcome variable named in \code{outcome}.}
+\item{\code{id.n}}{the number of
+points to be labelled in the plot, starting with the most extreme.}
+}}
 }
 \value{
 A plot is displayed, and \code{x} is invisibly returned.
@@ -71,7 +84,7 @@ that were not given a target value will not have the target mean displayed.
 
 When \code{type = "influence"}, \code{plot.lmw()} produces a plot of the
 scaled sample influence curve (SIC) for each unit by index. It does so by
-calling \code{\link{influence.lmw}}, which fits the outcome model to extract
+calling \code{\link[=influence.lmw]{influence.lmw()}}, which fits the outcome model to extract
 residuals and compute the SIC as \code{SIC = (N-1) * w * r / (1 - h)}, where
 \code{N} is the sample size, \code{w} are the units' implied regression
 weights, \code{r} are the residuals, and \code{h} are the hat values. SIC
@@ -103,6 +116,6 @@ plot(lmw.out1, type = "extrapolation",
 plot(lmw.out1, type = "influence", outcome = "re78")
 }
 \seealso{
-\code{\link{lmw}}, \code{\link{summary.lmw}},
-\code{\link{plot.summary.lmw}}
+\code{\link[=lmw]{lmw()}}, \code{\link[=summary.lmw]{summary.lmw()}},
+\code{\link[=plot.summary.lmw]{plot.summary.lmw()}}
 }

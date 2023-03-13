@@ -22,8 +22,7 @@ output.}
 
 \item{alpha}{when \code{ci = TRUE}, the alpha value used to compute the
 critical test statistic for the confidence interval; equivalently, 1 minus
-the confidence level (e.g., for a 99\\% confidence interval, \code{alpha =
-.01} should be specified). Default is .05 for a 95\\% confidence interval.}
+the confidence level (e.g., for a 99\\% confidence interval, \code{alpha = .01} should be specified). Default is .05 for a 95\\% confidence interval.}
 
 \item{\dots}{ignored.}
 }
@@ -37,7 +36,7 @@ t-statistics, and p-values. Omitted when \code{method = "URI"} or
 \code{fixef} is not \code{NULL} and for \code{lmw_iv} objects.}
 \item{coefficients}{a matrix containing the treatment effect estimates and
 their standard errors, t-statistics, and p-values.When \code{ci = TRUE}, the
-confidence limits \code{"95\%" CI L} (lower) and \code{"95\%" CI U} (upper)
+confidence limits \verb{"95\\\%" CI L} (lower) and \verb{"95\\\%" CI U} (upper)
 will be included between the standard error and t-statistic columns. When
 AIPW is used, z-statistics and z-tests are reported instead.}
 \item{model.coefficients}{when \code{model = TRUE}, the coefficient table of
@@ -47,7 +46,7 @@ the original coefficients are aliased (i.e., \code{NA}).}
 \item{sigma, df,
 r.squared, adj.r.squared}{the residual standard deviation, degrees of
 freedom components, R-squared, and adjusted R-squared. See
-\code{\link{summary.lm}}. When AIPW is used, \code{sigma} and \code{df} are
+\code{\link[=summary.lm]{summary.lm()}}. When AIPW is used, \code{sigma} and \code{df} are
 omitted.}
 
 Other components containing information for printing are also included.
@@ -55,7 +54,7 @@ Other components containing information for printing are also included.
 \description{
 \code{summary()} computes the treatment effect and potential outcome mean
 estimates from the supplied \code{lmw_est} object. It functions similarly to
-\code{\link{summary.lm}} in producing estimate tables with the estimates,
+\code{\link[=summary.lm]{summary.lm()}} in producing estimate tables with the estimates,
 standard errors, t-statistics, and p-values. Other model statistics can be
 additionally requested.
 }
@@ -84,9 +83,9 @@ using AIPW, as the model coefficients do not incorporate the augmentation
 terms.
 }
 \examples{
-# See examples at help("lmw_est")
+# See examples at `help("lmw_est")`
 }
 \seealso{
-\code{\link{lmw_est}} for fitting the outcome regression model,
-\code{\link{summary.lm}} for more information on the output components
+\code{\link[=lmw_est]{lmw_est()}} for fitting the outcome regression model,
+\code{\link[=summary.lm]{summary.lm()}} for more information on the output components
 }

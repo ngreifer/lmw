@@ -16,7 +16,7 @@
 }
 \arguments{
 \item{x}{a \code{summary.lmw} object; the output of a call to
-\code{\link{summary.lmw}} with \code{standardize = TRUE}.}
+\code{\link[=summary.lmw]{summary.lmw()}} with \code{standardize = TRUE}.}
 
 \item{stats}{a vector of the names of the columns in the \code{summary.lmw}
 output to plot; more than one is allowed. Abbreviations allowed. When
@@ -32,7 +32,7 @@ standardized mean difference.}
 \item{var.order}{how the variables should be ordered. Allowable options
 include \code{"data"}, ordering the variables as they appear in the summary
 output, \code{"alphabetical"}, ordering the variables alphabetically, and,
-when \code{un = TRUE} in the call to \code{summar.lmw()},
+when \code{un = TRUE} in the call to \code{summary.lmw()},
 \code{"unadjusted"}, ordering the variables by the first statistic in
 \code{stats} in the unadjusted sample. Default is \code{"data"}.
 Abbreviations allowed.}
@@ -43,7 +43,7 @@ balance has been achieved given a threshold. Multiple values can be supplied
 to add multiple lines. When \code{abs = FALSE}, the lines will be displayed
 on both sides of zero. The lines are drawn with \code{abline} with the
 linetype (\code{lty}) argument corresponding to the order of the entered
-variables (see options at \code{\link{par}}). Enter a value as \code{NA} to
+variables (see options at \code{\link[=par]{par()}}). Enter a value as \code{NA} to
 skip that value of \code{lty} (e.g., \code{c(NA, .05)} to have only a dashed
 vertical line at .05).}
 
@@ -51,7 +51,7 @@ vertical line at .05).}
 include \code{"vertical"} (the default) and \code{"horizontal"}.
 Abbreviations allowed.}
 
-\item{\dots}{further arguments passed to \code{\link{dotplot}}.}
+\item{\dots}{further arguments passed to \code{\link[=dotplot]{dotplot()}}.}
 }
 \value{
 A plot is displayed, and \code{x} is invisibly returned.
@@ -59,12 +59,12 @@ A plot is displayed, and \code{x} is invisibly returned.
 \description{
 Produces Love plots (also known as dot plots) of balance statistics to
 summarize balance visually. The plots are generated using
-\code{\link{dotchart}} and \code{\link{points}}.
+\code{\link[=dotchart]{dotchart()}} and \code{\link[=points]{points()}}.
 }
 \details{
 Love plots will be produced for the requested statistics in the
 \code{summary.lmw} output. How these plots are arranged depends on the value
-supplied to \code{layout}, which uses \code{\link{layout}} to arrange the
+supplied to \code{layout}, which uses \code{\link[=layout]{layout()}} to arrange the
 plots.
 }
 \examples{
@@ -82,5 +82,5 @@ plot(s)
 plot(s, stats = "SMD", abs = FALSE)
 }
 \seealso{
-\code{\link{summary.lmw}}
+\code{\link[=summary.lmw]{summary.lmw()}}
 }

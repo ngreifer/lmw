@@ -11,7 +11,7 @@
 }
 \arguments{
 \item{model}{an \code{lmw} or \code{lmw_est} object; the output of a call to
-\code{\link{lmw}} or \code{\link{lmw_est}}.}
+\code{\link[=lmw]{lmw()}} or \code{\link[=lmw_est]{lmw_est()}}.}
 
 \item{outcome}{the name of the outcome variable. Can be supplied as a string
 containing the name of the outcome variable or as the outcome variable
@@ -34,7 +34,7 @@ residuals.}
 \description{
 \code{influence()} produces influence measures for \code{lmw} objects that
 can be used as regression diagnostics to identify influential cases. These
-functions produce similar outputs to \code{\link{lm.influence}} but also
+functions produce similar outputs to \code{\link[=lm.influence]{lm.influence()}} but also
 include the sample influence curve (SIC) values, which combine information
 about the hat values, residuals, and implied regression weights.
 }
@@ -54,9 +54,9 @@ relative influence.
 \code{outcome} argument. For programmers who wish to use
 \code{influence.lmw()} inside other functions, an effective way to pass the
 name of an arbitrary outcome (e.g., \code{y} passed as a string) is to use
-\code{\link{do.call}}, for example: \preformatted{fun <- function(m, y, d) {
+\code{\link[=do.call]{do.call()}}, for example: \preformatted{fun <- function(m, y, d) {
 do.call("influence", list(m, y, d)) } } When using \code{influence.lmw()}
-inside \code{\link{lapply}} or \code{purrr::map} to loop over outcomes, this
+inside \code{\link[=lapply]{lapply()}} or \code{purrr::map} to loop over outcomes, this
 syntax must be used as well.
 }
 \examples{
@@ -80,9 +80,9 @@ all.equal(infl,
 
 }
 \seealso{
-\code{\link{plot.lmw}} for plotting the SIC values;
-\code{\link{lm.influence}} for influence measures for \code{lm} objects,
-which do not include SIC values; \code{\link{hatvalues}} for hat values for
+\code{\link[=plot.lmw]{plot.lmw()}} for plotting the SIC values;
+\code{\link[=lm.influence]{lm.influence()}} for influence measures for \code{lm} objects,
+which do not include SIC values; \code{\link[=hatvalues]{hatvalues()}} for hat values for
 \code{lm} objects (note that \code{lmw_est} objects also have a
 \code{hatvalues()} method).
 }

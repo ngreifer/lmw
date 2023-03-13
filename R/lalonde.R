@@ -6,7 +6,7 @@
 #' Population Survey of Income Dynamics (PSID). This data was previously
 #' analyzed extensively by Lalonde (1986) and Dehejia and Wahba (1999). The
 #' original dataset is available at
-#' \url{https://users.nber.org/~rdehejia/nswdata2.html}.
+#' <https://users.nber.org/~rdehejia/nswdata2.html>.
 #'
 #' The data corresponds to the NSW treated sample and the PSID control sample
 #' with 1974 earnings included. This specific dataset is different from the one in the
@@ -15,7 +15,7 @@
 #'
 #' @docType data
 #' @format A data frame with 2675 observations (185 treated, 2490 control). There
-#' are 9 variables measured for each individual. In addition, two constructed variables are included: \code{treat_multi}, which splits the original control group into two, and \code{Ins}, which is a constructed instrumental variable.
+#' are 9 variables measured for each individual. In addition, two constructed variables are included: `treat_multi`, which splits the original control group into two, and `Ins`, which is a constructed instrumental variable.
 #' \itemize{
 #' \item "treat" is the
 #' treatment assignment (1=treated, 0=control).

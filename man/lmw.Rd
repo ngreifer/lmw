@@ -37,7 +37,7 @@ effect, \code{"ATT"} for the average treatment effect in the treated,
 \code{"ATC"} for the average treatment effect in the control, or
 \code{"CATE"} for the conditional average treatment effect. When
 \code{estimand = "CATE"}, an argument to \code{target} must be supplied.
-This argument also affects what \code{\link{summary.lmw}} considers to be
+This argument also affects what \code{\link[=summary.lmw]{summary.lmw()}} considers to be
 the target population. Default is \code{"ATE"} unless \code{obj} is
 specified, in which case it takes its value from the supplied object.}
 
@@ -101,20 +101,30 @@ to be supplied. See Details.}
 }
 \value{
 An \code{lmw} object, which contains the following components:
-\item{treat}{the treatment variable, given as a factor.} \item{weights}{the
-computed implied regression weights.} \item{covs}{a data frame containing
-the covariates included the model formula.} \item{estimand}{the requested
-estimand.} \item{method}{the method used to estimate the weights
-(\code{"URI"} or \code{"MRI"}).} \item{base.weights}{the weights supplied to
-\code{base.weights}.} \item{s.weights}{the weights supplied to
-\code{s.weights}.} \item{dr.method}{when \code{base.weights} are supplied,
-the method for computing the doubly-robust weights.} \item{call}{the
-original call to \code{lmw()}.} \item{fixef}{the fixed effects variable if
-supplied to \code{fixef}.} \item{formula}{the model formula.}
-\item{target}{the supplied target profile or dataset when \code{estimand =
-"CATE"}, after some initial processing. The \code{"target.weights"}
+\item{treat}{the treatment variable, given as a factor.}
+\item{weights}{the
+computed implied regression weights.}
+\item{covs}{a data frame containing
+the covariates included the model formula.}
+\item{estimand}{the requested
+estimand.}
+\item{method}{the method used to estimate the weights
+(\code{"URI"} or \code{"MRI"}).}
+\item{base.weights}{the weights supplied to
+\code{base.weights}.}
+\item{s.weights}{the weights supplied to
+\code{s.weights}.}
+\item{dr.method}{when \code{base.weights} are supplied,
+the method for computing the doubly-robust weights.}
+\item{call}{the
+original call to \code{lmw()}.}
+\item{fixef}{the fixed effects variable if
+supplied to \code{fixef}.}
+\item{formula}{the model formula.}
+\item{target}{the supplied target profile or dataset when \code{estimand = "CATE"}, after some initial processing. The \code{"target.weights"}
 attribute contains the \code{target.weights} if supplied.}
-\item{contrast}{the contrasted treatment groups.} \item{focal}{the focal
+\item{contrast}{the contrasted treatment groups.}
+\item{focal}{the focal
 treatment level when \code{estimand} is \code{"ATT"} or \code{"ATC"}.}
 }
 \description{
@@ -166,9 +176,9 @@ example, if \code{formula = ~ X1 + log(X1) + X2 + X1:X2}, values in
 factor corresponding to a proportion (e.g., a target value of .5 for a
 variable like \code{sex} indicating a target population with a 50-50 sex
 split), the factor variable must be split into a numeric variable
-beforehand, e.g., using \code{\link{model.matrix}} or
+beforehand, e.g., using \code{\link[=model.matrix]{model.matrix()}} or
 \code{cobalt::splitfactor()}. \code{target} values cannot be given to
-variables specified using \code{$}, \code{[[]]}, or \code{[]} (e.g.,
+variables specified using \code{$}, \verb{[[]]}, or \verb{[]} (e.g.,
 \code{data$X1}), so an error will be thrown if they are used in
 \code{formula}. When a target dataset is supplied, covariates will be
 centered at their means in the (\code{target.weights}-weighted) target
@@ -251,7 +261,7 @@ weighted mean of the reference group.
 The implication of this is that contrast statistics computed in the weighted
 sample involve all units, even those not in the contrasted groups, whereas
 statistics computed in the unweighted sample only involve units in the
-contrasted groups. See \code{\link{summary.lmw}} for more information on
+contrasted groups. See \code{\link[=summary.lmw]{summary.lmw()}} for more information on
 assessing balance using the regression weights for multi-category
 treatments. Given these complications, it is generally best to use
 \code{method = "MRI"} with multi-category treatments.
@@ -268,9 +278,9 @@ URI, the weights will be the same regardless of whether the fixed effect
 variable is included as a covariate or supplied to \code{fixef}; when using
 MRI, results will differ because the fixed effect variable does not interact
 with treatment. The fixed effects variable will not appear in the
-\code{\link{summary.lmw}} output (but can be added using \code{addlvariables}
-argument) or in the model output of \code{\link{lmw_est}} or
-\code{\link{summary.lmw_est}}. Because it does not interact with the
+\code{\link[=summary.lmw]{summary.lmw()}} output (but can be added using \code{addlvariables}
+argument) or in the model output of \code{\link[=lmw_est]{lmw_est()}} or
+\code{\link[=summary.lmw_est]{summary.lmw_est()}}. Because it does not interact with the
 treatment, the distribution of the fixed effect variable may not correspond
 to the target population, so caution should be used if it is expected the
 treatment effect varies across levels of this variable (in which case it
@@ -365,9 +375,9 @@ Chattopadhyay, A., & Zubizarreta, J. R. (2022). On the implied
 weights of linear regression for causal inference. \emph{Biometrika}, asac058. \doi{10.1093/biomet/asac058}
 }
 \seealso{
-\code{\link{summary.lmw}} for summarizing balance and
-representativeness; \code{\link{plot.lmw}} for plotting features of the
-weights; \code{\link{lmw_est}} for estimating treatment effects from
-\code{lmw} objects; \code{\link{influence.lmw}} for influence measures;
-\code{\link{lm}} for fitting standard regression models.
+\code{\link[=summary.lmw]{summary.lmw()}} for summarizing balance and
+representativeness; \code{\link[=plot.lmw]{plot.lmw()}} for plotting features of the
+weights; \code{\link[=lmw_est]{lmw_est()}} for estimating treatment effects from
+\code{lmw} objects; \code{\link[=influence.lmw]{influence.lmw()}} for influence measures;
+\code{\link[=lm]{lm()}} for fitting standard regression models.
 }

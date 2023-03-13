@@ -37,7 +37,7 @@ effect, \code{"ATT"} for the average treatment effect in the treated,
 \code{"ATC"} for the average treatment effect in the control, or
 \code{"CATE"} for the conditional average treatment effect. When
 \code{estimand = "CATE"}, an argument to \code{target} must be supplied.
-This argument also affects what \code{\link{summary.lmw}} considers to be
+This argument also affects what \code{\link[=summary.lmw]{summary.lmw()}} considers to be
 the target population. Default is \code{"ATE"} unless \code{obj} is
 specified, in which case it takes its value from the supplied object.}
 
@@ -94,24 +94,32 @@ supplied.}
 }
 \value{
 An \code{lmw_iv} object, which inherits from \code{lmw} objects and
-contains the following components: \item{treat}{the treatment variable,
-given as a factor.} \item{weights}{the computed implied regression weights.}
+contains the following components:
+\item{treat}{the treatment variable,
+given as a factor.}
+\item{weights}{the computed implied regression weights.}
 \item{covs}{a data frame containing the covariates included the model
-formula.} \item{estimand}{the requested estimand.} \item{method}{the method
+formula.}
+\item{estimand}{the requested estimand.}
+\item{method}{the method
 used to estimate the weights (\code{"URI"} or \code{"MRI"}).}
 \item{base.weights}{the weights supplied to \code{base.weights}.}
-\item{s.weights}{the weights supplied to \code{s.weights}.} \item{call}{the
-original call to \code{lmw_iv()}.} \item{fixef}{the fixed effects variable
-if supplied to \code{fixef}.} \item{formula}{the model formula.}
+\item{s.weights}{the weights supplied to \code{s.weights}.}
+\item{call}{the
+original call to \code{lmw_iv()}.}
+\item{fixef}{the fixed effects variable
+if supplied to \code{fixef}.}
+\item{formula}{the model formula.}
 \item{iv}{the instrumental variables, given as a one-sided formula.}
-\item{target}{the supplied covariate target values when \code{estimand =
-"CATE"}, after some initial processing.} \item{contrast}{the contrasted
-treatment groups.} \item{focal}{the focal treatment levels when
+\item{target}{the supplied covariate target values when \code{estimand = "CATE"}, after some initial processing.}
+\item{contrast}{the contrasted
+treatment groups.}
+\item{focal}{the focal treatment levels when
 \code{estimand} is \code{"ATT"} or \code{"ATC"}.}
 
 All functions that lack a specific \code{lmw_iv} method work with
 \code{lmw_iv} objects as they do for \code{lmw} objects, such as
-\code{\link{summary.lmw}}, \code{\link{plot.lmw}}, etc.
+\code{\link[=summary.lmw]{summary.lmw()}}, \code{\link[=plot.lmw]{plot.lmw()}}, etc.
 }
 \description{
 Computes the weights implied by an instrumental variable (IV) model that
@@ -220,9 +228,9 @@ variables. When using URI, the weights will be the same regardless of
 whether the fixed effect variable is included as a covariate or supplied to
 \code{fixef}; when using MRI, results will differ because the fixed effect
 variable does not interact with treatment. The fixed effects variable will
-not appear in the \code{\link{summary.lmw}} output (but can be added using
-\code{addlvariables} argument) or in the model output of \code{\link{lmw_est}} or
-\code{\link{summary.lmw_est}}. Because it does not interact with the
+not appear in the \code{\link[=summary.lmw]{summary.lmw()}} output (but can be added using
+\code{addlvariables} argument) or in the model output of \code{\link[=lmw_est]{lmw_est()}} or
+\code{\link[=summary.lmw_est]{summary.lmw_est()}}. Because it does not interact with the
 treatment, the distribution of the fixed effect variable may not correspond
 to the target population, so caution should be used if it is expected the
 treatment effect varies across levels of this variable (in which case it
@@ -241,12 +249,12 @@ summary(lmw.out, addlvariables = ~married + re75)
 }
 \references{
 Chattopadhyay, A., & Zubizarreta, J. R. (2022). On the implied
-weights of linear regression for causal inference. Biometrika, asac058. \doi{10.1093/biomet/asac058}
+weights of linear regression for causal inference. \emph{Biometrika}, asac058. \doi{10.1093/biomet/asac058}
 }
 \seealso{
-\code{\link{summary.lmw}} for summarizing balance and
-representativeness; \code{\link{plot.lmw}} for plotting features of the
-weights; \code{\link{lmw_est}} for estimating treatment effects from
-\code{lmw_iv} objects; \code{\link{influence.lmw}} for influence measures;
+\code{\link[=summary.lmw]{summary.lmw()}} for summarizing balance and
+representativeness; \code{\link[=plot.lmw]{plot.lmw()}} for plotting features of the
+weights; \code{\link[=lmw_est]{lmw_est()}} for estimating treatment effects from
+\code{lmw_iv} objects; \code{\link[=influence.lmw]{influence.lmw()}} for influence measures;
 \code{ivreg()} in the \pkg{ivreg} package for fitting 2SLS models.
 }
