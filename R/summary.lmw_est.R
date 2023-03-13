@@ -354,7 +354,7 @@ vcov.lmw_est <- function(object, complete = TRUE, ...) {
 }
 
 #' @exportS3Method bread lmw_est
-bread.lmw_est <- function(x) {
+bread.lmw_est <- function(x, ...) {
   p <- x$rank
   p1 <- seq_len(p)
   Qr <- x$qr

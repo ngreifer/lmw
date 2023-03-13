@@ -125,7 +125,9 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
       fit$vcov <- sandwich::vcovCL(fit_sub, type = robust, cluster = cluster, ...)
     },
     warning = function(w) {
-      if (conditionMessage(w) != "clustered HC2/HC3 are only applicable to (generalized) linear regression models") warning(w)
+      if (conditionMessage(w) != "clustered HC2/HC3 are only applicable to (generalized) linear regression models") {
+        warning(w)
+      }
       invokeRestart("muffleWarning")
     })
   }
@@ -148,7 +150,7 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
 }
 
 #' @exportS3Method sandwich::bread lmw_est_iv
-bread.lmw_est_iv <- function(x) {
+bread.lmw_est_iv <- function(x, ...) {
   p <- x$rank
   p1 <- seq_len(p)
   Qr <- x$qr
