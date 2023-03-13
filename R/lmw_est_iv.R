@@ -1,3 +1,5 @@
+#' @exportS3Method lmw_est lmw_iv
+#' @rdname lmw_est
 lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, ...) {
 
   call <- match.call()
@@ -9,17 +11,11 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
                                           s.weights = x$s.weights, target.weights = attr(x$target, "target.weights"),
                                           focal = x$focal)
 
-  X <- obj1$X
-  t <- as.numeric(x$treat == levels(x$treat)[2])
-
   outcome <- do.call("get_outcome", list(substitute(outcome), data, x$formula,
                                          obj1$X))
   outcome_name <- attr(outcome, "outcome_name")
 
   attributes(outcome) <- NULL
-
-  ## model dimensions
-  p <- ncol(obj1$X)
 
   weighted <- !is.null(x$s.weights) || !is.null(x$base.weights)
 
@@ -108,7 +104,7 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
   }
 
   if (is.null(cluster)) {
-    fit$vcov <- sandwich::vcovHC(fit, type = robust, ...)
+    fit$vcov <- sandwich::vcovHC(fit_sub, type = robust, ...)
   }
   else {
     if (inherits(cluster, "formula")) {
@@ -126,7 +122,7 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
     }
 
     withCallingHandlers({
-      fit$vcov <- sandwich::vcovCL(fit, type = robust, cluster = cluster, ...)
+      fit$vcov <- sandwich::vcovCL(fit_sub, type = robust, cluster = cluster, ...)
     },
     warning = function(w) {
       if (conditionMessage(w) != "clustered HC2/HC3 are only applicable to (generalized) linear regression models") warning(w)
@@ -151,6 +147,7 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
   fit
 }
 
+#' @exportS3Method sandwich::bread lmw_est_iv
 bread.lmw_est_iv <- function(x) {
   p <- x$rank
   p1 <- seq_len(p)

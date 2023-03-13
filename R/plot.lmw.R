@@ -1,3 +1,101 @@
+#' Plots diagnosing regression-implied weights
+#'
+#' @description
+#' Produces plots to diagnose properties of the weights, including their
+#' distribution, to what degree the distribution of covariates involves
+#' extrapolation in the weighted sample, and how much influence each unit has
+#' on the effect estimate.
+#'
+#' @details
+#' When \code{type = "weights"}, \code{plot.lmw()} produces a density plot of
+#' the weights within each treatment group. By construction, these weights will
+#' have a mean of 1. Some weights may be negative. The effective sample size
+#' (ESS) and original sample size (N) will be displayed in the upper right
+#' corner of the plot when \code{ess = TRUE}.
+#'
+#' When \code{type = "extrapolation"}, \code{plot.lmw()} produces a plot of the
+#' distribution of weights and covariates for each treatment group. Each dot
+#' represents a unit, with values arranged on the x-axis according to their
+#' covariate value and the size of the dots corresponding to the magnitude of
+#' the weight. Units with positive weights are displayed in black in the upper
+#' portion of the plot, and units with negative weights are displayed in red in
+#' the lower portion. Having many and large red points indicates a high degree
+#' of extrapolation. All points are equally transparent, so darker regions
+#' indicate multiple points with the same value. The vertical lines indicates
+#' the weighted mean of the covariate in each group, and the X indicates the
+#' mean of the covariate in the target sample as determined by the
+#' \code{estimand} argument in the original call to \code{lmw()}. A large
+#' discrepancy between the vertical lines and Xs indicates a lack of balance
+#' between the treatment group and target sample. When \code{estimand = "CATE"}
+#' in the original call to \code{lmw()}, any variables supplied to \code{var}
+#' that were not given a target value will not have the target mean displayed.
+#'
+#' When \code{type = "influence"}, \code{plot.lmw()} produces a plot of the
+#' scaled sample influence curve (SIC) for each unit by index. It does so by
+#' calling \code{\link{influence.lmw}}, which fits the outcome model to extract
+#' residuals and compute the SIC as \code{SIC = (N-1) * w * r / (1 - h)}, where
+#' \code{N} is the sample size, \code{w} are the units' implied regression
+#' weights, \code{r} are the residuals, and \code{h} are the hat values. SIC
+#' values are scaled to have a maximum of 1. Higher values indicate greater
+#' relative influence.
+#'
+#' @param x an \code{lmw} object; the output of a call to \code{\link{lmw}}.
+#' @param type the type of plot to display. Allowable options include
+#' \code{"weights"}, \code{"extrapolation"}, and \code{"influence"}. See
+#' Details. Abbreviations allowed.
+#' @param \dots further arguments passed to specific types of plots.
+#'
+#' When \code{type = "weights"}, the following are accepted: \describe{
+#' \item{list("rug")}{\code{logical}; whether to display a rug plot of the
+#' weights. Default is \code{TRUE}.} \item{list("mean")}{whether to display a
+#' red line indicating the mean of the weights. Default is \code{TRUE}.}
+#' \item{list("ess")}{whether to display the original and weighted effective
+#' sample size in the top right corner. Default is \code{TRUE}.} } Other
+#' arguments are passed to \code{\link{density}}.
+#'
+#' When \code{type = "extrapolation"}, the following are accepted: \describe{
+#' \item{list("var")}{required; a right-sided formula or character vector
+#' containing the names of the covariates for which extrapolation is to be
+#' assessed.} \item{list("data")}{an optional data frame containing the
+#' variables named in \code{var}.} } When \code{type = "influence"}, the
+#' following are accepted: \describe{ \item{list("outcome")}{the name of the
+#' outcome variable. Can be supplied as a string containing the name of the
+#' outcome variable or as the outcome variable itself. If not supplied, the
+#' outcome variable in the \code{formula} supplied to \code{lmw()}, if any,
+#' will be used.} \item{list("data")}{an optional data frame containing the
+#' outcome variable named in \code{outcome}.} \item{list("id.n")}{the number of
+#' points to be labelled in the plot, starting with the most extreme.} }
+#'
+#' @return A plot is displayed, and \code{x} is invisibly returned.
+#'
+#' @seealso \code{\link{lmw}}, \code{\link{summary.lmw}},
+#' \code{\link{plot.summary.lmw}}
+#'
+#' @examples
+#' data("lalonde")
+#'
+#' # URI regression for ATT
+#' lmw.out1 <- lmw(~ treat + age + education + race + married +
+#'                    nodegree + re74 + re75, data = lalonde,
+#'                 estimand = "ATT", method = "URI",
+#'                 treat = "treat")
+#' lmw.out1
+#'
+#' # Distribution of weights
+#' plot(lmw.out1, type = "weights")
+#'
+#' # Extrapolation/representativeness for age and married
+#' plot(lmw.out1, type = "extrapolation",
+#'      var = ~age + married)
+#'
+#' # Extrapolation/representativeness for race
+#' plot(lmw.out1, type = "extrapolation",
+#'      var = ~race)
+#'
+#' # Influence for re78 outcome
+#' plot(lmw.out1, type = "influence", outcome = "re78")
+
+#' @exportS3Method plot lmw
 plot.lmw <- function(x, type = "weights", ...) {
   type <- match_arg(type, c("weights", "extrapolation", "influence"))
 
@@ -29,7 +127,7 @@ weights_plot <- function(x, rug = TRUE, mean = TRUE, ess = TRUE, ...) {
   par(mar = c(2.75, 3, 1.75, 1),
       mgp = c(1.5, 0.5, 0))
 
-  dev.hold()
+  grDevices::dev.hold()
   for (i in tlevs) {
     if (length(tlevs) == 2 && i != tlevs[1] && x$method == "URI") {
       in_i <- which(t != tlevs[1])
@@ -108,7 +206,7 @@ weights_plot <- function(x, rug = TRUE, mean = TRUE, ess = TRUE, ...) {
              cex = 0.8)
     }
   }
-  dev.flush()
+  grDevices::dev.flush()
 }
 
 extrapolation_plot <- function(x, var, data = NULL, ...) {
@@ -190,11 +288,11 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
 
   col <- character(length(t))
   for (i in tlevs) {
-    col[t == i & w >= 0] <- adjustcolor("black", alpha.f = alpha[i])
-    col[t == i & w < 0] <- adjustcolor("red", alpha.f = alpha[i])
+    col[t == i & w >= 0] <- grDevices::adjustcolor("black", alpha.f = alpha[i])
+    col[t == i & w < 0] <- grDevices::adjustcolor("red", alpha.f = alpha[i])
   }
 
-  dev.hold()
+  grDevices::dev.hold()
   for (j in names(v)) {
     vj <- v[[j]]
 
@@ -263,13 +361,11 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
          },
          tick = FALSE, cex.axis = cex.text)
   }
-  dev.flush()
+  grDevices::dev.flush()
 
 }
 
 influence_plot <- function(x, outcome, data = NULL, id.n = 3, ...) {
-  call <- match.call(expand.dots = FALSE)
-
   .pardefault <- par(no.readonly = TRUE)
   on.exit(par(.pardefault))
 
@@ -290,7 +386,7 @@ influence_plot <- function(x, outcome, data = NULL, id.n = 3, ...) {
   # indices <- indices[-length(indices)]
   # indices[length(indices)] <- N
 
-  dev.hold()
+  grDevices::dev.hold()
   plot(SIC_std,
        type = "h",
        lty = "solid",
@@ -299,7 +395,7 @@ influence_plot <- function(x, outcome, data = NULL, id.n = 3, ...) {
        ylim = c(0, 1.075),
        # cex.lab = 0.8,
        # cex.axis = 0.8,
-       col = grey(0),
+       col = grDevices::gray(0),
        xaxt = "n",
        yaxt = "n")
 
@@ -315,22 +411,6 @@ influence_plot <- function(x, outcome, data = NULL, id.n = 3, ...) {
        at = indices)
   axis(side = 2,
        at = seq(0, 1, 0.25))
-  mtext(as.graphicsAnnot("Sample Influence Curve"), 3, 0.25, cex = 1)
-  dev.flush()
+  mtext(grDevices::as.graphicsAnnot("Sample Influence Curve"), 3, 0.25, cex = 1)
+  grDevices::dev.flush()
 }
-
-plot.lmw_est <- function(x, type = "influence", ...) {
-  type <- match_arg(type, c("influence", "lm"))
-
-  if (type == "influence") {
-    influence_plot(x, ...)
-  }
-  else if (type == "lm") {
-    class(x) <- c(class(x), "lm")
-    plot.lm(x, ...)
-  }
-
-  invisible(x)
-}
-
-plot.lm <- utils::getS3method("plot", "lm")

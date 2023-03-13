@@ -1,3 +1,5 @@
+#' @exportS3Method lmw_est lmw_aipw
+#' @rdname lmw_est
 lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, ...) {
 
   call <- match.call()
@@ -159,6 +161,8 @@ lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = N
   fit
 }
 
+#' @exportS3Method summary lmw_est_aipw
+#' @rdname summary.lmw_est
 summary.lmw_est_aipw <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) {
   treat_coef_inds <- seq_along(object$treat_levels)
 
@@ -186,7 +190,7 @@ summary.lmw_est_aipw <- function(object, model = FALSE, ci = TRUE, alpha = .05, 
   means <- drop(a %*% object$coef_aipw)[means_order]
   means_vcov <- (a %*% object$vcov_aipw %*% t(a))[means_order, means_order]
 
-  contrasts <- combn(object$treat_levels, 2, simplify = FALSE)
+  contrasts <- utils::combn(object$treat_levels, 2, simplify = FALSE)
 
   a0 <- setNames(rep(0, length(object$treat_levels)), object$treat_levels)
   a <- do.call("rbind", lapply(contrasts, function(i) {

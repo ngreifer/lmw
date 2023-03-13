@@ -1,3 +1,82 @@
+#' Extract effect estimates and standard errors from \code{lmw_est} fits
+#'
+#' @description
+#' \code{summary()} computes the treatment effect and potential outcome mean
+#' estimates from the supplied \code{lmw_est} object. It functions similarly to
+#' \code{\link{summary.lm}} in producing estimate tables with the estimates,
+#' standard errors, t-statistics, and p-values. Other model statistics can be
+#' additionally requested.
+#'
+#' @details
+#' \code{summary.lmw_est()} produces a table of treatment effect estimates
+#' corresponding to all possible pairwise contrasts between the treatment
+#' levels. These treatment effects generalize to the population implied by the
+#' regression weights, which depends on the supplied estimand, whether sampling
+#' weights were provided, and which of the MRI or URI models was requested. The
+#' treatment effects are computed using linear contrasts of the outcome model
+#' coefficients.
+#'
+#' When \code{method = "MRI"}, the potential outcome mean estimates are also
+#' reported. These correspond to the potential outcome means in the population
+#' implied by the regression weights. When \code{method = "URI"}, only the
+#' treatment effects are estimated; the model-implied outcome means do not
+#' correspond to the potential outcome means for the population implied by the
+#' regression weights. That is, while the treatment effect generalizes to the
+#' population defined by the regression weights, the estimated potential
+#' outcome means do not and so are not reported.
+#'
+#' When \code{model = TRUE}, the model coefficients and their tests statistics
+#' are additionally produced. It is inappropriate to interpret or report these
+#' values as they have no causal interpretation. This is especially true when
+#' using AIPW, as the model coefficients do not incorporate the augmentation
+#' terms.
+#'
+#' @param object an \code{lmw_est} object; the output of a call to
+#' \code{lmw_est}.
+#' @param model \code{logical}; whether to produce a coefficient table for the
+#' outcome model coefficients. Note that these values should not be interpreted
+#' or reported so they are not produced by default.
+#' @param ci \code{logical}; whether to include confidence intervals in the
+#' output.
+#' @param alpha when \code{ci = TRUE}, the alpha value used to compute the
+#' critical test statistic for the confidence interval; equivalently, 1 minus
+#' the confidence level (e.g., for a 99\% confidence interval, \code{alpha =
+#' .01} should be specified). Default is .05 for a 95\% confidence interval.
+#' @param \dots ignored.
+#'
+#' @return
+#' A \code{summary.lmw_est} object with the following components:
+#' \item{call}{the original call to \code{lmw_est()}}
+#' \item{means}{a matrix
+#' containting the estimated potential outcome means, their standard errors,
+#' confidence interval limits (if requested with \code{ci = TRUE}),
+#' t-statistics, and p-values. Omitted when \code{method = "URI"} or
+#' \code{fixef} is not \code{NULL} and for \code{lmw_iv} objects.}
+#' \item{coefficients}{a matrix containing the treatment effect estimates and
+#' their standard errors, t-statistics, and p-values.When \code{ci = TRUE}, the
+#' confidence limits \code{"95\%" CI L} (lower) and \code{"95\%" CI U} (upper)
+#' will be included between the standard error and t-statistic columns. When
+#' AIPW is used, z-statistics and z-tests are reported instead.}
+#' \item{model.coefficients}{when \code{model = TRUE}, the coefficient table of
+#' the model coefficients, which has the same columns as \code{coefficients.}}
+#' \item{aliased}{when \code{model = TRUE}, a named logical vector showing if
+#' the original coefficients are aliased (i.e., \code{NA}).}
+#' \item{sigma, df,
+#' r.squared, adj.r.squared}{the residual standard deviation, degrees of
+#' freedom components, R-squared, and adjusted R-squared. See
+#' \code{\link{summary.lm}}. When AIPW is used, \code{sigma} and \code{df} are
+#' omitted.}
+#'
+#' Other components containing information for printing are also included.
+#'
+#' @seealso
+#' \code{\link{lmw_est}} for fitting the outcome regression model,
+#' \code{\link{summary.lm}} for more information on the output components
+#'
+#' @examples
+#' # See examples at help("lmw_est")
+
+#' @exportS3Method summary lmw_est
 summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) {
   treat_coef_inds <- seq_along(object$treat_levels)
 
@@ -28,10 +107,10 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
 
   if (!is.null(object$focal)) {
     treat_levels <- c(object$focal, setdiff(object$treat_levels, object$focal))
-    contrasts <- combn(treat_levels, 2, simplify = FALSE)
+    contrasts <- utils::combn(treat_levels, 2, simplify = FALSE)
   }
   else {
-    contrasts <- combn(object$treat_levels, 2, simplify = FALSE)
+    contrasts <- utils::combn(object$treat_levels, 2, simplify = FALSE)
   }
 
   a0 <- setNames(rep(0, length(object$treat_levels)), object$treat_levels)
@@ -152,6 +231,7 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
   return(ans)
 }
 
+#' @exportS3Method print summary.lmw_est
 print.summary.lmw_est <- function(x, digits = max(3, getOption("digits") - 3),
                                   signif.stars = getOption("show.signif.stars"), ...) {
   # cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
@@ -232,6 +312,7 @@ print.summary.lmw_est <- function(x, digits = max(3, getOption("digits") - 3),
   invisible(x)
 }
 
+#' @exportS3Method model.matrix lmw_est
 model.matrix.lmw_est <- function(object, ...) {
   mm <- object$model.matrix
   if (called_from("meatHC", "meatCL")) {
@@ -239,6 +320,8 @@ model.matrix.lmw_est <- function(object, ...) {
   }
   mm
 }
+
+#' @exportS3Method hatvalues lmw_est
 hatvalues.lmw_est <- function(model, ...) {
   h <- hat_fast(model$model.matrix, model$weights, model$fixef)
   if (called_from("meatHC", "meatCL")) {
@@ -246,6 +329,8 @@ hatvalues.lmw_est <- function(model, ...) {
   }
   h
 }
+
+#' @exportS3Method estfun lmw_est
 estfun.lmw_est <- function (x, ...) {
 
   x <- subset_fit(x)
@@ -263,26 +348,13 @@ estfun.lmw_est <- function (x, ...) {
 
   return(rval)
 }
+
+#' @exportS3Method vcov lmw_est
 vcov.lmw_est <- function(object, complete = TRUE, ...) {
   object$vcov
-
-  # p <- object$rank
-  # p1 <- seq_len(p)
-  # Qr <- object$qr
-  # cov.unscaled <- chol2inv(Qr$qr[p1, p1, drop = FALSE])
-  #
-  # if (is.null(object$weights)) {
-  #   rss <- sum(object$residuals^2)
-  # }
-  # else {
-  #   rss <- sum(object$weights * object$residuals^2)
-  # }
-  # resvar <- rss/object$df.residual
-  #
-  # .vcov.aliased(is.na(object$coefficients),
-  #               resvar * cov.unscaled,
-  #               complete)
 }
+
+#' @exportS3Method bread lmw_est
 bread.lmw_est <- function(x) {
   p <- x$rank
   p1 <- seq_len(p)
@@ -297,6 +369,8 @@ bread.lmw_est <- function(x) {
   dimnames(b) <- list(names(x$coefficients[p1]), names(x$coefficients[p1]))
   return(b)
 }
+
+#' @exportS3Method weights lmw_est
 weights.lmw_est <- function(object, ...) {
   wts <- object$weights
   if (called_from("meatHC", "meatCL")) {
@@ -304,6 +378,11 @@ weights.lmw_est <- function(object, ...) {
   }
   wts
 }
-predict.lmw_est <- function(object, ...) {
+
+#' @exportS3Method predict lmw_est
+predict.lmw_est <- function(object, newdata, ...) {
+ if (!missing(newdata)) {
+   warning("`predict()` cannot be used with `lmw_est` objects to generate predictions for new observations. Returning fitted values from the original dataset.")
+ }
   object$fitted.values
 }
