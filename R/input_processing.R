@@ -153,7 +153,7 @@ process_estimand <- function(estimand, target, obj) {
   m <- match.call(sys.function(sys.parent()),
                   sys.call(sys.parent()))
 
-  estimand.supplied <- hasName(m, "estimand")
+  estimand.supplied <- utils::hasName(m, "estimand")
 
   if (!is.character(estimand) || length(estimand) != 1) {
     stop("'estimand' must be a string of length 1.", call. = FALSE)
