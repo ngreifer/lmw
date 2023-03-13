@@ -63,12 +63,12 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
 
       #Funky formula for augmentation weights, but it works
       ipw.weights[t == 0] <- -ipw.weights[t == 0]
-      aug.weights <- rw*.lm.fit(rw*X, ipw.weights_rw)$residuals
+      aug.weights <- rw * .lm.fit(rw * X, ipw.weights_rw)$residuals
       aug.weights[t == 0] <- -aug.weights[t == 0]
     }
     else { #MRI
 
-      aug.weights <- rw*.lm.fit(rw*X, ipw.weights_rw)$residuals
+      aug.weights <- rw * .lm.fit(rw * X, ipw.weights_rw)$residuals
     }
 
     weights <- weights + aug.weights
@@ -90,7 +90,7 @@ get_w_from_X_iv <- function(X, A, treat, method, base.weights = NULL, s.weights 
   rw <- sqrt(w)
 
   #Remove linearly dependent columns
-  qr_X <- qr(rw*X)
+  qr_X <- qr(rw * X)
   X <- X[, qr_X$pivot[seq_len(qr_X$rank)], drop = FALSE]
 
   if (!is.null(fixef)) {
@@ -104,8 +104,8 @@ get_w_from_X_iv <- function(X, A, treat, method, base.weights = NULL, s.weights 
 
   iv_ind <- which(colnames(X) %in% iv_names)
 
-  weights_ <- rw*.lm.fit(rw*X[,-iv_ind, drop = FALSE], rw*A)$residuals -
-    rw*.lm.fit(rw*X, rw*A)$residuals
+  weights_ <- rw * .lm.fit(rw * X[,-iv_ind, drop = FALSE], rw * A)$residuals -
+    rw * .lm.fit(rw * X, rw * A)$residuals
 
   if (ncol(A) == 1) {
     weights <- weights_ / sum(A * weights_)
