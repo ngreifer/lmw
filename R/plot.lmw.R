@@ -292,8 +292,7 @@ extrapolation_plot <- function(x, variables, data = NULL, ...) {
     # cex[in_i] <- 30*sqrt(abs(w[in_i])/sum(abs(w[in_i]))) #Total abs(weights) sum to 1 on each side, same amount of ink on both sides
   }
 
-  if (length(v) <= 2) cex.text <- .8
-  else cex.text <- .8/.66
+  cex.text <- if (length(v) <= 2) .8  else .8/.66
 
   #Transparency of points depends on number of points logarithmically
   alpha <- vapply(tlevs, function(i) min(1, .6/log10(sum(abs(w[t == i]) > 1e-8))),

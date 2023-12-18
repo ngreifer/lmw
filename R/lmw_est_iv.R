@@ -163,5 +163,6 @@ bread.lmw_est_iv <- function(x, ...) {
 
   b <- cov.unscaled * n
   dimnames(b) <- list(names(x$coefficients)[p1], names(x$coefficients)[p1])
-  return(b)
+
+  b
 }

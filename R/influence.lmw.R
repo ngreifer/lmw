@@ -103,7 +103,9 @@ influence.lmw <- function(model, outcome, data = NULL, ...) {
     outcome[pos_w] <- demean(outcome[pos_w], model$fixef[pos_w], w[pos_w])
   }
 
-  fit <- lm.wfit(x = obj$X[pos_w,,drop = FALSE], y = outcome[pos_w], w = w[pos_w])
+  fit <- lm.wfit(x = obj$X[pos_w,,drop = FALSE],
+                 y = outcome[pos_w],
+                 w = w[pos_w])
 
   n <- nrow(obj$X)
 
@@ -118,9 +120,9 @@ influence.lmw <- function(model, outcome, data = NULL, ...) {
   SIC <- (n - 1) * abs(wr * model$weights/(1 - lmw_hat))
   #Note: URI formula used; same results with MRI formula when used with MRI weights
 
-  return(list(hat = setNames(lmw_hat, nm),
-              wt.res = setNames(wr, nm),
-              sic = setNames(SIC/max(SIC), nm)))
+  list(hat = setNames(lmw_hat, nm),
+       wt.res = setNames(wr, nm),
+       sic = setNames(SIC/max(SIC), nm))
 }
 
 #' @exportS3Method influence lmw_est
@@ -139,8 +141,8 @@ influence.lmw_est <- function(model, ...) {
   SIC <- (n - 1) * abs(wr * model$lmw.weights/(1 - lmw_hat))
   #Note: URI formula used; same results with MRI formula when used with MRI weights
 
-  return(list(hat = setNames(lmw_hat, nm),
-              wt.res = setNames(wr, nm),
-              sic = setNames(SIC/max(SIC), nm)))
+  list(hat = setNames(lmw_hat, nm),
+       wt.res = setNames(wr, nm),
+       sic = setNames(SIC/max(SIC), nm))
 }
 

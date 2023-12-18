@@ -227,7 +227,7 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
               fixef_name = attr(object$fixef, "fixef_name"))
 
   class(ans) <- "summary.lmw_est"
-  return(ans)
+  ans
 }
 
 #' @exportS3Method print summary.lmw_est
@@ -345,7 +345,7 @@ estfun.lmw_est <- function (x, ...) {
   attr(rval, "assign") <- NULL
   attr(rval, "contrasts") <- NULL
 
-  return(rval)
+  rval
 }
 
 #' @exportS3Method vcov lmw_est
@@ -366,7 +366,8 @@ bread.lmw_est <- function(x, ...) {
 
   b <- cov.unscaled * sum(x$weights > 0)
   dimnames(b) <- list(names(x$coefficients[p1]), names(x$coefficients[p1]))
-  return(b)
+
+  b
 }
 
 #' @exportS3Method weights lmw_est

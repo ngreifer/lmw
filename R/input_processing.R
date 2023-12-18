@@ -46,7 +46,7 @@ process_base.weights <- function(base.weights = NULL, data = NULL, obj = NULL) {
     stop("The base weights variable must be numeric.", call. = FALSE)
   }
 
-  return(base.weights)
+  base.weights
 }
 
 process_s.weights <- function(s.weights = NULL, data = NULL, obj = NULL) {
@@ -96,7 +96,7 @@ process_s.weights <- function(s.weights = NULL, data = NULL, obj = NULL) {
     stop("The sampling weights variable must be numeric.", call. = FALSE)
   }
 
-  return(s.weights)
+  s.weights
 }
 
 process_dr.method <- function(dr.method, base.weights, method, estimand) {
@@ -112,6 +112,7 @@ process_dr.method <- function(dr.method, base.weights, method, estimand) {
   if (estimand == "CATE" && dr.method == "AIPW") {
     stop("The CATE cannot be used with AIPW.", call. = FALSE)
   }
+
   dr.method
 }
 
@@ -126,10 +127,12 @@ process_treat <- function(treat_name, data, multi.ok = TRUE) {
 
   if (length(unique_treat) == 2) {
     if (is.factor(treat)) treat <- factor(treat, levels = levels(treat)[levels(treat) %in% unique_treat])
-    else if (is.numeric(treat) && !all(treat == 0 | treat == 1)) {
+    else if (!is.numeric(treat) || all(treat == 0 | treat == 1)) {
+      treat <- factor(treat, levels = sort(unique_treat))
+    }
+    else {
       stop("If the treatment is not a 0/1 variable, it must be a factor variable.", call. = FALSE)
     }
-    else treat <- factor(treat, levels = sort(unique_treat))
   }
   else if (multi.ok) {
     if (is.character(treat)) treat <- factor(treat, levels = sort(unique_treat))
@@ -144,7 +147,7 @@ process_treat <- function(treat_name, data, multi.ok = TRUE) {
 
   attr(treat, "treat_name") <- treat_name
 
-  return(treat)
+  treat
 }
 
 process_estimand <- function(estimand, target, obj) {
@@ -184,7 +187,7 @@ process_estimand <- function(estimand, target, obj) {
     }
   }
 
-  return(estimand)
+  estimand
 }
 
 process_mf <- function(mf) {
@@ -229,7 +232,7 @@ process_data <- function(data = NULL, obj = NULL) {
     data <- obj.data #NULL if no obj
   }
 
-  return(data)
+  data
 }
 
 process_treat_name <- function(treat, formula, data, method, obj) {
@@ -267,7 +270,8 @@ process_treat_name <- function(treat, formula, data, method, obj) {
                    treat), call. = FALSE)
     }
   }
-  return(treat)
+
+  treat
 }
 
 process_contrast <- function(contrast = NULL, treat, method) {
@@ -286,13 +290,14 @@ process_contrast <- function(contrast = NULL, treat, method) {
     if (can_str2num(treat)) {
       contrast <- as.character(contrast)
     }
-    else if (!all(contrast %in% seq_along(t_levels))) {
-      stop("'contrast' must contain the names or indices of treatment levels to be contrasted.", call. = FALSE)
-    }
-    else {
+    else if (all(contrast %in% seq_along(t_levels))) {
       contrast <- t_levels[contrast]
     }
+    else {
+      stop("'contrast' must contain the names or indices of treatment levels to be contrasted.", call. = FALSE)
+    }
   }
+
   if (is.factor(contrast)) {
     contrast <- as.character(contrast)
   }
@@ -306,18 +311,18 @@ process_contrast <- function(contrast = NULL, treat, method) {
     if (length(t_levels) == 2) {
       contrast <- c(contrast, t_levels[t_levels != contrast])
     }
-    else if (contrast == t_levels[1]) {
-      stop("If 'contrast' is a single value, it cannot be the reference value of the treatment.", call. = FALSE)
+    else if (contrast != t_levels[1]) {
+      contrast <- c(contrast, t_levels[1])
     }
     else {
-      contrast <- c(contrast, t_levels[1])
+      stop("If 'contrast' is a single value, it cannot be the reference value of the treatment.", call. = FALSE)
     }
   }
   else if (length(contrast) != 2) {
     stop("'contrast' cannot have length greater than 2.", call. = FALSE)
   }
 
-  return(contrast)
+  contrast
 }
 
 process_focal <- function(focal = NULL, treat, estimand) {
@@ -339,7 +344,7 @@ process_focal <- function(focal = NULL, treat, estimand) {
     stop("'focal' must be the name of a value of the treatment variable.", call. = FALSE)
   }
 
-  return(as.character(focal))
+  as.character(focal)
 }
 
 apply_contrast_to_treat <- function(treat, contrast = NULL) {
@@ -348,6 +353,7 @@ apply_contrast_to_treat <- function(treat, contrast = NULL) {
   attrs <- attributes(treat)
   treat <- factor(treat, levels = c(rev(contrast), levels(treat)[!levels(treat) %in% contrast]))
   for (i in setdiff(names(attrs), "levels")) attr(treat, i) <- attrs[[i]]
+
   treat
 }
 
@@ -376,9 +382,10 @@ get_data <- function(data, x) {
   }
   else {
     if (!is.data.frame(data)) {
-      if (is.matrix(data)) data <- as.data.frame.matrix(data)
-      else stop("'data' must be a data frame.", call. = FALSE)
+      if (!is.matrix(data)) stop("'data' must be a data frame.", call. = FALSE)
+      data <- as.data.frame.matrix(data)
     }
+
     if (nrow(data) != length(x$treat)) {
       stop("'data' must have as many rows as there were units in the original call to lmw().", call. = FALSE)
     }
@@ -508,12 +515,12 @@ process_target <- function(target, formula, mf, target.weights = NULL) {
   target_mf <- model.frame(formula, data = target)
   target_mm <- model.matrix(formula, data = target_mf)[,-1, drop = FALSE]
 
-  if (nrow(target_mm) == 1) {
-    out <- setNames(drop(target_mm), colnames(target_mm))
+  out <- {
+    if (nrow(target_mm) == 1) drop(target_mm)
+    else colMeans_w(target_mm, target.weights)
   }
-  else {
-    out <- setNames(colMeans_w(target_mm, target.weights), colnames(target_mm))
-  }
+
+  names(out) <- colnames(target_mm)
 
   attr(target, "target.weights") <- target.weights
   attr(out, "target_original") <- target
@@ -529,15 +536,15 @@ process_iv <- function(iv, formula, data = NULL) {
   tt.factors <- attr(terms(formula, data = data), "factors")
 
   if (is.character(iv)) {
-    if (!is.null(data) && is.data.frame(data)) {
-      if (!all(iv %in% names(data))) {
-        stop("All variables in 'iv' must be in 'data'.", call. = FALSE)
-      }
-      iv_f <- reformulate(iv)
-    }
-    else {
+    if (is.null(data) || !is.data.frame(data)) {
       stop("If 'iv' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
     }
+
+    if (!all(iv %in% names(data))) {
+      stop("All variables in 'iv' must be in 'data'.", call. = FALSE)
+    }
+
+    iv_f <- reformulate(iv)
   }
   else if (inherits(iv, "formula")) {
     iv_f <- iv
@@ -552,7 +559,7 @@ process_iv <- function(iv, formula, data = NULL) {
     stop("The instrumental variable(s) should not be present in the model formula.", call. = FALSE)
   }
 
-  return(iv_f)
+  iv_f
 }
 
 process_fixef <- function(fixef, formula, data = NULL, treat_name) {
@@ -561,15 +568,15 @@ process_fixef <- function(fixef, formula, data = NULL, treat_name) {
   tt.factors <- attr(terms(formula, data = data), "factors")
 
   if (is.character(fixef)) {
-    if (!is.null(data) && is.data.frame(data)) {
-      if (!all(fixef %in% names(data))) {
-        stop("All variables in 'fixef' must be in 'data'.", call. = FALSE)
-      }
-      fixef_f <- reformulate(fixef)
-    }
-    else {
+    if (is.null(data) || !is.data.frame(data)) {
       stop("If 'fixef' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
     }
+
+    if (!all(fixef %in% names(data))) {
+      stop("All variables in 'fixef' must be in 'data'.", call. = FALSE)
+    }
+
+    fixef_f <- reformulate(fixef)
   }
   else if (inherits(fixef, "formula")) {
     fixef_f <- fixef
@@ -599,7 +606,7 @@ process_fixef <- function(fixef, formula, data = NULL, treat_name) {
   fixef <- factor(fixef_mf[[fixef_name]])
   attr(fixef, "fixef_name") <- fixef_name
 
-  return(fixef)
+  fixef
 }
 
 check_lengths <- function(treat, ...) {
@@ -632,4 +639,6 @@ check_lengths <- function(treat, ...) {
 
     stop(msg, call. = FALSE)
   }
+
+  invisible(treat)
 }

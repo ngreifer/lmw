@@ -183,11 +183,9 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
 
   stat <- match_arg(stat, c("balance", "distribution"))
 
-  if (is.null(object$covs)) {
-    X <- matrix(nrow = length(object$treat), ncol = 0)
-  }
-  else {
-    X <- covs_df_to_matrix(object$covs)
+  X <- {
+    if (is.null(object$covs)) matrix(nrow = length(object$treat), ncol = 0)
+    else covs_df_to_matrix(object$covs)
   }
 
   if (!is.null(addlvariables)) {
@@ -195,23 +193,24 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
     data <- get_data(data, object)
 
     if (is.character(addlvariables)) {
-      if (!is.null(data) && is.data.frame(data)) {
-        if (all(addlvariables %in% names(data))) {
-          addlvariables <- data[addlvariables]
-        }
-        else {
-          stop("All variables in 'addlvariables' must be in 'data'.", call. = FALSE)
-        }
-      }
-      else {
+      if (is.null(data) || !is.data.frame(data)) {
         stop("If 'addlvariables' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
       }
+      if (!all(addlvariables %in% names(data))) {
+        stop("All variables in 'addlvariables' must be in 'data'.", call. = FALSE)
+      }
+
+      addlvariables <- data[addlvariables]
     }
     else if (inherits(addlvariables, "formula")) {
       vars.in.formula <- all.vars(addlvariables)
-      if (!is.null(data) && is.data.frame(data)) data <- cbind(data[names(data) %in% vars.in.formula],
-                                                               object$covs[names(data) %in% setdiff(vars.in.formula, names(data))])
-      else data <- object$covs
+      if (!is.null(data) && is.data.frame(data)) {
+        data <- cbind(data[names(data) %in% vars.in.formula],
+                      object$covs[names(data) %in% setdiff(vars.in.formula, names(data))])
+      }
+      else {
+        data <- object$covs
+      }
 
       addlvariables <- covs_df_to_matrix(model.frame(addlvariables, data = data))
     }
@@ -340,7 +339,7 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
               method = object$method,
               base.weights.origin = attr(object$base.weights, "origin"))
   class(res) <- "summary.lmw"
-  return(res)
+  res
 }
 
 #' @exportS3Method summary lmw_multi
@@ -361,11 +360,9 @@ summary.lmw_multi <- function(object, un = TRUE, addlvariables = NULL, standardi
     contrast <- object$contrast
   }
 
-  if (is.null(object$covs)) {
-    X <- matrix(nrow = length(object$treat), ncol = 0)
-  }
-  else {
-    X <- covs_df_to_matrix(object$covs)
+  X <- {
+    if (is.null(object$covs)) matrix(nrow = length(object$treat), ncol = 0)
+    else covs_df_to_matrix(object$covs)
   }
 
   if (!is.null(addlvariables)) {
@@ -373,23 +370,25 @@ summary.lmw_multi <- function(object, un = TRUE, addlvariables = NULL, standardi
     data <- get_data(data, object)
 
     if (is.character(addlvariables)) {
-      if (!is.null(data) && is.data.frame(data)) {
-        if (all(addlvariables %in% names(data))) {
-          addlvariables <- data[addlvariables]
-        }
-        else {
-          stop("All variables in 'addlvariables' must be in 'data'.", call. = FALSE)
-        }
-      }
-      else {
+      if (is.null(data) || !is.data.frame(data)) {
         stop("If 'addlvariables' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
       }
+
+      if (!all(addlvariables %in% names(data))) {
+        stop("All variables in 'addlvariables' must be in 'data'.", call. = FALSE)
+      }
+
+      addlvariables <- data[addlvariables]
     }
     else if (inherits(addlvariables, "formula")) {
       vars.in.formula <- all.vars(addlvariables)
-      if (!is.null(data) && is.data.frame(data)) data <- cbind(data[names(data) %in% vars.in.formula],
-                                                               object$covs[names(data) %in% setdiff(vars.in.formula, names(data))])
-      else data <- object$covs
+      if (!is.null(data) && is.data.frame(data)) {
+        data <- cbind(data[names(data) %in% vars.in.formula],
+                      object$covs[names(data) %in% setdiff(vars.in.formula, names(data))])
+      }
+      else {
+        data <- object$covs
+      }
 
       addlvariables <- covs_df_to_matrix(model.frame(addlvariables, data = data))
     }
@@ -537,7 +536,7 @@ summary.lmw_multi <- function(object, un = TRUE, addlvariables = NULL, standardi
               method = object$method,
               base.weights.origin = attr(object$base.weights, "origin"))
   class(res) <- c("summary.lmw_multi"[is.null(contrast)], "summary.lmw")
-  return(res)
+  res
 }
 
 #' @exportS3Method print summary.lmw
@@ -593,10 +592,12 @@ balance_one_var <- function(x, treat, weights, s.weights, standardize = TRUE,
   t1 <- levels(treat)[2] #treated level
 
   xsum <- rep(NA_real_, 6)
-  if (standardize)
-    names(xsum) <- c("SMD", paste("TSMD", levels(treat)[1:2]), "KS", paste("TKS", levels(treat)[1:2]))
-  else
-    names(xsum) <- c("MD", paste("TMD", levels(treat)[1:2]), "KS", paste("TKS", levels(treat)[1:2]))
+  names(xsum) <- {
+    if (standardize)
+      c("SMD", paste("TSMD", levels(treat)[1:2]), "KS", paste("TKS", levels(treat)[1:2]))
+    else
+      c("MD", paste("TMD", levels(treat)[1:2]), "KS", paste("TKS", levels(treat)[1:2]))
+  }
 
   #If all variable values are the same, return 0s
   if (all(abs(x[-1] - x[1]) < sqrt(.Machine$double.eps))) {
@@ -669,6 +670,7 @@ balance_one_var <- function(x, treat, weights, s.weights, standardize = TRUE,
 
   xsum
 }
+
 balance_one_var.multi <- function(x, treat, weights = NULL, s.weights, standardize = TRUE,
                                   focal = NULL, x_target = NULL, target.weights = NULL) {
   #weights must already have s.weights applied, which is true of regression weights from
@@ -676,10 +678,12 @@ balance_one_var.multi <- function(x, treat, weights = NULL, s.weights, standardi
   #function call.
 
   xsum <- rep(NA_real_, 6)
-  if (standardize)
-    names(xsum) <- c(paste("TSMD", levels(treat)), paste("TKS", levels(treat)))
-  else
-    names(xsum) <- c(paste("TMD", levels(treat)), paste("TKS", levels(treat)))
+  names(xsum) <- {
+    if (standardize)
+      c(paste("TSMD", levels(treat)), paste("TKS", levels(treat)))
+    else
+      c(paste("TMD", levels(treat)), paste("TKS", levels(treat)))
+  }
 
   #If all variable values are the same, return 0s
   if (all(abs(x[-1] - x[1]) < sqrt(.Machine$double.eps))) {
@@ -840,6 +844,7 @@ ks_w <- function(x, treat, weights) {
 
   max(ediff)
 }
+
 tks_w <- function(x, x_target, weights, target.weights) {
   treat <- factor(c(rep(1, length(x)), rep(0, length(x_target))), levels = 0:1)
   x <- c(x, x_target)
@@ -877,28 +882,31 @@ nn <- function(treat, weights, base.weights, s.weights) {
                         ESS(weights[treat==t1]))
   }
 
-  return(n)
+  n
 }
+
 nn_multi <- function(treat, weights, base.weights, s.weights) {
   if (is.null(s.weights)) s.weights <- rep(1, length(treat))
   # weights <- weights * s.weights #s.weights already in weights
 
   if (is.null(base.weights)) {
-    n <- matrix(0, nrow=2, ncol=nlevels(treat), dimnames = list(c("All", "Weighted"),
-                                                                levels(treat)))
+    n <- matrix(0, nrow = 2, ncol = nlevels(treat),
+                dimnames = list(c("All", "Weighted"),
+                                levels(treat)))
 
-    n["All",] <-     vapply(levels(treat), function(t) ESS(s.weights[treat==t]), numeric(1L))
+    n["All",] <-      vapply(levels(treat), function(t) ESS(s.weights[treat==t]), numeric(1L))
     n["Weighted",] <- vapply(levels(treat), function(t) ESS(weights[treat==t]), numeric(1L))
   }
   else {
     base.weights <- base.weights*s.weights
-    n <- matrix(0, nrow=3, ncol=nlevels(treat), dimnames = list(c("All","Base weighted", "Weighted"),
-                                                                levels(treat)))
+    n <- matrix(0, nrow = 3, ncol = nlevels(treat),
+                dimnames = list(c("All","Base weighted", "Weighted"),
+                                levels(treat)))
 
-    n["All",] <-     vapply(levels(treat), function(t) ESS(s.weights[treat==t]), numeric(1L))
+    n["All",] <-           vapply(levels(treat), function(t) ESS(s.weights[treat==t]), numeric(1L))
     n["Base weighted",] <- vapply(levels(treat), function(t) ESS(base.weights[treat==t]), numeric(1L))
-    n["Weighted",] <- vapply(levels(treat), function(t) ESS(weights[treat==t]), numeric(1L))
+    n["Weighted",] <-      vapply(levels(treat), function(t) ESS(weights[treat==t]), numeric(1L))
   }
 
-  return(n)
+  n
 }

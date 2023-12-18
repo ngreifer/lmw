@@ -100,8 +100,10 @@ remove_treat_from_formula <- function(formula, treat) {
 
   #Extract terms that interact w/ treat
   new.f.terms <- colnames(tt.factors)
-  if (treat %in% rownames(tt.factors)) interacts_with_treat <- tt.factors[treat,] > 0
-  else interacts_with_treat <- rep(FALSE, NCOL(tt.factors))
+  interacts_with_treat <- {
+    if (treat %in% rownames(tt.factors)) tt.factors[treat,] > 0
+    else rep(FALSE, NCOL(tt.factors))
+  }
 
   #Remove treat from interactions
   for (i in seq_along(new.f.terms)[interacts_with_treat]) {
@@ -109,11 +111,9 @@ remove_treat_from_formula <- function(formula, treat) {
   }
 
   #Reconstruct formula and dataset without treat
-  if (length(new.f.terms) > 0) {
-    formula_without_treat <- terms(reformulate(new.f.terms, intercept = TRUE))
-  }
-  else {
-    formula_without_treat <- terms(~1)
+  formula_without_treat <- {
+    if (length(new.f.terms) == 0) terms(~1)
+    else terms(reformulate(new.f.terms, intercept = TRUE))
   }
 
   attr(formula_without_treat, "new.f.terms") <- new.f.terms

@@ -404,7 +404,7 @@ lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = 
 
   class(out) <- c("lmw_aipw"[!is.null(dr.method) && dr.method == "AIPW"],
                   "lmw_multi"[nlevels(treat) > 2], "lmw")
-  return(out)
+  out
 }
 
 #' @exportS3Method print lmw
@@ -442,4 +442,6 @@ print.lmw <- function(x, ...) {
     cat(sprintf(" - fixed effect: %s\n",
                 attr(x$fixef, "fixef_name")))
   }
+
+  invisible(x)
 }

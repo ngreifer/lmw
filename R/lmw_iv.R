@@ -281,7 +281,7 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
               focal = focal)
 
   class(out) <- c("lmw_iv", "lmw")
-  return(out)
+  out
 }
 
 #' @exportS3Method print lmw_iv
@@ -310,4 +310,6 @@ print.lmw_iv <- function(x, ...) {
     cat(sprintf(" - fixed effect: %s\n",
                 attr(x$fixef, "fixef_name")))
   }
+
+  invisible(x)
 }

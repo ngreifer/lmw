@@ -2,8 +2,11 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
                          fixef = NULL) {
 
   if (is.null(s.weights)) s.weights <- rep(1, nrow(X))
-  if (is.null(base.weights) || dr.method == "AIPW") w <- s.weights
-  else w <- s.weights*base.weights
+
+  w <- s.weights
+  if (!is.null(base.weights) && dr.method != "AIPW") {
+    w <- w * base.weights
+  }
 
   if (method == "URI") {
     t <- X[,2]
@@ -26,8 +29,6 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
 
   #Remove linearly dependent columns
   X <- X[, qr_X$pivot[1:p], drop = FALSE]
-
-  if (is.null(s.weights)) s.weights <- rep(1, nrow(X))
 
   if (method == "URI") {
     #Treated group dummy always in second column
@@ -74,7 +75,7 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
     weights <- weights + aug.weights
   }
 
-  return(drop(weights))
+  drop(weights)
 }
 
 get_w_from_X_iv <- function(X, A, treat, method, base.weights = NULL, s.weights = NULL, fixef = NULL) {
@@ -84,8 +85,11 @@ get_w_from_X_iv <- function(X, A, treat, method, base.weights = NULL, s.weights 
   iv_names <- attr(X, "iv_names")
 
   if (is.null(s.weights)) s.weights <- rep(1, nrow(X))
-  if (is.null(base.weights)) w <- s.weights
-  else w <- s.weights*base.weights
+
+  w <- s.weights
+  if (!is.null(base.weights)) {
+    w <- w * base.weights
+  }
 
   rw <- sqrt(w)
 
@@ -117,5 +121,5 @@ get_w_from_X_iv <- function(X, A, treat, method, base.weights = NULL, s.weights 
     weights[treat == levels(treat)[1]] <- -weights[treat == levels(treat)[1]]
   }
 
-  return(weights)
+  weights
 }

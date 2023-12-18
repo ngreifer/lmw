@@ -299,5 +299,5 @@ summary.lmw_est_aipw <- function(object, model = FALSE, ci = TRUE, alpha = .05, 
               fixef_name = attr(object$fixef, "fixef_name"))
 
   class(ans) <- "summary.lmw_est"
-  return(ans)
+  ans
 }
