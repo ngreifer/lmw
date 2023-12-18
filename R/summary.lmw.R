@@ -180,7 +180,11 @@
 #' @exportS3Method summary lmw
 summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = TRUE, data = NULL, stat = "balance", ...) {
   #Balance assessment, similar in structure to summary.matchit()
+  chk::chk_flag(un)
+  chk::chk_flag(standardize)
 
+  chk::chk_string(stat)
+  stat <- tolower(stat)
   stat <- match_arg(stat, c("balance", "distribution"))
 
   X <- {
@@ -194,10 +198,10 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
 
     if (is.character(addlvariables)) {
       if (is.null(data) || !is.data.frame(data)) {
-        stop("If 'addlvariables' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
+        chk::err("if `addlvariables` is specified as a string, a data frame argument must be supplied to `data`")
       }
       if (!all(addlvariables %in% names(data))) {
-        stop("All variables in 'addlvariables' must be in 'data'.", call. = FALSE)
+        chk::err("all variables in `addlvariables` must be in `data`")
       }
 
       addlvariables <- data[addlvariables]
@@ -215,7 +219,7 @@ summary.lmw <- function(object, un = TRUE, addlvariables = NULL, standardize = T
       addlvariables <- covs_df_to_matrix(model.frame(addlvariables, data = data))
     }
     else if (!is.matrix(addlvariables) && !is.data.frame(addlvariables)) {
-      stop("The argument to 'addlvariables' must be in one of the accepted forms. See ?summary.lmw for details.", call. = FALSE)
+      chk::err("the argument to `addlvariables` must be in one of the accepted forms. See `?summary.lmw` for details")
     }
 
     if (is.data.frame(addlvariables)) {
@@ -348,11 +352,16 @@ summary.lmw_multi <- function(object, un = TRUE, addlvariables = NULL, standardi
                               contrast = NULL, stat = "balance", ...) {
   #Balance assessment, similar in structure to summary.matchit()
 
+  chk::chk_flag(un)
+  chk::chk_flag(standardize)
+
+  chk::chk_string(stat)
+  stat <- tolower(stat)
   stat <- match_arg(stat, c("balance", "distribution"))
 
   if (object$method == "URI") {
     if (utils::hasName(match.call(), "contrast")) {
-      warning("The 'contrast' argument is ignored when method = \"URI\" in the original call to lmw().", call. = FALSE)
+      chk::wrn("the `contrast` argument is ignored when `method = \"URI\"` in the original call to `lmw()`")
     }
     contrast <- object$contrast
   }
@@ -371,11 +380,10 @@ summary.lmw_multi <- function(object, un = TRUE, addlvariables = NULL, standardi
 
     if (is.character(addlvariables)) {
       if (is.null(data) || !is.data.frame(data)) {
-        stop("If 'addlvariables' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
+        chk::err("if `addlvariables` is specified as a string, a data frame argument must be supplied to `data`")
       }
-
       if (!all(addlvariables %in% names(data))) {
-        stop("All variables in 'addlvariables' must be in 'data'.", call. = FALSE)
+        chk::err("all variables in `addlvariables` must be in `data`")
       }
 
       addlvariables <- data[addlvariables]
@@ -393,7 +401,7 @@ summary.lmw_multi <- function(object, un = TRUE, addlvariables = NULL, standardi
       addlvariables <- covs_df_to_matrix(model.frame(addlvariables, data = data))
     }
     else if (!is.matrix(addlvariables) && !is.data.frame(addlvariables)) {
-      stop("The argument to 'addlvariables' must be in one of the accepted forms. See ?summary.lmw for details.", call. = FALSE)
+      chk::err("the argument to `addlvariables` must be in one of the accepted forms. See `?summary.lmw` for details")
     }
 
     if (is.data.frame(addlvariables)) {

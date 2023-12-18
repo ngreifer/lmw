@@ -7,16 +7,16 @@ process_base.weights <- function(base.weights = NULL, data = NULL, obj = NULL) {
     cond <- conditionMessage(attr(base.weights, "condition"))
     if (startsWith(cond, "object") && endsWith(cond, "not found")) {
       if (is.null(data)) {
-        stop(sprintf("The base weights variable '%s' cannot be found in the environment. Please supply an argument to 'data' containing the base weights.",
-                     base.weights_char), call. = FALSE)
+        chk::err(sprintf("the base weights variable '%s' cannot be found in the environment. Please supply an argument to `data` containing the base weights",
+                     base.weights_char))
       }
       else {
-        stop(sprintf("The base weights variable '%s' must be present in the supplied dataset or environment.",
-                     base.weights_char), call. = FALSE)
+        chk::err(sprintf("the base weights variable '%s' must be present in the supplied dataset or environment",
+                     base.weights_char))
       }
     }
     else {
-      stop(cond, call. = FALSE)
+      chk::err(cond, tidy = FALSE)
     }
   }
   else if (length(base.weights) == 0) {
@@ -30,12 +30,12 @@ process_base.weights <- function(base.weights = NULL, data = NULL, obj = NULL) {
   }
   else if (is.character(base.weights) && length(base.weights) == 1) {
     if (is.null(data)) {
-      stop("A dataset must be present when 'base.weights' is supplied as a string. Please supply an argument to 'data' containing the base weights.", call. = FALSE)
+      chk::err("a dataset must be present when `base.weights` is supplied as a string. Please supply an argument to `data` containing the base weights")
     }
     base.weights_char <- base.weights
     base.weights <- try(eval(str2expression(base.weights_char), data), silent = TRUE)
     if (length(base.weights) == 0 || inherits(base.weights, "try-error")) {
-      stop("The base weights variable must be present in the dataset.", call. = FALSE)
+      chk::err("the base weights variable must be present in the dataset")
     }
   }
 
@@ -43,7 +43,7 @@ process_base.weights <- function(base.weights = NULL, data = NULL, obj = NULL) {
     return(NULL)
   }
   if (!is.numeric(base.weights)) {
-    stop("The base weights variable must be numeric.", call. = FALSE)
+    chk::err("the base weights variable must be numeric")
   }
 
   base.weights
@@ -58,15 +58,15 @@ process_s.weights <- function(s.weights = NULL, data = NULL, obj = NULL) {
     cond <- conditionMessage(attr(s.weights, "condition"))
     if (startsWith(cond, "object") && endsWith(cond, "not found")) {
       if (is.null(data)) {
-        stop(sprintf("The sampling weights variable '%s' cannot be found in the environment. Please supply an argument to 'data' containing the sampling weights.", s.weights_char),
-             call. = FALSE)
+        chk::err(sprintf("the sampling weights variable '%s' cannot be found in the environment. Please supply an argument to `data` containing the sampling weights", s.weights_char))
       }
       else {
-        stop(sprintf("The sampling weights variable '%s' must be present in the supplied dataset or environment.", s.weights_char), call. = FALSE)
+        chk::err(sprintf("the sampling weights variable '%s' must be present in the supplied dataset or environment",
+                         s.weights_char))
       }
     }
     else {
-      stop(cond, call. = FALSE)
+      chk::err(cond, tidy = FALSE)
     }
   }
   else if (length(s.weights) == 0) {
@@ -80,12 +80,12 @@ process_s.weights <- function(s.weights = NULL, data = NULL, obj = NULL) {
   }
   else if (is.character(s.weights) && length(s.weights) == 1) {
     if (is.null(data)) {
-      stop("A dataset must be present when 's.weights' is supplied as a string. Please supply an argument to 'data' containing the sampling weights.", call. = FALSE)
+      chk::err("a dataset must be present when `s.weights` is supplied as a string. Please supply an argument to `data` containing the sampling weights")
     }
     s.weights_char <- s.weights
     s.weights <- try(eval(str2expression(s.weights_char), data), silent = TRUE)
     if (length(s.weights) == 0 || inherits(s.weights, "try-error")) {
-      stop("The sampling weights variable must be present in the dataset.", call. = FALSE)
+      chk::err("the sampling weights variable must be present in the dataset")
     }
   }
 
@@ -93,7 +93,7 @@ process_s.weights <- function(s.weights = NULL, data = NULL, obj = NULL) {
     return(NULL)
   }
   if (!is.numeric(s.weights)) {
-    stop("The sampling weights variable must be numeric.", call. = FALSE)
+    chk::err("the sampling weights variable must be numeric")
   }
 
   s.weights
@@ -101,16 +101,15 @@ process_s.weights <- function(s.weights = NULL, data = NULL, obj = NULL) {
 
 process_dr.method <- function(dr.method, base.weights, method, estimand) {
   if (is.null(base.weights)) return(NULL)
-  if (length(dr.method) != 1 || !is.character(dr.method)) {
-    stop("'dr.method' must be a string.", call. = FALSE)
-  }
+
+  chk::chk_string(dr.method)
   dr.method <- toupper(dr.method)
   # dr.method <- match_arg(dr.method, c("WLS"))
   # dr.method <- match_arg(dr.method, c("WLS", "AIPW"[method == "MRI"]))
   dr.method <- match_arg(dr.method, c("WLS", "AIPW"))
 
   if (estimand == "CATE" && dr.method == "AIPW") {
-    stop("The CATE cannot be used with AIPW.", call. = FALSE)
+    chk::err("the CATE cannot be used with AIPW")
   }
 
   dr.method
@@ -121,7 +120,9 @@ process_treat <- function(treat_name, data, multi.ok = TRUE) {
   treat <- model.response(model.frame(reformulate("0", treat_name),
                                       data = data, na.action = "na.pass"))
 
-  if (anyNA(treat)) stop("Missing values are not allowed in the treatment.", call. = FALSE)
+  if (anyNA(treat)) {
+    chk::err("missing values are not allowed in the treatment")
+  }
 
   unique_treat <- unique(treat)
 
@@ -131,18 +132,18 @@ process_treat <- function(treat_name, data, multi.ok = TRUE) {
       treat <- factor(treat, levels = sort(unique_treat))
     }
     else {
-      stop("If the treatment is not a 0/1 variable, it must be a factor variable.", call. = FALSE)
+      chk::err("if the treatment is not a 0/1 variable, it must be a factor variable")
     }
   }
   else if (multi.ok) {
     if (is.character(treat)) treat <- factor(treat, levels = sort(unique_treat))
     else if (is.factor(treat)) treat <- factor(treat, levels = levels(treat)[levels(treat) %in% unique_treat])
     else {
-      stop("The treatment must be a factor variable if it takes on more than two values.", call. = FALSE)
+      chk::err("the treatment must be a factor variable if it takes on more than two values")
     }
   }
   else {
-    stop("The treatment must be binary.", call. = FALSE)
+    chk::err("the treatment must be binary")
   }
 
   attr(treat, "treat_name") <- treat_name
@@ -158,20 +159,18 @@ process_estimand <- function(estimand, target, obj) {
 
   estimand.supplied <- utils::hasName(m, "estimand")
 
-  if (!is.character(estimand) || length(estimand) != 1) {
-    stop("'estimand' must be a string of length 1.", call. = FALSE)
-  }
+  chk::chk_string(estimand)
   estimand <- toupper(estimand)
   estimand <- match_arg(estimand, c("ATE", "ATT", "ATC", "CATE"))
 
   if (estimand == "CATE") {
     if (is.null(target)) {
-      stop("'target' must be specified when estimand = \"CATE\".", call. = FALSE)
+      chk::err("`target` must be specified when `estimand = \"CATE\"`")
     }
   }
   else if (!is.null(target)) {
     if (estimand.supplied) {
-      warning("Setting 'estimand' to \"CATE\" because 'target' was supplied.", call. = FALSE)
+      chk::wrn("setting `estimand` to \"CATE\" because `target` was supplied")
     }
     estimand <- "CATE"
   }
@@ -181,9 +180,8 @@ process_estimand <- function(estimand, target, obj) {
       estimand <- obj$estimand
     }
     else if (!identical(estimand, obj$estimand)) {
-      warning(sprintf("'estimand' (\"%s\") does not agree with the estimand specified in the supplied %s object (\"%s\"). Using \"%s\".",
-                      estimand, if (inherits(obj, "matchit")) "matchit" else "weightit", obj$estimand, estimand),
-              call. = FALSE)
+      chk::wrn(sprintf("`estimand` (\"%s\") does not agree with the estimand specified in the supplied %s object (\"%s\") Using \"%s\".",
+                      estimand, if (inherits(obj, "matchit")) "matchit" else "weightit", obj$estimand, estimand))
     }
   }
 
@@ -193,7 +191,9 @@ process_estimand <- function(estimand, target, obj) {
 process_mf <- function(mf) {
   for (i in seq_len(ncol(mf))) {
     if (is.character(mf[[i]])) mf[[i]] <- factor(mf[[i]])
-    else if (any(!is.finite(mf[[i]]))) stop("Non-finite values are not allowed in the covariates.", call. = FALSE)
+    else if (any(!is.finite(mf[[i]]))) {
+      chk::err("non-finite values are not allowed in the covariates")
+    }
   }
   mf
 }
@@ -206,7 +206,7 @@ process_data <- function(data = NULL, obj = NULL) {
       data <- as.data.frame(data)
     }
     else if (!is.data.frame(data)) {
-      stop("'data' must be a data.frame object.", call. = FALSE)
+      chk::err("`data` must be a data.frame object")
     }
   }
 
@@ -214,8 +214,7 @@ process_data <- function(data = NULL, obj = NULL) {
   if (inherits(obj, "matchit")) {
     if (!requireNamespace("MatchIt", quietly = TRUE)) {
       if (null.data) {
-        warning("The 'MatchIt' package should be installed when a matchit object is supplied to 'obj'.",
-                call. = FALSE)
+        chk::wrn("The 'MatchIt' package should be installed when a matchit object is supplied to `obj`")
       }
     }
     else {
@@ -246,28 +245,28 @@ process_treat_name <- function(treat, formula, data, method, obj) {
   if (is.null(treat)) {
     if (is.null(obj_treat)) {
       if (!any(colSums(tt.factors != 0) == 1)) {
-        stop("Please supply an argument to 'treat' to identify the treatment variable.", call. = FALSE)
+        chk::err("please supply an argument to `treat` to identify the treatment variable")
       }
 
       #Use first variable in formula that doesn't involve an interaction
       treat <- colnames(tt.factors)[which(colSums(tt.factors != 0) == 1)[1]]
-      message(paste0("Using \"", treat, "\" as the treatment variable. If this is incorrect or to suppress this message, please supply an argument to 'treat' to identify the treatment variable."))
+      chk::msg(sprintf("using \"%s\" as the treatment variable. If this is incorrect or to suppress this message, please supply an argument to 'treat' to identify the treatment variable", treat))
     }
     else {
       if (method == "URI" && !obj_treat %in% rownames(tt.factors)) {
-        stop(sprintf("The treatment variable in the supplied matchit object (%s) does not align with any variables in 'formula'.",
-                     obj_treat), call. = FALSE)
+        chk::err(sprintf("the treatment variable in the supplied matchit object (%s) does not align with any variables in `formula`",
+                     obj_treat))
       }
       treat <- obj_treat
     }
   }
   else {
     if (length(treat) != 1 || !is.character(treat)) {
-      stop("'treat' must be a string naming the treatment variable.", call. = FALSE)
+      chk::err("`treat` must be a string naming the treatment variable")
     }
     if (method == "URI" && !treat %in% rownames(tt.factors)) {
-      stop(sprintf("The supplied treatment variable (\"%s\") does not align with any variables in 'formula'.",
-                   treat), call. = FALSE)
+      chk::err(sprintf("the supplied treatment variable (\"%s\") does not align with any variables in `formula`",
+                   treat))
     }
   }
 
@@ -281,7 +280,7 @@ process_contrast <- function(contrast = NULL, treat, method) {
 
   if (is.null(contrast)) {
     if (is.null(contrast) && length(t_levels) > 2 && method == "URI") {
-      stop("'contrast' must be specified when the treatment has more than two levels and method = \"URI\".", call. = FALSE)
+      chk::err("`contrast` must be specified when the treatment has more than two levels and `method = \"URI\"`")
     }
     return(NULL)
   }
@@ -294,7 +293,7 @@ process_contrast <- function(contrast = NULL, treat, method) {
       contrast <- t_levels[contrast]
     }
     else {
-      stop("'contrast' must contain the names or indices of treatment levels to be contrasted.", call. = FALSE)
+      chk::err("`contrast` must contain the names or indices of treatment levels to be contrasted")
     }
   }
 
@@ -304,7 +303,7 @@ process_contrast <- function(contrast = NULL, treat, method) {
 
   #contrast is now character
   if (!all(contrast %in% t_levels)) {
-    stop("'contrast' must contain the names or indices of treatment levels to be contrasted.", call. = FALSE)
+    chk::err("`contrast` must contain the names or indices of treatment levels to be contrasted")
   }
 
   if (length(contrast) == 1) {
@@ -315,11 +314,11 @@ process_contrast <- function(contrast = NULL, treat, method) {
       contrast <- c(contrast, t_levels[1])
     }
     else {
-      stop("If 'contrast' is a single value, it cannot be the reference value of the treatment.", call. = FALSE)
+      chk::err("if `contrast` is a single value, it cannot be the reference value of the treatment")
     }
   }
   else if (length(contrast) != 2) {
-    stop("'contrast' cannot have length greater than 2.", call. = FALSE)
+    chk::err("`contrast` cannot have length greater than 2")
   }
 
   contrast
@@ -327,21 +326,21 @@ process_contrast <- function(contrast = NULL, treat, method) {
 
 process_focal <- function(focal = NULL, treat, estimand) {
   if (estimand %in% c("ATE", "CATE")) {
-    if (!is.null(focal)) warning(sprintf("'focal' is ignored when estimand = \"%s\".", estimand), call. = FALSE)
+    if (!is.null(focal)) chk::wrn(sprintf("`focal` is ignored when `estimand = \"%s\"`", estimand))
     return(NULL)
   }
 
   if (is.null(focal)) {
     focal <- switch(estimand, "ATT" = levels(treat)[2], levels(treat)[1])
     if (nlevels(treat) > 2 || !can_str2num(unique(treat, nmax = 2)))
-      message(sprintf("Using \"%s\" as the focal (%s) group. If this is incorrect or to suppress this message, please supply an argument to 'focal' to identify the focal treatment level.",
+      chk::msg(sprintf("using \"%s\" as the focal (%s) group. If this is incorrect or to suppress this message, please supply an argument to `focal` to identify the focal treatment level",
                       focal, switch(estimand, "ATT" = "treated", "control")))
   }
   else if (length(focal) != 1) {
-    stop("'focal' must be of length 1.", call. = FALSE)
+    chk::err("`focal` must be of length 1")
   }
   else if (!as.character(focal) %in% levels(treat)) {
-    stop("'focal' must be the name of a value of the treatment variable.", call. = FALSE)
+    chk::err("`focal` must be the name of a value of the treatment variable")
   }
 
   as.character(focal)
@@ -377,17 +376,17 @@ get_data <- function(data, x) {
     data <- process_data(data, obj)
 
     if (length(data) != 0 && (length(dim(data)) != 2 || nrow(data) != length(x[["treat"]]))) {
-      stop("A valid dataset could not be found. Please supply an argument to 'data' containing the original dataset used to estimate the weights.", call. = FALSE)
+      chk::err("a valid dataset could not be found. Please supply an argument to `data` containing the original dataset used to estimate the weights")
     }
   }
   else {
     if (!is.data.frame(data)) {
-      if (!is.matrix(data)) stop("'data' must be a data frame.", call. = FALSE)
+      if (!is.matrix(data)) chk::err("`data` must be a data frame")
       data <- as.data.frame.matrix(data)
     }
 
     if (nrow(data) != length(x$treat)) {
-      stop("'data' must have as many rows as there were units in the original call to lmw().", call. = FALSE)
+      chk::err("`data` must have as many rows as there were units in the original call to `lmw()`")
     }
 
     obj <- try(eval(x$call$obj, envir = f_env), silent = TRUE)
@@ -412,7 +411,7 @@ get_outcome <- function(outcome, data = NULL, formula, X) {
 
   if (missing(outcome)) {
     if (attr(tt, "response") == 0) {
-      stop("'outcome' must be supplied.", call. = FALSE)
+      chk::err("`outcome` must be supplied")
     }
 
     outcome_char <- deparse1(attr(tt, "variables")[[2]])
@@ -421,7 +420,7 @@ get_outcome <- function(outcome, data = NULL, formula, X) {
     if (inherits(mf, "try-error")) {
       cond <- attr(mf, "condition")$message
       if (startsWith(cond, "object") && endsWith(cond, "not found")) {
-        stop(sprintf("The outcome variable '%s' must be present in the supplied dataset or environment.", outcome_char), call. = FALSE)
+        chk::err(sprintf("the outcome variable '%s' must be present in the supplied dataset or environment", outcome_char))
       }
     }
     outcome <- model.response(mf)
@@ -434,34 +433,33 @@ get_outcome <- function(outcome, data = NULL, formula, X) {
       cond <- attr(outcome, "condition")$message
       if (startsWith(cond, "object") && endsWith(cond, "not found")) {
         if (is.null(data)) {
-          stop(sprintf("The outcome variable '%s' cannot be found in the environment. Please supply an argument to 'data' containing the original dataset used to estimate the weights.", outcome_char),
-               call. = FALSE)
+          chk::err(sprintf("the outcome variable '%s' cannot be found in the environment. Please supply an argument to `data` containing the original dataset used to estimate the weights", outcome_char))
         }
         else {
-          stop(sprintf("The outcome variable '%s' must be present in the supplied dataset or environment.", outcome_char), call. = FALSE)
+          chk::err(sprintf("the outcome variable '%s' must be present in the supplied dataset or environment", outcome_char))
         }
       }
     }
     if (is.character(outcome) && length(outcome) == 1) {
       if (is.null(data)) {
-        stop("A dataset must be present when 'outcome' is supplied as a string. Please supply an argument to 'data' containing the original dataset used to estimate the weights.", call. = FALSE)
+        chk::err("a dataset must be present when `outcome` is supplied as a string. Please supply an argument to `data` containing the original dataset used to estimate the weights")
       }
       outcome_char <- outcome
       outcome <- try(eval(str2expression(outcome_char), data), silent = TRUE)
       if (length(outcome) == 0 || inherits(outcome, "try-error")) {
-        stop("The outcome variable must be present in the dataset.", call. = FALSE)
+        chk::err("the outcome variable must be present in the dataset")
       }
     }
   }
 
   if (length(outcome) == 0) {
-    stop("The outcome variable cannot be NULL.", call. = FALSE)
+    chk::err("the outcome variable cannot be `NULL`")
   }
   if (!is.numeric(outcome) && !is.logical(outcome)) {
-    stop("The outcome variable must be numeric.", call. = FALSE)
+    chk::err("the outcome variable must be numeric")
   }
   if (length(outcome) != nrow(X)) {
-    stop("The outcome variable must have length equal to the number of units in the dataset.", call. = FALSE)
+    chk::err("the outcome variable must have length equal to the number of units in the dataset")
   }
 
   attr(outcome, "outcome_name") <- outcome_char
@@ -470,20 +468,20 @@ get_outcome <- function(outcome, data = NULL, formula, X) {
 
 process_target <- function(target, formula, mf, target.weights = NULL) {
   if (any(c("$", "[", "[[") %in% all.names(formula))) {
-    stop("Subsetting operations ($, [.], [[.]]) are not allowed in the model formula when 'target' is specified.", call. = FALSE)
+    chk::err("subsetting operations ($, [.], [[.]]) are not allowed in the model formula when `target` is specified")
   }
   if (!is.list(target)) {
-    stop("'target' must be a list of covariate-value pairs or a data frame containing the target population.", call. = FALSE)
+    chk::err("`target` must be a list of covariate-value pairs or a data frame containing the target population")
   }
   if (!is.data.frame(target) && !all(lengths(target) == 1L)) {
-    stop("All entries in 'target' must have lengths of 1 when supplied as a list.", call. = FALSE)
+    chk::err("all entries in `target` must have lengths of 1 when supplied as a list")
   }
   if (!is.null(target.weights)) {
     if (!is.data.frame(target) || nrow(target) == 1) {
-      warning("'target.weights' is ignored when 'target' is a target profile.", call. = FALSE)
+      chk::wrn("`target.weights` is ignored when `target` is a target profile")
     }
     if (!is.numeric(target.weights) || length(target.weights) != nrow(target)) {
-      stop("'target.weights' must be a numeric vector with length equal to the number of rows of the target dataset.", call. = FALSE)
+      chk::err("`target.weights` must be a numeric vector with length equal to the number of rows of the target dataset")
     }
     target.weights <- as.numeric(target.weights)
   }
@@ -492,15 +490,15 @@ process_target <- function(target, formula, mf, target.weights = NULL) {
   vars_in_target <- names(target)
   vars_in_formula_not_in_target <- setdiff(vars_in_formula, vars_in_target)
   if (length(vars_in_formula_not_in_target) > 0) {
-    stop(paste0("All covariates in the model formula must be present in 'target'; variable(s) not present:\n\t",
-                paste(vars_in_formula_not_in_target, collapse = ", ")), call. = FALSE)
+    chk::err(paste0("All covariates in the model formula must be present in `target`; variable(s) not present:\n\t",
+                paste(vars_in_formula_not_in_target, collapse = ", ")), tidy = FALSE)
   }
 
   vars_in_target_not_in_formula <- setdiff(vars_in_target, vars_in_formula)
   if (length(vars_in_target_not_in_formula) > 0) {
     if (!is.data.frame(target)) {
-      warning(paste0("The following value(s) in 'target' will be ignored:\n\t",
-                     paste(vars_in_target_not_in_formula, collapse = ", ")), call. = FALSE)
+      chk::wrn(paste0("The following value(s) in `target` will be ignored:\n\t",
+                     paste(vars_in_target_not_in_formula, collapse = ", ")), tidy = FALSE)
     }
     target <- target[vars_in_target %in% vars_in_formula]
   }
@@ -530,18 +528,18 @@ process_target <- function(target, formula, mf, target.weights = NULL) {
 
 process_iv <- function(iv, formula, data = NULL) {
   if (length(iv) == 0) {
-    stop("An argument to 'iv' specifying the instrumental variable(s) is required.", call. = FALSE)
+    chk::err("an argument to `iv` specifying the instrumental variable(s) is required")
   }
 
   tt.factors <- attr(terms(formula, data = data), "factors")
 
   if (is.character(iv)) {
     if (is.null(data) || !is.data.frame(data)) {
-      stop("If 'iv' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
+      chk::err("if `iv` is specified as a string, a data frame argument must be supplied to `data`")
     }
 
     if (!all(iv %in% names(data))) {
-      stop("All variables in 'iv' must be in 'data'.", call. = FALSE)
+      chk::err("all variables in `iv` must be in `data`")
     }
 
     iv_f <- reformulate(iv)
@@ -550,13 +548,13 @@ process_iv <- function(iv, formula, data = NULL) {
     iv_f <- iv
   }
   else {
-    stop("'iv' must be a one-sided formula or character vector of instrumental variables.", call. = FALSE)
+    chk::err("`iv` must be a one-sided formula or character vector of instrumental variables")
   }
 
   iv.factors <- attr(terms(iv_f, data = data), "term.labels")
 
   if (any(iv.factors %in% rownames(tt.factors))) {
-    stop("The instrumental variable(s) should not be present in the model formula.", call. = FALSE)
+    chk::err("the instrumental variable(s) should not be present in the model formula")
   }
 
   iv_f
@@ -569,11 +567,11 @@ process_fixef <- function(fixef, formula, data = NULL, treat_name) {
 
   if (is.character(fixef)) {
     if (is.null(data) || !is.data.frame(data)) {
-      stop("If 'fixef' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
+      chk::err("if `fixef` is specified as a string, a data frame argument must be supplied to `data`")
     }
 
     if (!all(fixef %in% names(data))) {
-      stop("All variables in 'fixef' must be in 'data'.", call. = FALSE)
+      chk::err("all variables in `fixef` must be in `data`")
     }
 
     fixef_f <- reformulate(fixef)
@@ -582,25 +580,25 @@ process_fixef <- function(fixef, formula, data = NULL, treat_name) {
     fixef_f <- fixef
   }
   else {
-    stop("'fixef' must be a one-sided formula or string naming the fixed effect variable.", call. = FALSE)
+    chk::err("`fixef` must be a one-sided formula or string naming the fixed effect variable")
   }
 
   fixef_name <- attr(terms(fixef_f, data = data), "term.labels")
   if (length(fixef_name) > 1) {
-    stop("Only one fixed effect variable may be supplied.", call. = FALSE)
+    chk::err("only one fixed effect variable may be supplied")
   }
 
   if (any(fixef_name == treat_name)) {
-    stop("The fixed effect variable cannot be the same as the treatment variable.", call. = FALSE)
+    chk::err("the fixed effect variable cannot be the same as the treatment variable")
   }
   if (any(fixef_name %in% rownames(tt.factors))) {
-    stop("The fixed effect variable should not be present in the model formula.", call. = FALSE)
+    chk::err("the fixed effect variable should not be present in the model formula")
   }
 
   fixef_mf <- model.frame(fixef_f, data = data, na.action = "na.pass")
 
   if (anyNA(fixef_mf)) {
-    stop("Missing values are not allowed in the fixed effect variable.", call. = FALSE)
+    chk::err("missing values are not allowed in the fixed effect variable")
   }
 
   fixef <- factor(fixef_mf[[fixef_name]])
@@ -629,15 +627,14 @@ check_lengths <- function(treat, ...) {
     names(error_df) <- NULL
 
     msg <- paste(
-      sprintf("%s and %s must have the same length. Variable lengths:",
-              paste(arg_names[-length(lengths)], collapse = ", "),
-              arg_names[length(lengths)]),
+      sprintf("%s must have the same length. Variable lengths:",
+              word_list(c("the treatment", add_quotes(arg_names[-1], "`")))),
       format(do.call("paste", lapply(rownames(error_df), function(i) {
         paste0("\n", i, " ", error_df[i, 1])
       })), justfify = "right")
     )
 
-    stop(msg, call. = FALSE)
+    chk::err(msg, tidy = FALSE)
   }
 
   invisible(treat)

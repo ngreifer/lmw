@@ -354,6 +354,8 @@ lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = 
                 contrast = NULL, focal = NULL) {
   call <- match.call()
 
+  chk::chk_string(method)
+  method <- toupper(method)
   method <- match_arg(method, c("URI", "MRI"))
 
   estimand <- process_estimand(estimand, target, obj)

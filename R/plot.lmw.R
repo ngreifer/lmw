@@ -110,6 +110,8 @@
 
 #' @exportS3Method plot lmw
 plot.lmw <- function(x, type = "weights", ...) {
+  chk::chk_string(type)
+  type <- tolower(type)
   type <- match_arg(type, c("weights", "extrapolation", "influence"))
 
   if (type == "weights") {
@@ -239,25 +241,25 @@ extrapolation_plot <- function(x, variables, data = NULL, ...) {
   data <- get_data(data, x)
 
   if (missing(variables)) {
-    stop("The variables for which extrapolation is to be assessed must be named in the 'variables' argument.", call. = FALSE)
+    chk::err("the variables for which extrapolation is to be assessed must be named in the `variables` argument")
   }
   if (is.character(variables)) {
-    if (!is.null(data) && is.data.frame(data)) {
-      if (all(variables %in% names(data))) {
-        covs <- covs_df_to_matrix(data[variables])
-      }
-      else {
-        stop("All variables in 'variables' must be in 'data'.", call. = FALSE)
-      }
+    if (is.null(data) || !is.data.frame(data)) {
+      chk::err("if `variables` is specified as a string, a data frame argument must be supplied to `data`")
     }
-    else {
-      stop("If 'variables' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
+
+    if (!all(variables %in% names(data))) {
+      chk::err("all variables in `variables` must be in `data`")
     }
+
+    covs <- covs_df_to_matrix(data[variables])
   }
   else if (inherits(variables, "formula")) {
     vars.in.formula <- all.vars(variables)
-    if (!is.null(data) && is.data.frame(data)) data <- cbind(data[names(data) %in% vars.in.formula],
-                                                             x$covs[names(data) %in% setdiff(vars.in.formula, names(data))])
+    if (!is.null(data) && is.data.frame(data)) {
+      data <- cbind(data[names(data) %in% vars.in.formula],
+                    x$covs[names(data) %in% setdiff(vars.in.formula, names(data))])
+    }
     else data <- x$covs
 
     covs <- covs_df_to_matrix(model.frame(variables, data = data))

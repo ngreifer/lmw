@@ -77,6 +77,10 @@
 
 #' @exportS3Method summary lmw_est
 summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) {
+  chk::chk_flag(model)
+  chk::chk_flag(ci)
+  chk::chk_number(alpha)
+
   treat_coef_inds <- seq_along(object$treat_levels)
 
   object$vcov <- .vcov.aliased(is.na(object$coefficients), object$vcov)
@@ -308,6 +312,7 @@ print.summary.lmw_est <- function(x, digits = max(3, getOption("digits") - 3),
                                            digits = digits), sep = "")
 
   }
+
   invisible(x)
 }
 
@@ -382,7 +387,7 @@ weights.lmw_est <- function(object, ...) {
 #' @exportS3Method predict lmw_est
 predict.lmw_est <- function(object, newdata, ...) {
  if (!missing(newdata)) {
-   warning("`predict()` cannot be used with `lmw_est` objects to generate predictions for new observations. Returning fitted values from the original dataset.")
+   chk::wrn("`predict()` cannot be used with `lmw_est` objects to generate predictions for new observations. Returning fitted values from the original dataset")
  }
   object$fitted.values
 }

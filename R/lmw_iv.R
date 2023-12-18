@@ -227,9 +227,11 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
   call <- match.call()
 
   if (missing(iv)) {
-    stop("An argument to 'iv' specifying the instrumental variable(s) is required.", call. = FALSE)
+    chk::err("an argument to `iv` specifying the instrumental variable(s) is required")
   }
 
+  chk::chk_string(method)
+  method <- toupper(method)
   method <- match_arg(method, c("URI", "MRI"))
 
   estimand <- process_estimand(estimand, target, obj)

@@ -11,7 +11,9 @@ get_X_from_formula <- function(formula, data, treat, method, estimand, target = 
 
   mf <- model.frame(formula_without_treat, data = data, na.action = "na.pass")
 
-  if (anyNA(mf)) stop("Missing values are not allowed in the covariates.", call. = FALSE)
+  if (anyNA(mf)) {
+    chk::err("missing values are not allowed in the covariates")
+  }
 
   mf <- process_mf(mf)
 
@@ -138,7 +140,9 @@ get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, method, es
 
   mf <- model.frame(formula_without_treat, data = data, na.action = "na.pass")
 
-  if (anyNA(mf)) stop("Missing values are not allowed in the covariates.", call. = FALSE)
+  if (anyNA(mf)) {
+    chk::err("missing values are not allowed in the covariates")
+  }
 
   mf <- process_mf(mf)
 
@@ -149,7 +153,9 @@ get_1st_stage_X_from_formula_iv <- function(formula, data, treat, iv, method, es
 
   iv_mf <- model.frame(iv, data = data, na.action = "na.pass")
 
-  if (anyNA(iv_mf)) stop("Missing values are not allowed in the instrumental variable(s).", call. = FALSE)
+  if (anyNA(iv_mf)) {
+    chk::err("missing values are not allowed in the instrumental variable(s)")
+  }
 
   iv_mf <- process_mf(iv_mf)
 

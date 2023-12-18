@@ -14,7 +14,7 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
 
   if (!is.null(fixef)) {
     if (!is.null(base.weights) && dr.method == "AIPW") {
-      stop("Fixed effects cannot be used with AIPW.", call. = FALSE)
+      chk::err("fixed effects cannot be used with AIPW")
     }
     for (i in seq_len(ncol(X))) {
       X[,i] <- demean(X[,i], fixef, w)
@@ -75,7 +75,13 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
     weights <- weights + aug.weights
   }
 
-  drop(weights)
+  weights <- drop(weights)
+
+  for (i in unique(treat)[vapply(unique(treat), function(u) sum(w[treat == u]) > .1, logical(1L))]) {
+    weights[treat == i] <- weights[treat == i] / mean(weights[treat == i])
+  }
+
+  weights
 }
 
 get_w_from_X_iv <- function(X, A, treat, method, base.weights = NULL, s.weights = NULL, fixef = NULL) {

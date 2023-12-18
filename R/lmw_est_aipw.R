@@ -4,15 +4,13 @@ lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = N
 
   call <- match.call()
 
-  if (!inherits(x, "lmw")) {
-    stop("'x' must be an lmw object.", call. = FALSE)
-  }
+  chk::chk_is(x, "lmw")
 
   if ("robust" %in% names(call)[-1]) {
-    warning("'robust' is ignored for lmw_aipw objects. See ?lmw_est.lmw_aipw for details.", call. = FALSE)
+    chk::wrn("`robust` is ignored for lmw_aipw objects. See `?lmw_est.lmw_aipw` for details")
   }
   if ("cluster" %in% names(call)[-1]) {
-    warning("'cluster' is ignored for lmw_aipw objects. See ?lmw_est.lmw_aipw for details.", call. = FALSE)
+    chk::wrn("`cluster` is ignored for lmw_aipw objects. See `?lmw_est.lmw_aipw` for details")
   }
 
   data <- get_data(data, x)

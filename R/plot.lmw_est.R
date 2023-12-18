@@ -66,6 +66,8 @@
 
 #' @exportS3Method plot lmw_est
 plot.lmw_est <- function(x, type = "influence", ...) {
+  chk::chk_string(type)
+  type <- tolower(type)
   type <- match_arg(type, c("influence", "lm"))
 
   if (type == "influence") {
