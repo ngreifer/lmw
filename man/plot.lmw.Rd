@@ -28,11 +28,11 @@ Other arguments are passed to \code{\link[=density]{density()}}.
 
 When \code{type = "extrapolation"}, the following are accepted:
 \describe{
-\item{\code{var}}{required; a right-sided formula or character vector
+\item{\code{variables}}{required; a right-sided formula or character vector
 containing the names of the covariates for which extrapolation is to be
 assessed.}
 \item{\code{data}}{an optional data frame containing the
-variables named in \code{var}.}
+variables named in \code{variables}.}
 }
 
 When \code{type = "influence"}, the
@@ -79,7 +79,7 @@ mean of the covariate in the target sample as determined by the
 \code{estimand} argument in the original call to \code{lmw()}. A large
 discrepancy between the vertical lines and Xs indicates a lack of balance
 between the treatment group and target sample. When \code{estimand = "CATE"}
-in the original call to \code{lmw()}, any variables supplied to \code{var}
+in the original call to \code{lmw()}, any variables supplied to \code{variables}
 that were not given a target value will not have the target mean displayed.
 
 When \code{type = "influence"}, \code{plot.lmw()} produces a plot of the
@@ -106,11 +106,11 @@ plot(lmw.out1, type = "weights")
 
 # Extrapolation/representativeness for age and married
 plot(lmw.out1, type = "extrapolation",
-     var = ~age + married)
+     variables = ~age + married)
 
 # Extrapolation/representativeness for race
 plot(lmw.out1, type = "extrapolation",
-     var = ~race)
+     variables = ~race)
 
 # Influence for re78 outcome
 plot(lmw.out1, type = "influence", outcome = "re78")

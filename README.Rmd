@@ -82,7 +82,8 @@ Negative weights are present in the control group.
 We can further examine extrapolation for specific covariates:
 
 ```{r}
-plot(lmw.out, type = "extrapolation", var = ~married + re75)
+plot(lmw.out, type = "extrapolation",
+     variables = ~married + re75)
 ```
 
 The $\times$ indicates the mean of the covariate in the target population (the treated group), and the vertical line indicates the mean of the covariate weighted by the implied regression weights. For these covariates, the implied regression weights yield a sample fairly representative of the target population.

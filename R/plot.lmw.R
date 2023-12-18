@@ -27,7 +27,7 @@
 #' `estimand` argument in the original call to `lmw()`. A large
 #' discrepancy between the vertical lines and Xs indicates a lack of balance
 #' between the treatment group and target sample. When `estimand = "CATE"`
-#' in the original call to `lmw()`, any variables supplied to `var`
+#' in the original call to `lmw()`, any variables supplied to `variables`
 #' that were not given a target value will not have the target mean displayed.
 #'
 #' When `type = "influence"`, `plot.lmw()` produces a plot of the
@@ -58,11 +58,11 @@
 #'
 #' When `type = "extrapolation"`, the following are accepted:
 #' \describe{
-#' \item{`var`}{required; a right-sided formula or character vector
+#' \item{`variables`}{required; a right-sided formula or character vector
 #' containing the names of the covariates for which extrapolation is to be
 #' assessed.}
 #' \item{`data`}{an optional data frame containing the
-#' variables named in `var`.}
+#' variables named in `variables`.}
 #' }
 #'
 #' When `type = "influence"`, the
@@ -99,11 +99,11 @@
 #'
 #' # Extrapolation/representativeness for age and married
 #' plot(lmw.out1, type = "extrapolation",
-#'      var = ~age + married)
+#'      variables = ~age + married)
 #'
 #' # Extrapolation/representativeness for race
 #' plot(lmw.out1, type = "extrapolation",
-#'      var = ~race)
+#'      variables = ~race)
 #'
 #' # Influence for re78 outcome
 #' plot(lmw.out1, type = "influence", outcome = "re78")
@@ -222,7 +222,7 @@ weights_plot <- function(x, rug = TRUE, mean = TRUE, ess = TRUE, ...) {
   grDevices::dev.flush()
 }
 
-extrapolation_plot <- function(x, var, data = NULL, ...) {
+extrapolation_plot <- function(x, variables, data = NULL, ...) {
   .pardefault <- par(no.readonly = TRUE)
   on.exit(par(.pardefault))
 
@@ -238,29 +238,29 @@ extrapolation_plot <- function(x, var, data = NULL, ...) {
 
   data <- get_data(data, x)
 
-  if (missing(var)) {
-    stop("The variables for which extrapolation is to be assessed must be named in the 'var' argument.", call. = FALSE)
+  if (missing(variables)) {
+    stop("The variables for which extrapolation is to be assessed must be named in the 'variables' argument.", call. = FALSE)
   }
-  if (is.character(var)) {
+  if (is.character(variables)) {
     if (!is.null(data) && is.data.frame(data)) {
-      if (all(var %in% names(data))) {
-        covs <- covs_df_to_matrix(data[var])
+      if (all(variables %in% names(data))) {
+        covs <- covs_df_to_matrix(data[variables])
       }
       else {
-        stop("All variables in 'var' must be in 'data'.", call. = FALSE)
+        stop("All variables in 'variables' must be in 'data'.", call. = FALSE)
       }
     }
     else {
-      stop("If 'var' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
+      stop("If 'variables' is specified as a string, a data frame argument must be supplied to 'data'.", call. = FALSE)
     }
   }
-  else if (inherits(var, "formula")) {
-    vars.in.formula <- all.vars(var)
+  else if (inherits(variables, "formula")) {
+    vars.in.formula <- all.vars(variables)
     if (!is.null(data) && is.data.frame(data)) data <- cbind(data[names(data) %in% vars.in.formula],
                                                              x$covs[names(data) %in% setdiff(vars.in.formula, names(data))])
     else data <- x$covs
 
-    covs <- covs_df_to_matrix(model.frame(var, data = data))
+    covs <- covs_df_to_matrix(model.frame(variables, data = data))
   }
 
   v <- as.data.frame(covs)
