@@ -3,7 +3,6 @@
 \docType{package}
 \name{lmw-package}
 \alias{lmw-package}
-\alias{_PACKAGE}
 \title{lmw: Linear Model Weights}
 \description{
 Computes the implied weights of linear regression models for estimating average causal effects and provides diagnostics based on these weights. These diagnostics rely on the analyses in Chattopadhyay and Zubizarreta (2022) \doi{10.1093/biomet/asac058} where several regression estimators are represented as weighting estimators, in connection to inverse probability weighting. 'lmw' provides tools to diagnose representativeness, balance, extrapolation, and influence for these models, clarifying the target population of inference. Tools are also available to simplify estimating treatment effects for specific target populations of interest.

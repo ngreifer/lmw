@@ -66,7 +66,7 @@ weights.}
 
 \item{dr.method}{the method used to incorporate the \code{base.weights} into
 a doubly-robust estimator. Can be one of \code{"WLS"} for weighted least
-squares or \code{"AIPW"} for augmented inverse probability weighting.
+squares (\code{"IPWRA"} is an allowable alias) or \code{"AIPW"} for augmented inverse probability weighting.
 Ignored when \code{base.weights} is \code{NULL}.}
 
 \item{obj}{a \code{matchit} or \code{weightit} object corresponding to the
@@ -232,7 +232,7 @@ with \code{include.s.weights = FALSE} or weights resulting from
 Regression weights can be computed in a matched or weighted sample by
 supplying a \code{matchit} or \code{weightit} object (from \pkg{MatchIt} or
 \pkg{WeightIt}, respectively) to the \code{obj} argument of \code{lmw()}.
-The estimand, base weights, and sampling weights (if any) will be taken from
+The estimand, focal group (if any), base weights, and sampling weights (if any) will be taken from
 the supplied object and used in the calculation of the implied regression
 weights, unless these have been supplied separately to \code{lmw()}. The
 \code{weights} component of the supplied object containing the matching or

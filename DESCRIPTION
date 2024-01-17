@@ -1,7 +1,7 @@
 Package: lmw
 Type: Package
 Title: Linear Model Weights
-Version: 0.0.1.9001
+Version: 0.0.1.9002
 Authors@R: c(
   person("Ambarish", "Chattopadhyay", email = "ambarish_chattopadhyay@g.harvard.edu", role = c("aut"),
          comment = c(ORCID = "0000-0002-1502-0974")),
@@ -31,7 +31,16 @@ Imports:
     sandwich (>= 3.0-2),
     backports (>= 1.4.1)
 Suggests: 
-    MatchIt (>= 4.3.2)
+    MatchIt (>= 4.3.2),
+    WeightIt (>= 0.14.2),
+    marginaleffects (>= 0.17.0),
+    PSweight (>= 1.1.8),
+    estimatr,
+    lmtest,
+    ivreg,
+    mlogit,
+    testthat (>= 3.0.0)
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.0
 LazyData: true
+Config/testthat/edition: 3
