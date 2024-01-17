@@ -50,7 +50,7 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
 
   if (!is.null(base.weights) && dr.method == "AIPW") {
 
-    ipw.weights <- base.weights*s.weights
+    ipw.weights <- base.weights * s.weights
     for (i in levels(treat)) {
       ipw.weights[treat == i] <- ipw.weights[treat == i]/sum(ipw.weights[treat == i])
     }
@@ -60,15 +60,14 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
     if (method == "URI") {
       #For multicategory treatments, set base.weights of groups not
       # involved in contrast to 0
-      if (nlevels(treat) > 2) ipw.weights[!treat %in% levels(treat)[1:2]] <- 0
+      if (nlevels(treat) > 2) ipw.weights_rw[!treat %in% levels(treat)[1:2]] <- 0
 
       #Funky formula for augmentation weights, but it works
-      ipw.weights[t == 0] <- -ipw.weights[t == 0]
+      ipw.weights_rw[t == 0] <- -ipw.weights_rw[t == 0]
       aug.weights <- rw * .lm.fit(rw * X, ipw.weights_rw)$residuals
       aug.weights[t == 0] <- -aug.weights[t == 0]
     }
     else { #MRI
-
       aug.weights <- rw * .lm.fit(rw * X, ipw.weights_rw)$residuals
     }
 
@@ -77,8 +76,16 @@ get_w_from_X <- function(X, treat, method, base.weights = NULL, s.weights = NULL
 
   weights <- drop(weights)
 
-  for (i in unique(treat)[vapply(unique(treat), function(u) sum(w[treat == u]) > .1, logical(1L))]) {
-    weights[treat == i] <- weights[treat == i] / mean(weights[treat == i])
+  #Rescale weights to have a mean of 1 in each group
+  if (method == "URI" && nlevels(treat) > 2) {
+    for (i in 0:1) {
+      weights[t == i] <- weights[t == i] / mean(weights[t == i])
+    }
+  }
+  else {
+    for (i in levels(treat)) {
+      weights[treat == i] <- weights[treat == i] / mean(weights[treat == i])
+    }
   }
 
   weights
@@ -118,13 +125,18 @@ get_w_from_X_iv <- function(X, A, treat, method, base.weights = NULL, s.weights 
     rw * .lm.fit(rw * X, rw * A)$residuals
 
   if (ncol(A) == 1) {
-    weights <- weights_ / sum(A * weights_)
+    weights <- weights_ #/ sum(A * weights_)
     weights[treat == levels(treat)[1]] <- -weights[treat == levels(treat)[1]]
   }
   else {
     #Scaling factor is a [ncol(A) x 1] vector (solve(t(A) %*% weights_)[,1])
     weights <- weights_ %*% solve(crossprod(A, weights_), c(1, rep(0, ncol(A) - 1)))
     weights[treat == levels(treat)[1]] <- -weights[treat == levels(treat)[1]]
+  }
+
+  #Rescale weights to have a mean of 1 in each group
+  for (i in levels(treat)) {
+    weights[treat == i] <- weights[treat == i] / mean(weights[treat == i])
   }
 
   weights
