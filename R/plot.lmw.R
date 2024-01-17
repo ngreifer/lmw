@@ -172,7 +172,7 @@ weights_plot <- function(x, rug = TRUE, mean = TRUE, ess = TRUE, ...) {
         })
       # Note: without the above lines, a warning is thrown; see
       # https://stackoverflow.com/a/56861070/6348551
-      xlim <- c(0, 2*wi_range[2])
+      xlim <- c(0, 2 * wi_range[2])
     }
     else {
       dens <- density(wi, ...)
@@ -184,7 +184,7 @@ weights_plot <- function(x, rug = TRUE, mean = TRUE, ess = TRUE, ...) {
       }
     }
 
-    ylim <- c(0, max(dens$y)*1.05)
+    ylim <- c(0, max(dens$y) * 1.05)
 
     plot(dens,
          ylab = "Density",
