@@ -5,14 +5,14 @@
 
 <!-- <img src="man/figures/logo.png" align="right" width="150"/> -->
 
-## <!-- [![CRAN_Status_Badge](https://img.shields.io/cran/v/MatchIt?color=952100)](https://cran.r-project.org/package=lmw) [![CRAN_Downloads_Badge](https://cranlogs.r-pkg.org/badges/MatchIt?color=952100)](https://cran.r-project.org/package=lmw) -->
+## [![CRAN_Status_Badge](https://img.shields.io/cran/v/lmw)](https://cran.r-project.org/package=lmw) [![CRAN_Downloads_Badge](https://cranlogs.r-pkg.org/badges/lmw)](https://cran.r-project.org/package=lmw)
 
 ### Overview
 
 `lmw` computes weights implied by a linear regression model used to
 estimate an average treatment effect and provides diagnostics that
 incorporate these weights as described in [Chattopadhyay & Zubizarreta
-(2022)](https://doi.org/10.1093/biomet/asac058). The treatment effect
+(2023)](https://doi.org/10.1093/biomet/asac058). The treatment effect
 resulting from this model can be represented as a difference between the
 weighted outcome means in the treatment groups, similar to inverse
 probability weighting.
@@ -24,9 +24,9 @@ variance among all weights that do so, and they may be negative. Despite
 yielding exact mean balance between treatment groups, they may not yield
 balance between the treatment groups and the target population
 corresponding to the desired estimand; in addition, the negative weights
-they produce indicate extrapolation beyond the support of the covariate.
-`lmw` provides tools to compute the implied weights and perform
-diagnostics to assess balance, extrapolation, influence, and
+they produce indicate extrapolation beyond the support of the
+covariates. `lmw` provides tools to compute the implied weights and
+perform diagnostics to assess balance, extrapolation, influence, and
 distributional properties of the weights. In addition, `lmw` provides
 tools to estimate average treatment effects from the specified models
 that correspond to selected target populations.
@@ -145,12 +145,16 @@ plot(lmw.out, type = "weights")
 
 <img src="man/figures/README-unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
-Negative weights are present in the control group.
+A red line indicates the average of the weights in that group (the
+weights are scaled so this is always equal to 1). Negative weights are
+present in the control group. Weights are also highly variable in the
+control group, leading to a decreased effective sample size (ESS).
 
 We can further examine extrapolation for specific covariates:
 
 ``` r
-plot(lmw.out, type = "extrapolation", var = ~married + re75)
+plot(lmw.out, type = "extrapolation",
+     variables = ~married + re75)
 ```
 
 <img src="man/figures/README-unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
@@ -189,6 +193,12 @@ summary(lmw.fit)
 
 In addition, `lmw` can be used with multi-category treatments, two-stage
 least squares estimation of instrumental variable models, and
-double-robust estimators by interfacing with the `MatchIt` and
+doubly-robust estimators by interfacing with the `MatchIt` and
 `WeightIt` packages to implement these diagnostics for regression in a
 matched or weighted sample.
+
+### References
+
+Chattopadhyay, A., & Zubizarreta, J. R. (2023). On the implied weights
+of linear regression for causal inference. *Biometrika*, 110(3),
+615–629. <https://doi.org/10.1093/biomet/asac058>

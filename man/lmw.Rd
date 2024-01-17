@@ -375,8 +375,7 @@ summary(lmw.out7)
 
 }
 \references{
-Chattopadhyay, A., & Zubizarreta, J. R. (2022). On the implied
-weights of linear regression for causal inference. \emph{Biometrika}, asac058. \doi{10.1093/biomet/asac058}
+Chattopadhyay, A., & Zubizarreta, J. R. (2023). On the implied weights of linear regression for causal inference. \emph{Biometrika}, 110(3), 615–629. \doi{doi.org/10.1093/biomet/asac058}
 }
 \seealso{
 \code{\link[=summary.lmw]{summary.lmw()}} for summarizing balance and

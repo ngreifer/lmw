@@ -262,8 +262,7 @@
 #' `lmw` objects; [influence.lmw()] for influence measures;
 #' [lm()] for fitting standard regression models.
 #'
-#' @references Chattopadhyay, A., & Zubizarreta, J. R. (2022). On the implied
-#' weights of linear regression for causal inference. *Biometrika*, asac058. \doi{10.1093/biomet/asac058}
+#' @references Chattopadhyay, A., & Zubizarreta, J. R. (2023). On the implied weights of linear regression for causal inference. *Biometrika*, 110(3), 615–629. \doi{doi.org/10.1093/biomet/asac058}
 #'
 #' @examples
 #' data("lalonde")

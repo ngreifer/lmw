@@ -13,7 +13,7 @@ Authors@R: c(
   )
 Description: Computes the implied weights of linear regression models for estimating
      average causal effects and provides diagnostics based on these weights. These
-     diagnostics rely on the analyses in Chattopadhyay and Zubizarreta (2022)
+     diagnostics rely on the analyses in Chattopadhyay and Zubizarreta (2023)
      <doi:10.1093/biomet/asac058> where
      several regression estimators are represented as weighting estimators, in connection
      to inverse probability weighting. 'lmw' provides tools to diagnose
