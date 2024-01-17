@@ -76,7 +76,7 @@ lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = N
   #over correct estimand.
   ew <- {
     if (is.null(x$focal)) as.numeric(reg_w > 0)
-    else as.numeric(reg_w > 0)*as.numeric(x$treat == x$focal)
+    else as.numeric(reg_w > 0) * as.numeric(x$treat == x$focal)
   }
 
   aipw_w <- reg_w * x$base.weights
@@ -114,10 +114,12 @@ lmw_est.lmw_aipw <- function(x, outcome, data = NULL, robust = TRUE, cluster = N
   A <- matrix(0, nrow = p + 2*nA, ncol = p + 2*nA)
   A[1:p, 1:p] <- crossprod(obj$X[pos_w,, drop = FALSE])/n
 
+  mean_ew <- sum(ew)/n
+
   for (i in 1:nA) {
-    A[p + i, p + i] <- sum(ew)/n
+    A[p + i, p + i] <- mean_ew
     A[p + nA + i, p + nA + i] <- sum(aipw_w[x$treat == levels(x$treat)[i]])/n
-    A[p + i, c(1, i)] <- -sum(ew)/n
+    A[p + i, c(1, i)] <- -mean_ew
     A[p + nA + i, 1:p] <- colSums((x$treat == levels(x$treat)[i]) * aipw_w * obj$X)/n
   }
 
