@@ -81,6 +81,10 @@ summary.lmw_est <- function(object, model = FALSE, ci = TRUE, alpha = .05, ...) 
   chk::chk_flag(ci)
   chk::chk_number(alpha)
 
+  if ("cluster" %in% ...names()) {
+    chk::wrn("`cluster` is not an allowable argument to `summary.lmw_est()`; did you mean to supply it to `lmw_est()`?")
+  }
+
   treat_coef_inds <- seq_along(object$treat_levels)
 
   object$vcov <- .vcov.aliased(is.na(object$coefficients), object$vcov)
