@@ -111,7 +111,7 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
   else {
     if (inherits(cluster, "formula")) {
       cluster <- model.frame(cluster,
-                             data = data[pos_w,, drop = FALSE],
+                             data = data,
                              na.action = na.pass)
     }
     else {
@@ -137,6 +137,11 @@ lmw_est.lmw_iv <- function(x, outcome, data = NULL, robust = TRUE, cluster = NUL
   if (!is.null(x$fixef) && robust %in% c("const", "HC1")) {
     n <- length(pos_w)
     fit$vcov <- fit$vcov * (n - ncol(fit$model.matrix))/fit$df.residual
+  }
+
+  #For cluster SE, adjust df as the min number of clusters across clustering variables
+  if (!is.null(cluster)) {
+    fit$df.residual <- min(vapply(cluster, function(cl) length(unique(cl)), numeric(1L))) - 1
   }
 
   fit$lmw.weights <- x$weights

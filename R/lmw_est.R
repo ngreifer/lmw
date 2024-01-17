@@ -327,6 +327,11 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
     fit$vcov <- fit$vcov * (n - ncol(fit$model.matrix))/fit$df.residual
   }
 
+  #For cluster SE, adjust df as the min number of clusters across clustering variables
+  if (!is.null(cluster)) {
+    fit$df.residual <- min(vapply(cluster, function(cl) length(unique(cl)), numeric(1L))) - 1
+  }
+
   fit$lmw.weights <- x$weights
   fit$call <- call
   fit$estimand <- x$estimand
@@ -339,7 +344,7 @@ lmw_est.lmw <- function(x, outcome, data = NULL, robust = TRUE, cluster = NULL, 
   fit
 }
 
-#' @exportS3Method print lmw
+#' @exportS3Method print lmw_est
 print.lmw_est <- function(x, ...) {
   cat(sprintf("An %s object\n", class(x)[1]))
   cat(" - outcome:", x$outcome, "\n")
