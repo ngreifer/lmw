@@ -104,7 +104,7 @@
 #' Regression weights can be computed in a matched or weighted sample by
 #' supplying a `matchit` or `weightit` object (from \pkg{MatchIt} or
 #' \pkg{WeightIt}, respectively) to the `obj` argument of `lmw()`.
-#' The estimand, base weights, and sampling weights (if any) will be taken from
+#' The estimand, focal group (if any), base weights, and sampling weights (if any) will be taken from
 #' the supplied object and used in the calculation of the implied regression
 #' weights, unless these have been supplied separately to `lmw()`. The
 #' `weights` component of the supplied object containing the matching or
@@ -201,7 +201,7 @@
 #' weights.
 #' @param dr.method the method used to incorporate the `base.weights` into
 #' a doubly-robust estimator. Can be one of `"WLS"` for weighted least
-#' squares or `"AIPW"` for augmented inverse probability weighting.
+#' squares (`"IPWRA"` is an allowable alias) or `"AIPW"` for augmented inverse probability weighting.
 #' Ignored when `base.weights` is `NULL`.
 #' @param obj a `matchit` or `weightit` object corresponding to the
 #' matched or weighted sample in which the implied outcome regression would
@@ -382,7 +382,7 @@ lmw <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat = 
   #treat_contrast has levels re-ordered so contrast is first
   treat_contrast <- apply_contrast_to_treat(treat, contrast)
 
-  focal <- process_focal(focal, treat_contrast, estimand)
+  focal <- process_focal(focal, treat_contrast, estimand, obj)
 
   X_obj <- get_X_from_formula(formula, data, treat_contrast, method, estimand,
                               target, s.weights, target.weights, focal)

@@ -104,6 +104,7 @@ process_dr.method <- function(dr.method, base.weights, method, estimand) {
 
   chk::chk_string(dr.method)
   dr.method <- toupper(dr.method)
+  if (dr.method == "IPWRA") dr.method <- "WLS"
   # dr.method <- match_arg(dr.method, c("WLS"))
   # dr.method <- match_arg(dr.method, c("WLS", "AIPW"[method == "MRI"]))
   dr.method <- match_arg(dr.method, c("WLS", "AIPW"))
@@ -324,23 +325,43 @@ process_contrast <- function(contrast = NULL, treat, method) {
   contrast
 }
 
-process_focal <- function(focal = NULL, treat, estimand) {
+process_focal <- function(focal = NULL, treat, estimand, obj = NULL) {
   if (estimand %in% c("ATE", "CATE")) {
     if (!is.null(focal)) chk::wrn(sprintf("`focal` is ignored when `estimand = \"%s\"`", estimand))
     return(NULL)
   }
 
-  if (is.null(focal)) {
-    focal <- switch(estimand, "ATT" = levels(treat)[2], levels(treat)[1])
-    if (nlevels(treat) > 2 || !can_str2num(unique(treat, nmax = 2)))
-      chk::msg(sprintf("using \"%s\" as the focal (%s) group. If this is incorrect or to suppress this message, please supply an argument to `focal` to identify the focal treatment level",
-                      focal, switch(estimand, "ATT" = "treated", "control")))
+  if (!is.null(focal)) {
+    if (length(focal) != 1) {
+      chk::err("`focal` must be of length 1")
+    }
+
+    if (!as.character(focal) %in% levels(treat)) {
+      chk::err("`focal` must be the name of a value of the treatment variable")
+    }
+
+    if (!is.null(obj) && !is.null(obj$focal) && !identical(focal, obj$focal)) {
+      chk::wrn("`focal` does not align with the `focal` component of the `obj` input")
+    }
   }
-  else if (length(focal) != 1) {
-    chk::err("`focal` must be of length 1")
-  }
-  else if (!as.character(focal) %in% levels(treat)) {
-    chk::err("`focal` must be the name of a value of the treatment variable")
+  else {
+    if (is.null(obj$focal) || is.null(obj$focal)) {
+      focal <- switch(estimand, "ATT" = levels(treat)[2], levels(treat)[1])
+      if (nlevels(treat) > 2 || !can_str2num(unique(treat, nmax = 2)))
+        chk::msg(sprintf("using \"%s\" as the focal (%s) group. If this is incorrect or to suppress this message, please supply an argument to `focal` to identify the focal treatment level",
+                         focal, switch(estimand, "ATT" = "treated", "control")))
+    }
+    else {
+      focal <- obj$focal
+
+      if (length(focal) != 1) {
+        chk::err("`focal` must be of length 1")
+      }
+
+      if (!as.character(focal) %in% levels(treat)) {
+        chk::err("`focal` must be the name of a value of the treatment variable")
+      }
+    }
   }
 
   as.character(focal)

@@ -256,7 +256,7 @@ lmw_iv <- function(formula, data = NULL, estimand = "ATE", method = "URI", treat
   #treat_contrast has levels re-ordered so contrast is first
   treat_contrast <- apply_contrast_to_treat(treat, contrast)
 
-  focal <- process_focal(focal, treat_contrast, estimand)
+  focal <- process_focal(focal, treat_contrast, estimand, obj)
 
   iv <- process_iv(iv, formula, data)
 
