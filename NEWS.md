@@ -1,7 +1,7 @@
 `lmw` News and Updates
 ======
 
-# `lmw` 0.0.2 (in development)
+# `lmw` 0.0.2
 
 * Changed the `var` argument in `plot(., type = "extrapolation")` to `variables` (`var` still works as an abbreviation).
 

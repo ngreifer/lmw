@@ -272,15 +272,18 @@ covs_df_to_matrix <- function(covs) {
 }
 
 #Quickly compute diagonal of hat matrix without having to compute
-#full project matrix. Uses a special formula with a fixed effects (f)
+#full projection matrix. Uses a special formula when a fixed effect (f)
 #is present to simplify calculation. Assumes X first column is an
 #intercept.
 hat_fast <- function(X, w = NULL, f = NULL) {
   if (is.null(f)) {
-    if (is.null(w)) QR <- qr.default(X)
-    else QR <- qr.default(sqrt(w) * X)
+    QR <- {
+      if (is.null(w)) qr.default(X)
+      else qr.default(sqrt(w) * X)
+    }
 
     Q <- qr.qy(QR, diag(1, nrow = nrow(QR$qr), ncol = QR$rank))
+
     return(rowSums(Q * Q))
   }
 
@@ -326,11 +329,9 @@ treat_levels_from_coefs <- function(coef_names, treat_levels, treat_name = NULL)
 #Group mean centers a variable x for a factor f. For
 #use with fixed effects.
 demean <- function(x, f, w = NULL) {
+  f <- as.factor(f)
   for (i in levels(f)) {
-    x[f == i] <- {
-      if (is.null(w)) x[f == i] - mean(x[f == i])
-      else  x[f == i] - mean_w(x[f == i], w[f == i])
-    }
+    x[f == i] <- x[f == i] - mean_w(x, w, subset = f == i)
   }
   x
 }
